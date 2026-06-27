@@ -43,3 +43,27 @@ is escalated to a human.
 - **complex** — auth, data integrity, concurrency, security, or three or more interacting systems.
 
 When in doubt, classify as `standard`.
+
+## Stack notes
+
+**Next.js 16 + next-intl versioning:**
+- Next.js 16 renamed `middleware.ts` → `proxy.ts`. The file **must** be named `proxy.ts`; `middleware.ts` is deprecated.
+- `next-intl@^3` does not peer with Next.js 16; use `next-intl@^4`. The v4 API surface (e.g. `defineRouting`, `createNavigation`, `createMiddleware`, `getRequestConfig`) is identical for our usage.
+
+**Tailwind v4:**
+- `create-next-app` with Next.js 16 installs Tailwind v4, which uses `@import "tailwindcss"` instead of the old `@tailwind base/components/utilities` directives. Do not replace with the old syntax.
+
+**Locale layout pattern:**
+- `app/layout.tsx` must be a minimal passthrough (no `<html>`/`<body>`); the locale layout `app/[locale]/layout.tsx` owns `<html lang={locale}>`, `<body>`, `NextIntlClientProvider`, and all persistent chrome (header, nav).
+- Pages only render their own content; shell belongs in the locale layout.
+- Call `getMessages({ locale })` with the validated locale string, not `getMessages()` without arguments.
+
+**Playwright:**
+- **WSL2 gotcha**: Chromium headless requires `libnspr4.so` and other system libs that cannot be installed without root. In CI, use `npx playwright install --with-deps chromium`. Locally, developers can use `npx playwright install chromium` and accept that some tests may fail if libs are missing.
+- **Config**: Always set `retries: process.env.CI ? 2 : 0` and `workers: process.env.CI ? 1 : undefined` in `playwright.config.ts`.
+
+**ESLint:**
+- `"lint": "eslint"` with no path can silently pass in ESLint v9 flat config mode if no files match. Always use `"lint": "eslint ."`.
+
+**CI environment:**
+- Add dummy `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to the Build step in CI pipelines now, before Supabase integration lands. `NEXT_PUBLIC_*` vars are inlined at build time and missing them can cause build failures downstream.

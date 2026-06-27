@@ -1,6 +1,7 @@
 # STORY-01: Web app scaffold, pt-PT shell & deploy to free hosting
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: local (no remote yet)
 
 ## User story
 As the coordinator, I want a deployed, responsive web app shell in Portuguese
