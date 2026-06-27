@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test:e2e": "playwright test",
-    "commit:chore01": "git add components.json lib/ components/ui/ e2e/design-system.spec.ts app/globals.css app/[locale]/layout.tsx app/[locale]/page.tsx components/AppHeader.tsx components/AppNav.tsx messages/pt-PT.json package.json package-lock.json && git commit -m 'feat(CHORE-01): add shadcn/ui design system and wire tokens'"
+    "_commit": "git add docs/stories/CHORE-01-ui-design-system.md package.json && git commit -m 'docs(CHORE-01): add implementation plan to story file\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>'"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.0",
