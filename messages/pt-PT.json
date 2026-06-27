@@ -1,0 +1,13 @@
+{
+  "App": {
+    "name": "Escala"
+  },
+  "Nav": {
+    "ariaLabel": "Navegação principal",
+    "home": "Início"
+  },
+  "Home": {
+    "welcome": "Bem-vindo ao Escala.",
+    "description": "Gestão de escalas para equipas de serviço."
+  }
+}
