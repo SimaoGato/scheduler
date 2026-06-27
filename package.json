@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:e2e": "playwright test",
-    "_git": "git add package.json && git commit -m 'chore(CHORE-01): restore scripts to production state\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>'"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.0",
