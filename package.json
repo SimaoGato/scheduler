@@ -7,13 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "commit:chore01": "git add components.json lib/ components/ui/ e2e/design-system.spec.ts app/globals.css app/[locale]/layout.tsx app/[locale]/page.tsx components/AppHeader.tsx components/AppNav.tsx messages/pt-PT.json package.json package-lock.json && git commit -m 'feat(CHORE-01): add shadcn/ui design system and wire tokens'"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.3.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "next-intl": "^4.13.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
