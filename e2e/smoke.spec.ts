@@ -26,4 +26,6 @@ test('responsive shell: no horizontal overflow at mobile width (375 px)', async 
 test('app name rendered from i18n catalog', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('header')).toContainText('Escala');
+  await expect(page.locator('main')).toContainText('Bem-vindo');
+  await expect(page.locator('nav')).toContainText('Início');
 });
