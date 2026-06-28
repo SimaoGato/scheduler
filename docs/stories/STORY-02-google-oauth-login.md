@@ -1,6 +1,7 @@
 # STORY-02: Google sign-in / sign-out with persistent session
 Epic: EPIC-01
-Status: draft
+PR: 5
+Status: done ✅
 
 ## User story
 As a user, I want to sign in and out with my Google account, so that I can
