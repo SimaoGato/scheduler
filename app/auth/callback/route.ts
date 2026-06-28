@@ -12,15 +12,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * - New user: count all rows; if count === 0 assign 'admin' (AC3 bootstrap),
  *   otherwise assign 'member' (AC1). Then INSERT.
  *
- * Uses .maybeSingle() for the existence check (WARNING 4): returns
+ * Uses .maybeSingle() for the existence check: returns
  * { data: null, error: null } for zero rows and { data: null, error: <real error> }
  * for DB errors, so the branch condition `data !== null` is unambiguous.
  *
- * Uses (count ?? -1) === 0 for the bootstrap guard (WARNING 2): treats a null
- * count as "unknown" (not zero), which avoids an incorrect admin promotion when
- * the count query itself fails.
+ * Null count throws rather than falling back, preventing an incorrect admin
+ * promotion when the count query itself fails.
  */
 async function provisionUser(serviceClient: SupabaseClient, user: User): Promise<void> {
+  if (!user.email) {
+    throw new Error(`[provisionUser] User ${user.id} has no email; cannot provision record.`);
+  }
+
   const displayName =
     (user.user_metadata?.full_name as string | undefined) ??
     (user.user_metadata?.name as string | undefined) ??
@@ -31,7 +34,7 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
     .from('users')
     .select('id')
     .eq('id', user.id)
-    .maybeSingle(); // WARNING 4: maybeSingle returns null data (not an error) for 0 rows
+    .maybeSingle(); // maybeSingle returns null data (not an error) for 0 rows
 
   if (selectError) {
     throw selectError;
@@ -59,12 +62,12 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
     throw countError;
   }
 
-  // WARNING 2: treat null count as "unknown" (not zero) to avoid incorrect admin promotion.
+  // Treat null count as unknown (not zero) to avoid incorrect admin promotion.
   if (count === null) {
     throw new Error('[provisionUser] Count query returned null; cannot determine bootstrap role.');
   }
 
-  const role = (count ?? -1) === 0 ? 'admin' : 'member'; // AC3: first user is admin, AC1: rest are members
+  const role = count === 0 ? 'admin' : 'member'; // AC3: first user is admin, AC1: rest are members
 
   const { error: insertError } = await serviceClient.from('users').insert({
     id: user.id,
@@ -93,11 +96,11 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    // WARNING 1: destructure data (not just error) to extract the session user.
+    // Destructure data (not just error) to extract the session user.
     const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!exchangeError) {
-      // WARNING 1: guard against null session even when there is no exchange error.
+      // Guard against null session even when there is no exchange error.
       const user = data.session?.user;
       if (!user) {
         console.error('[auth/callback] Exchange succeeded but session or user is null.');

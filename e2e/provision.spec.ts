@@ -10,6 +10,15 @@
  *       never reached, which also confirms the try/catch does not block the
  *       exchange_failed redirect)
  *
+ *   Null-email guard (WARNING 1 fix):
+ *     provisionUser() throws with a descriptive message when user.email is absent.
+ *     This is a server-side throw caught by the outer try/catch in GET(), so the
+ *     user still reaches the home redirect. The guard cannot be exercised in a
+ *     Playwright test because: (a) Google OAuth always provides an email, and
+ *     (b) the throw is swallowed non-fatally. Verification is by TypeScript type
+ *     narrowing: after the guard, user.email is inferred as string (not
+ *     string | undefined), which the compiler enforces at build time.
+ *
  *   Manual verification steps for AC1–AC4
  *   (requires real Supabase project with Google provider and a filled-in .env.local
  *    AND the migration 20260628000001_create_users_table.sql applied via SQL Editor):
