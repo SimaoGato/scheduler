@@ -112,6 +112,9 @@ When in doubt, classify as `standard`.
 - **signOut server action**: Wrap `createClient()` + `signOut()` in try/catch. Always call `redirect()` unconditionally after the catch block, so the user reaches login regardless of errors. Use `routing.defaultLocale` (from `@/i18n/routing`) for the redirect path, not hardcoded strings.
 - **User display fallback**: Optional user metadata fields (e.g. `user.user_metadata.full_name`) may be absent. Always provide a non-empty fallback when rendering user greetings (e.g. via an i18n key like `Auth.userFallback` that covers "Olá, " with a default name) so the UI never shows truncated text like "Olá, ".
 
+**GRANT before RLS (PostgreSQL prerequisite):**
+- PostgreSQL checks table-level privileges BEFORE evaluating RLS policies. If `authenticated` (or `anon`) has no SELECT privilege on a table, every query returns `42501 permission denied` — RLS policies are never consulted. Always include `GRANT SELECT ON public.<table> TO authenticated;` (and other verbs as needed) in the same migration that creates the table and enables RLS. Symptom: Supabase client returns `{ code: '42501', message: 'permission denied for table <name>' }` even though the row exists and the user is authenticated.
+
 **Supabase service-role client:**
 - **Service-role client pattern**: Use `createClient` from `@supabase/supabase-js` (not `@supabase/ssr`; no cookie management needed). Add `import 'server-only'` as the first line of `lib/supabase/service.ts` to prevent accidental browser imports. Create the client lazily inside the factory function (not at module level) so missing env vars (e.g. `SUPABASE_SERVICE_ROLE_KEY`) don't throw at module-load time in CI builds with placeholder credentials.
 - **`CREATE POLICY IF NOT EXISTS` is PG17+ only**: Supabase runs PostgreSQL 17 (as of mid-2025). However, `DROP POLICY IF EXISTS "name" ON table; CREATE POLICY ...` is the safer pattern — it works on PG15 and later and makes intent explicit.

@@ -49,7 +49,6 @@ export async function requireAuth(request: NextRequest): Promise<AuthUser | Next
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      console.error('[requireAuth] getUser failed:', { code: authError?.code, msg: authError?.message, hasUser: !!user })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -60,7 +59,6 @@ export async function requireAuth(request: NextRequest): Promise<AuthUser | Next
       .single()
 
     if (roleError || !row) {
-      console.error('[requireAuth] role SELECT failed:', { code: roleError?.code, msg: roleError?.message, hasRow: !!row })
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
