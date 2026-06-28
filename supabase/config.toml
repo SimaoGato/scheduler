@@ -7,5 +7,5 @@ project_id = "your-dev-project-ref"
 
 [db]
 # Must match the PostgreSQL major version of your remote Supabase project.
-# Supabase hosted projects run PostgreSQL 15.
-major_version = 15
+# Supabase projects run PostgreSQL 17 as of mid-2025.
+major_version = 17
