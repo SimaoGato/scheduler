@@ -24,8 +24,11 @@ test('responsive shell: no horizontal overflow at mobile width (375 px)', async 
 });
 
 test('app name rendered from i18n catalog', async ({ page }) => {
+  // Unauthenticated visitors are redirected to /pt-PT/login, which is where
+  // the i18n strings are now shown.
   await page.goto('/');
   await expect(page.locator('header')).toContainText('Escala');
-  await expect(page.locator('main')).toContainText('Bem-vindo');
   await expect(page.locator('nav')).toContainText('Início');
+  // The login page is shown for unauthenticated users; verify sign-in button is present
+  await expect(page.getByRole('button', { name: 'Continuar com Google' })).toBeVisible();
 });
