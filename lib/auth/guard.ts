@@ -32,8 +32,12 @@ export async function requireAuth(request: NextRequest): Promise<AuthUser | Next
           getAll() {
             return request.cookies.getAll()
           },
-          setAll() {
-            // Guards only read; token refresh is handled by proxy.ts for page routes.
+          setAll(cookiesToSet) {
+            // Write refreshed tokens back into request.cookies so auth.getUser()
+            // can use the new access token for this request. The browser does not
+            // get updated cookies from this (response Set-Cookie is not set here);
+            // proxy.ts will refresh them on the next page navigation.
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           },
         },
       }
