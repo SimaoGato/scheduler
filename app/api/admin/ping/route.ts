@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/guard'
 
 /**
@@ -9,8 +9,8 @@ import { requireAdmin } from '@/lib/auth/guard'
  *   - 403 if authenticated as Member
  *   - 200 { ok: true, role: 'admin' } if authenticated as Admin
  */
-export async function GET() {
-  const result = await requireAdmin()
+export async function GET(request: NextRequest) {
+  const result = await requireAdmin(request)
   if (result instanceof NextResponse) return result
 
   return NextResponse.json({ ok: true, role: result.role })
