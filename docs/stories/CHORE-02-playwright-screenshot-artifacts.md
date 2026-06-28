@@ -1,6 +1,7 @@
 # CHORE-02: Configure Playwright screenshot capture and CI artifact upload
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 4
 
 ## Task
 Configure Playwright to capture screenshots during test runs and upload them as
