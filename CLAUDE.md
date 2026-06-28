@@ -53,6 +53,12 @@ When in doubt, classify as `standard`.
 **Tailwind v4:**
 - `create-next-app` with Next.js 16 installs Tailwind v4, which uses `@import "tailwindcss"` instead of the old `@tailwind base/components/utilities` directives. Do not replace with the old syntax.
 
+**shadcn/ui + Tailwind v4 integration:**
+- `components.json` must have `"tailwind": { "config": "" }` (empty string, not a file path). The CLI auto-detects Tailwind v4 from `postcss.config.mjs`. If detection fails, create `components.json` manually.
+- `npx shadcn@latest init` and `npx shadcn@latest add` may be blocked in sandboxed environments. In that case, create `components.json`, `lib/utils.ts`, and component files manually — the CLI output is deterministic and identical.
+- Tailwind v4 CSS token layer: shadcn injects two `@layer base` blocks (custom properties in `:root` and property defaults on `*`/`body`) plus an `@theme inline` block mapping CSS variables to Tailwind utilities. Multiple `@layer base` declarations in one file are valid and merge correctly. The `@import "tailwindcss"` line must remain first.
+- `components/ui/button.tsx` must have `'use client'` as its first line. It uses `React.forwardRef` and Radix `Slot`, both requiring the client runtime. Importing into server components is valid — Next.js treats the Button as a client boundary automatically.
+
 **Locale layout pattern:**
 - `app/layout.tsx` must be a minimal passthrough (no `<html>`/`<body>`); the locale layout `app/[locale]/layout.tsx` owns `<html lang={locale}>`, `<body>`, `NextIntlClientProvider`, and all persistent chrome (header, nav).
 - Pages only render their own content; shell belongs in the locale layout.
@@ -61,6 +67,8 @@ When in doubt, classify as `standard`.
 **Playwright:**
 - **WSL2 gotcha**: Chromium headless requires `libnspr4.so` and other system libs that cannot be installed without root. In CI, use `npx playwright install --with-deps chromium`. Locally, developers can use `npx playwright install chromium` and accept that some tests may fail if libs are missing.
 - **Config**: Always set `retries: process.env.CI ? 2 : 0` and `workers: process.env.CI ? 1 : undefined` in `playwright.config.ts`.
+- **boundingBox() guard**: Always call `await expect(locator).toBeVisible()` before `boundingBox()`. The `boundingBox()` method is not auto-retried; calling it without a visibility wait produces confusing null failures on slow CI runners.
+- **Tap targets (WCAG 44px minimum)**: Use `min-h-[44px]` (not `h-11`) for interactive elements. `h-11` (2.75rem) computes to exactly 44px only at the browser's default 16px/rem. `min-h-[44px]` is a hard pixel floor that holds regardless of font scale and makes tests flake-proof.
 
 **ESLint:**
 - `"lint": "eslint"` with no path can silently pass in ESLint v9 flat config mode if no files match. Always use `"lint": "eslint ."`.

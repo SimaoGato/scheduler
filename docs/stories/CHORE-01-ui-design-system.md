@@ -1,6 +1,7 @@
 # CHORE-01: Choose and integrate a UI component library & design tokens
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 2
 
 ## Task
 Set up a consistent, polished UI foundation — a component library plus base
