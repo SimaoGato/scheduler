@@ -12,7 +12,6 @@
 -- the same table.
 -- SET search_path = '' prevents search-path injection.
 -- -----------------------------------------------------------------------
-DROP FUNCTION IF EXISTS public.get_my_role();
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS TEXT
 LANGUAGE sql STABLE
