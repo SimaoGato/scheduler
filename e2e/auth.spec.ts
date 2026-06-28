@@ -37,15 +37,17 @@ test('AC1: login page renders without error message by default', async ({ page }
   await expect(page.locator('main')).toBeVisible();
   const button = page.getByRole('button', { name: 'Continuar com Google' });
   await expect(button).toBeVisible();
-  // No error notice should be visible
-  await expect(page.locator('[role="alert"]')).toHaveCount(0);
+  // No error notice should be visible.
+  // Use data-testid to avoid matching Next.js's __next-route-announcer__ (role="alert").
+  await expect(page.locator('[data-testid="auth-error"]')).toHaveCount(0);
 });
 
 // AC5: access_denied error shows pt-PT cancellation notice
 test('AC5: /pt-PT/login?error=access_denied shows cancellation notice', async ({ page }) => {
   await page.goto('/pt-PT/login?error=access_denied');
   await expect(page.locator('main')).toBeVisible();
-  const alert = page.locator('[role="alert"]');
+  // Use data-testid to avoid strict-mode violation from Next.js's __next-route-announcer__
+  const alert = page.locator('[data-testid="auth-error"]');
   await expect(alert).toBeVisible();
   await expect(alert).toContainText('Início de sessão cancelado.');
 });
@@ -54,7 +56,8 @@ test('AC5: /pt-PT/login?error=access_denied shows cancellation notice', async ({
 test('AC5: /pt-PT/login?error=exchange_failed shows exchange error notice', async ({ page }) => {
   await page.goto('/pt-PT/login?error=exchange_failed');
   await expect(page.locator('main')).toBeVisible();
-  const alert = page.locator('[role="alert"]');
+  // Use data-testid to avoid strict-mode violation from Next.js's __next-route-announcer__
+  const alert = page.locator('[data-testid="auth-error"]');
   await expect(alert).toBeVisible();
   await expect(alert).toContainText(
     'Não foi possível completar o início de sessão. Tente novamente.'
