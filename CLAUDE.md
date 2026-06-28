@@ -61,6 +61,7 @@ When in doubt, classify as `standard`.
 
 **Locale layout pattern:**
 - `app/layout.tsx` must be a minimal passthrough (no `<html>`/`<body>`); the locale layout `app/[locale]/layout.tsx` owns `<html lang={locale}>`, `<body>`, `NextIntlClientProvider`, and all persistent chrome (header, nav).
+- **Global CSS must be imported in `app/layout.tsx`** — add `import './globals.css'` there. The locale layout does not import it. Without this, Tailwind generates no CSS and the app is completely unstyled in production.
 - Pages only render their own content; shell belongs in the locale layout.
 - Call `getMessages({ locale })` with the validated locale string, not `getMessages()` without arguments.
 
