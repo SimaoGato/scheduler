@@ -1,11 +1,9 @@
 -- STORY-03: Provision user as Member on first login
 --
 -- HOW TO APPLY:
---   There is no Supabase CLI config in this repository yet.
---   Apply this migration manually:
---     1. Open the Supabase dashboard for this project.
---     2. Go to SQL Editor.
---     3. Paste this entire file and click Run.
+--   This migration is applied automatically by the `migrate` CI job in
+--   .github/workflows/ci.yml whenever a PR is merged to main.
+--   Manual application via the Supabase dashboard SQL Editor is no longer needed.
 --   The migration is idempotent (uses IF NOT EXISTS / DROP POLICY IF EXISTS + CREATE POLICY).
 --
 -- NOTE: The users_select_own policy is intentional pre-work for STORY-04
