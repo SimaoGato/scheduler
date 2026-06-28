@@ -18,6 +18,7 @@
     "errorAccessDenied": "Início de sessão cancelado.",
     "errorExchangeFailed": "Não foi possível completar o início de sessão. Tente novamente.",
     "errorDefault": "Ocorreu um erro durante o início de sessão. Tente novamente.",
-    "userGreeting": "Olá, {name}"
+    "userGreeting": "Olá, {name}",
+    "userFallback": "utilizador"
   }
 }

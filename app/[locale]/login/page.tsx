@@ -33,7 +33,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
       )}
 
-      <GoogleSignInButton label={t('continueWithGoogle')} />
+      <GoogleSignInButton label={t('continueWithGoogle')} errorDefaultLabel={t('errorDefault')} />
     </main>
   );
 }

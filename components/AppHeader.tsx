@@ -18,7 +18,7 @@ export default async function AppHeader() {
   }
 
   const displayName =
-    user?.user_metadata?.full_name ?? user?.email ?? '';
+    user?.user_metadata?.full_name ?? user?.email ?? tAuth('userFallback');
 
   return (
     <header className="border-b bg-background px-4 py-3">
