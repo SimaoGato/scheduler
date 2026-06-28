@@ -8,6 +8,7 @@
   },
   "Home": {
     "welcome": "Bem-vindo ao Escala.",
-    "description": "Gestão de escalas para equipas de serviço."
+    "description": "Gestão de escalas para equipas de serviço.",
+    "cta": "Ver escala"
   }
 }
