@@ -6,7 +6,7 @@
 --     1. Open the Supabase dashboard for this project.
 --     2. Go to SQL Editor.
 --     3. Paste this entire file and click Run.
---   The migration is idempotent (uses IF NOT EXISTS / CREATE POLICY IF NOT EXISTS).
+--   The migration is idempotent (uses IF NOT EXISTS / DROP POLICY IF EXISTS + CREATE POLICY).
 --
 -- NOTE: The users_select_own policy is intentional pre-work for STORY-04
 -- (authorization enforcement). It is not unused dead code.
@@ -24,6 +24,7 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- Authenticated users may read their own record.
 -- This policy is pre-work for STORY-04 (authorization enforcement).
+DROP POLICY IF EXISTS "users_select_own" ON public.users;
 CREATE POLICY "users_select_own" ON public.users
   FOR SELECT
   USING (auth.uid() = id);
