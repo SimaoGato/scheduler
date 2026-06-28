@@ -70,6 +70,9 @@ When in doubt, classify as `standard`.
 - **Config**: Always set `retries: process.env.CI ? 2 : 0` and `workers: process.env.CI ? 1 : undefined` in `playwright.config.ts`.
 - **boundingBox() guard**: Always call `await expect(locator).toBeVisible()` before `boundingBox()`. The `boundingBox()` method is not auto-retried; calling it without a visibility wait produces confusing null failures on slow CI runners.
 - **Tap targets (WCAG 44px minimum)**: Use `min-h-[44px]` (not `h-11`) for interactive elements. `h-11` (2.75rem) computes to exactly 44px only at the browser's default 16px/rem. `min-h-[44px]` is a hard pixel floor that holds regardless of font scale and makes tests flake-proof.
+- **Multi-reporter pattern**: Set `reporter: [['html'], ['list']]` in `playwright.config.ts`. The `html` reporter generates the detailed report with screenshots; `list` preserves console output in CI logs for quick debugging. Use this pattern, not `[['html']]` alone.
+- **Artifact uploads — `if-no-files-found: error`**: For deterministic output directories (e.g. `playwright-report/` from html reporter, `test-results/` from `screenshot: 'on'`), set `if-no-files-found: error` in `actions/upload-artifact@v4`. This creates a real CI gate and prevents silent failures. Reserve `warn` for optional/conditional outputs.
+- **`if: always()` placement in CI**: In GitHub Actions, place `if: always()` at the step level (same indent as `uses:`), not at the job level. Correct placement ensures artifacts upload even when earlier steps fail.
 
 **ESLint:**
 - `"lint": "eslint"` with no path can silently pass in ESLint v9 flat config mode if no files match. Always use `"lint": "eslint ."`.
