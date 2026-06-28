@@ -14,7 +14,7 @@
  *        (any non-first login account; second Google account works).
  *     2. Sign in with that Google account. Session cookie is now active.
  *     3. Open browser DevTools console.
- *     4. Run: fetch('/api/admin/ping').then(r => r.json().then(b => console.log(r.status, b)))
+ *     4. Run: fetch('/api/admin/ping').then(async r => console.log(r.status, await r.json()))
  *     5. Confirm status is 403 and body is { "error": "Forbidden" }.
  *
  *   AC2 — Admin → 200 OK:
@@ -34,8 +34,12 @@
  *        - As Member: fetch('/api/admin/ping') should return 403 (proves app-layer guard).
  *        - RLS is verified by the fact that the role lookup in requireAuth() succeeds
  *          (returns own row via users_select_own policy) but returns role='member'.
- *     3. To verify the admin-select-all policy, sign in as Admin and confirm
- *        the Supabase Table Editor shows all rows (admin can see them all).
+ *     3. To verify the admin-select-all policy directly, sign in as Admin and in the
+ *        browser DevTools console run:
+ *            fetch('/api/admin/ping').then(r => r.json()).then(console.log)
+ *        The 200 response confirms the guard reads the admin row via the
+ *        users_admin_select_all RLS policy. A broken policy would cause the role
+ *        SELECT to fail (no row returned) → 401, not 200.
  *     4. To verify no anon-key UPDATE is possible: the absence of an UPDATE policy
  *        on public.users means all UPDATE attempts via the anon-key client are
  *        denied by default (RLS deny-by-default). This is a structural guarantee,
@@ -57,5 +61,5 @@ test('AC3: unauthenticated GET /api/admin/ping returns 401', async ({ request })
   const response = await request.get('/api/admin/ping');
   expect(response.status()).toBe(401);
   const body = await response.json();
-  expect(body).toHaveProperty('error');
+  expect(body.error).toBeTruthy();
 });

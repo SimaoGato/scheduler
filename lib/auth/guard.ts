@@ -41,9 +41,11 @@ export async function requireAuth(): Promise<AuthUser | NextResponse> {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return { user, role: row.role as 'admin' | 'member' }
-  } catch {
+    const role = row.role === 'admin' ? ('admin' as const) : ('member' as const)
+    return { user, role }
+  } catch (err) {
     // Any unexpected error (missing env, network, etc.) → treat as unauthenticated
+    console.error('[requireAuth] unexpected error:', err)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 }
