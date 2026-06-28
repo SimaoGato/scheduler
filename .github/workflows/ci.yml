@@ -71,9 +71,12 @@ jobs:
     # dashboard, not a code change.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
+      # Pin to immutable release tag — update intentionally; see https://github.com/supabase/setup-cli/releases
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1.7.1
         with:
           # Pinned to avoid unexpected CLI breaking changes; update intentionally.
           version: 2.22.6
