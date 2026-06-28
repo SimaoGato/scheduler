@@ -8,9 +8,9 @@ const intlMiddleware = createMiddleware(routing);
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Paths exempt from the auth guard
-  const isLoginPath = /\/[^/]+\/login/.test(pathname);
-  const isAuthCallback = pathname.startsWith('/auth/callback');
+  // Paths exempt from the auth guard.
+  // NOTE: /auth/* is already excluded by the matcher below — no runtime check needed.
+  const isLoginPath = /^\/[^/]+\/login(\/|$)/.test(pathname);
 
   // Create a mutable response to carry Supabase cookies through
   let supabaseResponse = NextResponse.next({ request });
@@ -46,7 +46,7 @@ export default async function middleware(request: NextRequest) {
   }
 
   // Auth guard: redirect unauthenticated users to login
-  if (!user && !isLoginPath && !isAuthCallback) {
+  if (!user && !isLoginPath) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = `/${routing.defaultLocale}/login`;
     redirectUrl.search = '';
@@ -69,6 +69,9 @@ export default async function middleware(request: NextRequest) {
   return intlResponse;
 }
 
+// The matcher excludes /api, /auth (OAuth callback lives at /auth/callback),
+// Next.js internals, and static assets. Auth-callback exemption is handled here,
+// not inside the middleware function.
 export const config = {
   matcher: ['/((?!api|auth|_next|_vercel|.*\\..*).*)',],
 };

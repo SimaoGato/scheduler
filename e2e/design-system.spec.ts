@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // AC1: a <button> rendered by the shadcn Button component is present on the login page
-test('design-system AC1: shadcn Button is rendered on the home page', async ({ page }) => {
+test('design-system AC1: shadcn Button is rendered on the login page', async ({ page }) => {
   // Unauthenticated requests are redirected to /pt-PT/login where a shadcn Button renders.
   await page.goto('/pt-PT/login');
   // Use getByRole for a specific, future-proof locator that won't collide with
