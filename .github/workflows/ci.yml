@@ -33,6 +33,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Smoke test
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
         run: npm run test:e2e
 
       - name: Upload Playwright report
