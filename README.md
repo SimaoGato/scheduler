@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Escala
 
-## Getting Started
+A scheduling tool for managing church ministry volunteers. Built for the sound and multimedia team at ADSintra, though the role model is generic enough to serve any small team that rotates people across configurable roles.
 
-First, run the development server:
+## What it does
+
+The coordinator picks a date range, the app generates a balanced schedule — respecting blocked dates, skill-level constraints, and fairness across the team — and then exports it as an image with a ready-to-send Portuguese message for the WhatsApp group.
+
+Team members log in with Google to block dates they can't serve. The coordinator reviews and adjusts the draft before publishing.
+
+## Stack
+
+- **Next.js 16** (App Router) with **React 19** and TypeScript
+- **Supabase** for Postgres, Auth, and Row-Level Security
+- **Tailwind CSS v4** and **shadcn/ui** for components
+- **next-intl** for Portuguese (pt-PT) localisation
+- **Playwright** for end-to-end tests
+- Deployed on **Vercel** (frontend) + **Supabase free tier** (database)
+
+## Local development
+
+**Prerequisites:** Node 20+, npm, a Supabase project.
+
+```bash
+git clone <repo>
+cd scheduler
+npm install
+```
+
+Copy the environment template and fill in your Supabase credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service-role key (server-only, never exposed to the browser) |
 
-## Learn More
+See `docs/stories/CHORE-03-separate-dev-prod-supabase.md` for setting up separate dev and production Supabase projects.
 
-To learn more about Next.js, take a look at the following resources:
+## Database migrations
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Migrations live in `supabase/migrations/`. Apply them to your linked project:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx supabase db push --project-ref <your-project-ref>
+```
 
-## Deploy on Vercel
+## Running tests
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# End-to-end tests (Playwright)
+npm run test:e2e
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Lint
+npm run lint
+
+# Type check
+npx tsc --noEmit
+```
+
+## User roles
+
+| Role | Can do |
+|---|---|
+| **Admin** | Manage people, roles, and skill levels; generate and edit schedules; manage other users' availability; promote/demote Admins |
+| **Member** | Block their own availability; view the published schedule |
+
+New users who sign in with Google are Members by default. An Admin must promote them.
+
+## Project docs
+
+- `docs/product/PRD.md` — Product requirements
+- `docs/epics/` — Feature epics
+- `docs/stories/` — Implementation stories
+- `docs/adr/` — Architecture decision records

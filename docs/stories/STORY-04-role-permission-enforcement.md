@@ -1,6 +1,6 @@
 # STORY-04: Server-side role permission enforcement
 Epic: EPIC-01
-Status: in-progress
+Status: done ✅
 
 ## User story
 As the coordinator, I want Admin-only actions to be blocked for Members on the
