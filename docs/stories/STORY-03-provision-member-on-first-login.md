@@ -1,6 +1,7 @@
 # STORY-03: Provision user as Member on first login
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 6
 
 ## User story
 As the system, I want to create an application user record set to **Member** the
