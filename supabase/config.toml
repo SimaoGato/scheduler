@@ -1,0 +1,11 @@
+# Supabase CLI project configuration.
+#
+# project_id is used for local Supabase CLI operations.
+# In CI, the --project-ref flag overrides this value.
+# For local use, set this to your dev project ref (see CHORE-03).
+project_id = "your-dev-project-ref"
+
+[db]
+# Must match the PostgreSQL major version of your remote Supabase project.
+# Supabase hosted projects run PostgreSQL 15.
+major_version = 15
