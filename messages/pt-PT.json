@@ -18,11 +18,7 @@
     "demoteButton": "Rebaixar a Membro",
     "errorLastAdmin": "Não é possível remover o único Administrador.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
-    "actionLoading": "A processar...",
-    "manualAC1": "Verificar manualmente: entrar como admin e ver a lista de utilizadores",
-    "manualAC2": "Verificar manualmente: promover um membro e recarregar para confirmar",
-    "manualAC3": "Verificar manualmente: rebaixar um admin (com 2+ admins) e recarregar",
-    "manualAC4": "Verificar manualmente: tentar rebaixar o único admin — deve bloquear com mensagem"
+    "actionLoading": "A processar..."
   },
   "Home": {
     "welcome": "Bem-vindo ao Escala.",
