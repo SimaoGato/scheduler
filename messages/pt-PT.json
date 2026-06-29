@@ -20,6 +20,12 @@
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "actionLoading": "A processar..."
   },
+  "Member": {
+    "noAccessTitle": "Bem-vindo ao Escala!",
+    "noAccessDescription": "A tua conta está activa, mas ainda não tens acesso a nenhuma funcionalidade. Fala com um Administrador para obteres permissões.",
+    "noRoleError": "Erro ao carregar o teu perfil. Por favor, contacta o administrador.",
+    "accessDenied": "Não tens permissão para aceder a essa página."
+  },
   "Home": {
     "welcome": "Bem-vindo ao Escala.",
     "description": "Gestão de escalas para equipas de serviço.",
