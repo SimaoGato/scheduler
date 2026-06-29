@@ -58,8 +58,9 @@ import { test, expect } from '@playwright/test';
 test('AC2 (partial): nav hides "Utilizadores" for unauthenticated users (role=null)', async ({ page }) => {
   await page.goto('/');
   // proxy.ts redirects to login; the shell (header+nav) is still present
-  await expect(page.locator('nav')).toBeVisible();
-  await expect(page.locator('nav')).toContainText('Início');
+  const nav = page.getByRole('navigation', { name: 'Navegação principal' });
+  await expect(nav).toBeVisible();
+  await expect(nav).toContainText('Início');
   // The admin-only link must NOT appear when role is null / member
-  await expect(page.locator('nav')).not.toContainText('Utilizadores');
+  await expect(nav).not.toContainText('Utilizadores');
 });
