@@ -30,11 +30,8 @@ test('AC5-api-patch: PATCH /api/admin/users/some-id unauthenticated → 401', as
 });
 
 test('AC5-page: GET /pt-PT/admin/users unauthenticated → redirected to login', async ({ page }) => {
-  const response = await page.goto('/pt-PT/admin/users');
+  await page.goto('/pt-PT/admin/users');
   // proxy.ts redirects unauthenticated users to /pt-PT/login
-  // The final URL after redirect should be the login page
+  // Playwright follows redirects automatically; final URL must be the login page
   expect(page.url()).toContain('/login');
-  // Also accept 200 (login page rendered after redirect) or redirect status
-  const status = response?.status() ?? 0;
-  expect([200, 302, 307, 308]).toContain(status);
 });

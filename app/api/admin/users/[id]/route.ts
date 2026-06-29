@@ -15,10 +15,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: userId } = await params
-
   const result = await requireAdmin(request)
   if (result instanceof NextResponse) return result
+
+  const { id: userId } = await params
 
   try {
     const body = await request.json()

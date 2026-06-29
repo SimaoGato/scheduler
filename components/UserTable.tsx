@@ -44,7 +44,7 @@ export default function UserTable({ initialUsers }: Props) {
   return (
     <div>
       {errorMessage && (
-        <div data-testid="um-error" className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div data-testid="um-error" aria-live="polite" className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {errorMessage}
         </div>
       )}
