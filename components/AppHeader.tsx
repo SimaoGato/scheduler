@@ -6,6 +6,12 @@ import { signOut } from '@/app/[locale]/login/actions';
 export default async function AppHeader() {
   const t = await getTranslations('App');
   const tAuth = await getTranslations('Auth');
+  // Reusing UserManagement.roleAdmin / UserManagement.roleMember to avoid
+  // duplicating strings that are semantically identical. NOTE 1, STORY-06.
+  const tUM = await getTranslations('UserManagement');
+
+  // NOTE: Both AppHeader and page.tsx perform independent role fetches.
+  // These should be consolidated with React cache() in a future story.
 
   let user = null;
   try {
@@ -17,19 +23,50 @@ export default async function AppHeader() {
     user = null;
   }
 
+  let role: 'admin' | 'member' | null = null;
+  if (user) {
+    try {
+      const supabase = await createClient();
+      const { data: row } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      role =
+        row?.role === 'admin'
+          ? ('admin' as const)
+          : row?.role === 'member'
+            ? ('member' as const)
+            : null;
+    } catch {
+      // Role fetch failure — role stays null; header still renders greeting + sign-out
+      role = null;
+    }
+  }
+
   const displayName =
     user?.user_metadata?.full_name ?? user?.email ?? tAuth('userFallback');
+
+  const roleLabel =
+    role === 'admin'
+      ? tUM('roleAdmin')
+      : role === 'member'
+        ? tUM('roleMember')
+        : null;
 
   return (
     <header className="border-b bg-background px-4 py-3">
       <div className="container mx-auto flex items-center justify-between">
         <span className="text-lg font-semibold">{t('name')}</span>
         <div className="flex items-center gap-4">
-          <AppNav />
+          <AppNav role={role} />
           {user && (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground" data-testid="user-identity">
                 {tAuth('userGreeting', { name: displayName })}
+                {roleLabel && (
+                  <span data-testid="user-role-label"> &middot; {roleLabel}</span>
+                )}
               </span>
               <form action={signOut}>
                 <button
