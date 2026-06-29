@@ -1,6 +1,7 @@
 # STORY-05: Admin user management — list & promote/demote
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 13
 
 ## User story
 As an Admin, I want to see all users and promote or demote them between Admin
