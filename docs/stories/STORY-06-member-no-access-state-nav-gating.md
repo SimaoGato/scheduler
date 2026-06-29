@@ -1,6 +1,7 @@
 # STORY-06: Member "no access yet" state & role-gated navigation
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 14
 
 ## User story
 As a brand-new Member, I want a clear, friendly view that matches my permissions,

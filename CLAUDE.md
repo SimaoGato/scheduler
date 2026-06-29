@@ -65,6 +65,13 @@ When in doubt, classify as `standard`.
 - Pages only render their own content; shell belongs in the locale layout.
 - Call `getMessages({ locale })` with the validated locale string, not `getMessages()` without arguments.
 
+**i18n lazy-loading pattern in async Server Components:**
+- In async Server Components with multiple role-based early returns (e.g. `home/page.tsx`), load translation namespaces **lazy** — only call `await getTranslations(...)` just before the branch that uses them. This avoids paying for namespaces that are never used on short-circuit paths. Example: if a member request returns early, the Admin-only `Home` namespace is never fetched.
+
+**i18n key hygiene:**
+- Only add keys to `messages/pt-PT.json` that are explicitly consumed in the current story. Plan-phase draft keys (e.g. `Member.role` with `{role}` interpolation) should be removed before implementation — orphaned keys are dead weight and confuse translators.
+- **AO90 spelling for pt-PT**: Modern Portuguese (post-2012 Acordo Ortográfico) uses "ativa" (not "activa"), "ato" (not "acto"), "fato" (not "facto"). All new pt-PT strings must follow AO90.
+
 **Playwright:**
 - **WSL2 gotcha**: Chromium headless requires `libnspr4.so` and other system libs that cannot be installed without root. In CI, use `npx playwright install --with-deps chromium`. Locally, developers can use `npx playwright install chromium` and accept that some tests may fail if libs are missing.
 - **Config**: Always set `retries: process.env.CI ? 2 : 0` and `workers: process.env.CI ? 1 : undefined` in `playwright.config.ts`.
@@ -117,6 +124,12 @@ When in doubt, classify as `standard`.
 - **searchParams Promise**: In Next.js 16, page props have `searchParams: Promise<object>`. Type it as `Promise<{ error?: string }>` and `await` before reading properties.
 - **signOut server action**: Wrap `createClient()` + `signOut()` in try/catch. Always call `redirect()` unconditionally after the catch block, so the user reaches login regardless of errors. Use `routing.defaultLocale` (from `@/i18n/routing`) for the redirect path, not hardcoded strings.
 - **User display fallback**: Optional user metadata fields (e.g. `user.user_metadata.full_name`) may be absent. Always provide a non-empty fallback when rendering user greetings (e.g. via an i18n key like `Auth.userFallback` that covers "Olá, " with a default name) so the UI never shows truncated text like "Olá, ".
+- **Access-denied banner guard in Server Components**: When a query param (e.g. `?denied=1`) drives a UI denial message, always guard it with `role !== <privileged_role>`. Without the guard, a privileged user who bookmarks or crafts a `?denied=1` URL sees a misleading "you don't have permission" message. Pattern: `const showDeniedBanner = denied === '1' && role !== 'admin'`. Apply `showDeniedBanner` to all code paths that render user-facing content, not just the denial branch.
+
+**Per-page admin guard convention (Server Components):**
+- Every `app/[locale]/admin/*/page.tsx` must include a role-guard redirect until a middleware-level guard is introduced. This is belt-and-suspenders: `proxy.ts` guards unauthenticated access, but members who somehow reach an admin URL need per-page rejection.
+- Pattern: Fetch the user's role, check `if (role !== 'admin') redirect(\`/${routing.defaultLocale}/?denied=1\`)`. The `?denied=1` query param signals the home page to show an access-denied banner (use the `showDeniedBanner` guard pattern documented in Supabase SSR Auth).
+- This convention is per-page opt-in — there is no structural enforcement at the framework level in the current architecture (see ADR-007 for the rationale). As the admin section grows, migrate to a middleware-level guard if page duplication becomes burdensome.
 
 **GRANT before RLS (PostgreSQL prerequisite):**
 - PostgreSQL checks table-level privileges BEFORE evaluating RLS policies. If `authenticated` (or `anon`) has no SELECT privilege on a table, every query returns `42501 permission denied` — RLS policies are never consulted. Always include `GRANT SELECT ON public.<table> TO authenticated;` (and other verbs as needed) in the same migration that creates the table and enables RLS. Symptom: Supabase client returns `{ code: '42501', message: 'permission denied for table <name>' }` even though the row exists and the user is authenticated.
