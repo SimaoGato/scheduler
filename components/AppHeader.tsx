@@ -6,9 +6,6 @@ import { signOut } from '@/app/[locale]/login/actions';
 export default async function AppHeader() {
   const t = await getTranslations('App');
   const tAuth = await getTranslations('Auth');
-  // Reusing UserManagement.roleAdmin / UserManagement.roleMember to avoid
-  // duplicating strings that are semantically identical. NOTE 1, STORY-06.
-  const tUM = await getTranslations('UserManagement');
 
   // NOTE: Both AppHeader and page.tsx perform independent role fetches.
   // These should be consolidated with React cache() in a future story.
@@ -24,6 +21,7 @@ export default async function AppHeader() {
   }
 
   let role: 'admin' | 'member' | null = null;
+  let roleLabel: string | null = null;
   if (user) {
     try {
       const supabase = await createClient();
@@ -42,17 +40,20 @@ export default async function AppHeader() {
       // Role fetch failure — role stays null; header still renders greeting + sign-out
       role = null;
     }
+    // tUM is only needed when user is present (for roleLabel).
+    // Reusing UserManagement.roleAdmin / UserManagement.roleMember to avoid
+    // duplicating strings that are semantically identical. NOTE 1, STORY-06.
+    const tUM = await getTranslations('UserManagement');
+    roleLabel =
+      role === 'admin'
+        ? tUM('roleAdmin')
+        : role === 'member'
+          ? tUM('roleMember')
+          : null;
   }
 
   const displayName =
     user?.user_metadata?.full_name ?? user?.email ?? tAuth('userFallback');
-
-  const roleLabel =
-    role === 'admin'
-      ? tUM('roleAdmin')
-      : role === 'member'
-        ? tUM('roleMember')
-        : null;
 
   return (
     <header className="border-b bg-background px-4 py-3">

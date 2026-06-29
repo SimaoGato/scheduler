@@ -2,16 +2,12 @@ import { getTranslations } from 'next-intl/server';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 
-// NOTE: This page and AppHeader both perform independent role fetches.
-// These should be consolidated with React cache() in a future story.
-
 interface PageProps {
   // Next.js 16: searchParams is a Promise
   searchParams: Promise<{ denied?: string }>;
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  const t = await getTranslations('Home');
   const m = await getTranslations('Member');
 
   // searchParams is a Promise in Next.js 16
@@ -52,7 +48,8 @@ export default async function HomePage({ searchParams }: PageProps) {
   }
 
   // AC4: Show a specific access-denied banner when redirected from an admin route.
-  const showDeniedBanner = denied === '1';
+  // Suppress for admins — they are never actually denied, so the banner would be misleading.
+  const showDeniedBanner = denied === '1' && role !== 'admin';
 
   // AC1: Authenticated member (or user with no role due to DB provisioning failure)
   // AC4 warning 4: if user is set but role is null, show an error — do NOT silently
@@ -110,6 +107,8 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   // Admin view (role === 'admin') or unauthenticated fallback (user === null,
   // proxy.ts ensures only admins or CI placeholder-cred runs reach here).
+  // Load Home translations only here — the member/no-role branches above never use them.
+  const t = await getTranslations('Home');
   return (
     <main className="flex-1 container mx-auto px-4 py-8">
       {showDeniedBanner && (

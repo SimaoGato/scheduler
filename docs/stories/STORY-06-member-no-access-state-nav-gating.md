@@ -39,6 +39,32 @@ for brand-new Members" and a member-appropriate view. Distinct from STORY-04
 ## Definition of Done
 See CLAUDE.md.
 
+## Manual verification
+
+The following ACs require real Supabase credentials and cannot run in CI.
+Run these steps locally with `.env.local` configured and Google OAuth set up.
+
+### AC1 — Member "no access yet" view
+1. Log in with a Google account whose row has `role = 'member'` in `public.users`.
+2. Confirm the home page shows **"Bem-vindo ao Escala!"** and the no-access
+   description, and does **not** show the "Ver escala" button.
+
+### AC3 — Admin nav shows admin links
+1. Log in with a Google account whose row has `role = 'admin'` in `public.users`.
+2. Confirm the nav shows both **"Início"** and **"Utilizadores"**.
+
+### AC4 — Member blocked from admin route
+1. While logged in as a Member, navigate directly to `/pt-PT/admin/users`.
+2. Confirm redirect to the home page with a visible banner:
+   **"Não tens permissão para aceder a essa página."**
+3. Confirm the admin user table is **not** rendered.
+
+### AC5 — Identity visible in shell
+1. Log in as any user (admin or member).
+2. Confirm the header shows the user's name (via "Olá, {name}"), their role
+   label (**"Administrador"** or **"Membro"**), and a **"Sair"** button.
+3. Click **"Sair"** and confirm redirect to the login page.
+
 ## Implementation plan
 
 ### Affected areas
