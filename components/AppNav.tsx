@@ -14,6 +14,11 @@ export default function AppNav() {
             <Link href="/">{t('home')}</Link>
           </Button>
         </li>
+        <li>
+          <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+            <Link href="/admin/users">{t('userManagement')}</Link>
+          </Button>
+        </li>
       </ul>
     </nav>
   );
