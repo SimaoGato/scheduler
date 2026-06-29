@@ -49,9 +49,13 @@ export default async function AdminUsersPage() {
     role = null
   }
 
-  // 4. Non-admin users are redirected to the home page
+  // 4. Non-admin users are redirected to the home page with ?denied=1 so the
+  //    home page can display a specific "access denied" message (AC4, STORY-06).
+  //    CONVENTION: Every future app/[locale]/admin/*/page.tsx must include an
+  //    equivalent role-guard redirect (with ?denied=1) until a middleware-level
+  //    guard is introduced.
   if (role !== 'admin') {
-    redirect(`/${routing.defaultLocale}/`)
+    redirect(`/${routing.defaultLocale}/?denied=1`)
   }
 
   // 5. Fetch all users via service-role client (bypasses RLS)
