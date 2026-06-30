@@ -127,6 +127,14 @@ When in doubt, classify as `standard`.
 - **User display fallback**: Optional user metadata fields (e.g. `user.user_metadata.full_name`) may be absent. Always provide a non-empty fallback when rendering user greetings (e.g. via an i18n key like `Auth.userFallback` that covers "Olá, " with a default name) so the UI never shows truncated text like "Olá, ".
 - **Access-denied banner guard in Server Components**: When a query param (e.g. `?denied=1`) drives a UI denial message, always guard it with `role !== <privileged_role>`. Without the guard, a privileged user who bookmarks or crafts a `?denied=1` URL sees a misleading "you don't have permission" message. Pattern: `const showDeniedBanner = denied === '1' && role !== 'admin'`. Apply `showDeniedBanner` to all code paths that render user-facing content, not just the denial branch.
 
+**React cache() for auth deduplication:**
+- Create `lib/auth/session.ts` with `getSessionUser` and `getUserRole(userId)` wrapped in `cache()` from `'react'`. These are the canonical helpers for all Server Components needing the current user or role.
+- Do NOT add `import 'server-only'` — `next/headers` (imported transitively via `createClient`) is a sufficient bundler boundary; `server-only` would be redundant and block test file imports.
+- `React.cache()` scopes memoisation to a single server render tree — there is no cross-request cache leak risk.
+- `supabase.auth.getUser()` returns `{ data: { user: User | null } }`. The `user` field is `User | null`, never `undefined`. Do not add `?? null` — it is dead code.
+- All catch blocks must bind `catch (err)` and call `console.error('[fnName] unexpected error:', err)` before returning null. Bare `catch {}` is not acceptable in server helpers.
+- The middleware (`proxy.ts`) runs in a different execution context and cannot share the React cache — it must keep its own `auth.getUser()` call.
+
 **Per-page admin guard convention (Server Components):**
 - Every `app/[locale]/admin/*/page.tsx` must include a role-guard redirect until a middleware-level guard is introduced. This is belt-and-suspenders: `proxy.ts` guards unauthenticated access, but members who somehow reach an admin URL need per-page rejection.
 - Pattern: Fetch the user's role, check `if (role !== 'admin') redirect(\`/${routing.defaultLocale}/?denied=1\`)`. The `?denied=1` query param signals the home page to show an access-denied banner (use the `showDeniedBanner` guard pattern documented in Supabase SSR Auth).
