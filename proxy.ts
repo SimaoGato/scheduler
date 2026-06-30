@@ -58,6 +58,19 @@ export default async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
+  // Reverse guard: redirect authenticated users away from login (STORY-09)
+  if (user && isLoginPath) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${routing.defaultLocale}/`;
+    redirectUrl.search = '';
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    // Copy any Supabase cookies onto the redirect response (same pattern as above)
+    supabaseResponse.cookies.getAll().forEach(cookie => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return redirectResponse;
+  }
+
   // Let next-intl handle locale routing
   const intlResponse = intlMiddleware(request);
 
