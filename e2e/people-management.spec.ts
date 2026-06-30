@@ -12,6 +12,18 @@
  *
  * ACs 1-5 full-flow tests require a real authenticated admin session and are
  * covered by manual verification steps documented in the story file.
+ *
+ * Review findings fixed (require authenticated session to test in e2e):
+ *   BW1 — POST /api/admin/people with invalid JSON body → 400 (not 500).
+ *          PATCH /api/admin/people/:id with invalid JSON body → 400 (not 500).
+ *          Auth guard fires first for unauthenticated requests so CI sees 401.
+ *   BW2 — PATCH /api/admin/people/:uuid with non-UUID id → 400 (not 500).
+ *          DELETE /api/admin/people/:uuid with non-UUID id → 400 (not 500).
+ *          Auth guard fires first for unauthenticated requests so CI sees 401.
+ *   BW3 — PATCH selects only 'id' column (structural, no observable response change).
+ *   FW1 — Supabase error logged in AdminPeoplePage (structural, logging only).
+ *   FW2 — Add-person input has aria-label="Adicionar pessoa" (WCAG SC 1.3.1).
+ *   FW3 — New person inserted in alphabetical (pt) sort order after POST response.
  */
 
 import { test, expect } from '@playwright/test';

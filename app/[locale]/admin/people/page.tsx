@@ -43,11 +43,16 @@ export default async function AdminPeoplePage() {
   let people: PersonRow[] = []
   try {
     const serviceClient = createServiceClient()
-    const { data } = await serviceClient
+    // FW1: destructure error so Supabase client errors (non-throwing) are logged
+    const { data, error } = await serviceClient
       .from('people')
       .select('id, name, linked_user_id, is_active')
       .eq('is_active', true)
       .order('name', { ascending: true })
+
+    if (error) {
+      console.error('[AdminPeoplePage] supabase error:', error)
+    }
 
     people = (data ?? []).map((row) => ({
       id: row.id as string,
