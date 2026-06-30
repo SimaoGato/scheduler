@@ -14,8 +14,8 @@ import type { UserRow } from '@/types/user-management'
  *   2. This page additionally checks the user's role so a Member who somehow
  *      reaches this URL is redirected to the home page.
  *
- * Uses createClient() (anon-key) for the current user's session and role check,
- * and createServiceClient() (service-role) to list all users.
+ * Uses getSessionUser() / getUserRole() (React cache, anon-key) for the current
+ * user's session and role, and createServiceClient() (service-role) to list all users.
  */
 export default async function AdminUsersPage() {
   const t = await getTranslations('UserManagement')

@@ -1,6 +1,6 @@
 // No `import 'server-only'` here: createClient() imports `next/headers` which
-// already enforces server-only at the Next.js bundler level. Adding
-// `server-only` would block this module from being imported in test files.
+// already enforces server-only at the Next.js bundler level. `server-only` would
+// be redundant — `next/headers` is a sufficient bundler boundary.
 
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase/server';
@@ -16,8 +16,9 @@ export const getSessionUser = cache(async () => {
   try {
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
-    return data.user ?? null;
-  } catch {
+    return data.user;
+  } catch (err) {
+    console.error('[getSessionUser] unexpected error:', err);
     return null;
   }
 });
@@ -41,7 +42,8 @@ export const getUserRole = cache(async (userId: string) => {
       : row?.role === 'member'
         ? ('member' as const)
         : null;
-  } catch {
+  } catch (err) {
+    console.error('[getUserRole] unexpected error:', err);
     return null;
   }
 });
