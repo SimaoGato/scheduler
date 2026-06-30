@@ -52,9 +52,17 @@ export async function POST(request: NextRequest) {
   const result = await requireAdmin(request)
   if (result instanceof NextResponse) return result
 
+  // BW1: wrap request.json() separately so malformed JSON returns 400, not 500
+  let body: unknown
   try {
-    const body = await request.json()
-    const name = typeof body?.name === 'string' ? body.name.trim() : ''
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  try {
+    const rec = body as Record<string, unknown>
+    const name = typeof rec?.name === 'string' ? (rec.name as string).trim() : ''
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })

@@ -36,7 +36,10 @@ export default function PeopleTable({ initialPeople }: Props) {
 
       if (response.ok) {
         const newPerson = (await response.json()) as PersonRow
-        setRows((prev) => [newPerson, ...prev])
+        // FW3: maintain server's alphabetical (pt) sort order after adding
+        setRows((prev) =>
+          [...prev, newPerson].sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+        )
         setAddName('')
       } else {
         setErrorMessage(t('errorGeneric'))
@@ -134,6 +137,7 @@ export default function PeopleTable({ initialPeople }: Props) {
           value={addName}
           onChange={(e) => setAddName(e.target.value)}
           placeholder={t('namePlaceholder')}
+          aria-label={t('addPersonLabel')}
           className="flex-1 rounded-md border px-3 py-2 text-sm"
           disabled={loadingId === 'add'}
         />
