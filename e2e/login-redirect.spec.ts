@@ -43,7 +43,9 @@ test('AC2: unauthenticated user visiting /pt-PT/login sees the login page', asyn
   await page.goto('/pt-PT/login');
   // Must remain on /pt-PT/login — no redirect to home
   await expect(page).toHaveURL(/\/pt-PT\/login/);
+  // Wait for main content to be rendered before asserting child elements (S1 guard)
+  await expect(page.locator('main')).toBeVisible();
   // Login button must be visible — the form is rendered
-  const button = page.getByRole('button', { name: 'Continuar com Google' });
+  const button = page.getByTestId('google-signin-button');
   await expect(button).toBeVisible();
 });

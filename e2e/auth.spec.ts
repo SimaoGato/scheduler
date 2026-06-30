@@ -27,7 +27,7 @@ import { test, expect } from '@playwright/test';
 test('AC1: unauthenticated visit to /pt-PT/ redirects to login page', async ({ page }) => {
   await page.goto('/pt-PT/');
   await expect(page).toHaveURL(/\/pt-PT\/login/);
-  const button = page.getByRole('button', { name: 'Continuar com Google' });
+  const button = page.getByTestId('google-signin-button');
   await expect(button).toBeVisible();
 });
 
@@ -35,7 +35,7 @@ test('AC1: unauthenticated visit to /pt-PT/ redirects to login page', async ({ p
 test('AC1: login page renders without error message by default', async ({ page }) => {
   await page.goto('/pt-PT/login');
   await expect(page.locator('main')).toBeVisible();
-  const button = page.getByRole('button', { name: 'Continuar com Google' });
+  const button = page.getByTestId('google-signin-button');
   await expect(button).toBeVisible();
   // No error notice should be visible.
   // Use data-testid to avoid matching Next.js's __next-route-announcer__ (role="alert").

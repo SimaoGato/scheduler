@@ -29,6 +29,7 @@ export default function GoogleSignInButton({ label, errorDefaultLabel }: GoogleS
     <>
       <Button
         onClick={handleSignIn}
+        data-testid="google-signin-button"
         className="min-h-[44px] w-full sm:w-auto"
       >
         {label}
