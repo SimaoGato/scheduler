@@ -5,7 +5,8 @@
   "Nav": {
     "ariaLabel": "Navegação principal",
     "home": "Início",
-    "userManagement": "Utilizadores"
+    "userManagement": "Utilizadores",
+    "people": "Equipa"
   },
   "UserManagement": {
     "title": "Gestão de utilizadores",
@@ -30,6 +31,20 @@
     "welcome": "Bem-vindo ao Escala.",
     "description": "Gestão de escalas para equipas de serviço.",
     "cta": "Ver escala"
+  },
+  "PeopleManagement": {
+    "title": "Equipa",
+    "columnName": "Nome",
+    "addPersonLabel": "Adicionar pessoa",
+    "namePlaceholder": "Nome",
+    "saveButton": "Guardar",
+    "cancelButton": "Cancelar",
+    "editButton": "Editar",
+    "removeButton": "Remover",
+    "emptyList": "Sem pessoas na equipa.",
+    "errorNameRequired": "O nome é obrigatório.",
+    "errorGeneric": "Ocorreu um erro. Tente novamente.",
+    "actionLoading": "A processar..."
   },
   "Auth": {
     "signInTitle": "Entrar no Escala",
