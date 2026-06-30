@@ -25,6 +25,13 @@ export default function AppNav({ role }: Props) {
             </Button>
           </li>
         )}
+        {role === 'admin' && (
+          <li>
+            <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+              <Link href="/admin/people">{t('people')}</Link>
+            </Button>
+          </li>
+        )}
       </ul>
     </nav>
   );
