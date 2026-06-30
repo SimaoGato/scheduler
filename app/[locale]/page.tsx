@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionUser, getUserRole } from '@/lib/auth/session';
 import { Button } from '@/components/ui/button';
 
 interface PageProps {
@@ -13,38 +13,11 @@ export default async function HomePage({ searchParams }: PageProps) {
   // searchParams is a Promise in Next.js 16
   const { denied } = await searchParams;
 
-  // NOTE: Both AppHeader and page.tsx perform independent role fetches.
-  // These should be consolidated with React cache() in a future story.
-  let user = null;
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
-  } catch {
-    // Supabase unreachable / placeholder creds — treat as unauthenticated.
-    // proxy.ts already redirected unauthenticated users before this renders;
-    // this path is only reached in CI with placeholder credentials.
-    user = null;
-  }
+  const user = await getSessionUser();
 
   let role: 'admin' | 'member' | null = null;
   if (user) {
-    try {
-      const supabase = await createClient();
-      const { data: row } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      role =
-        row?.role === 'admin'
-          ? ('admin' as const)
-          : row?.role === 'member'
-            ? ('member' as const)
-            : null;
-    } catch {
-      role = null;
-    }
+    role = await getUserRole(user.id);
   }
 
   // AC4: Show a specific access-denied banner when redirected from an admin route.

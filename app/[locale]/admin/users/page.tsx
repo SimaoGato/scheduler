@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
-import { createClient } from '@/lib/supabase/server'
+import { getSessionUser, getUserRole } from '@/lib/auth/session'
 import { createServiceClient } from '@/lib/supabase/service'
 import UserTable from '@/components/UserTable'
 import type { UserRow } from '@/types/user-management'
@@ -20,34 +20,16 @@ import type { UserRow } from '@/types/user-management'
 export default async function AdminUsersPage() {
   const t = await getTranslations('UserManagement')
 
-  // 1. Get the current authenticated user via the server (anon-key) client
-  let user = null
-  try {
-    const supabase = await createClient()
-    const { data } = await supabase.auth.getUser()
-    user = data.user
-  } catch {
-    user = null
-  }
+  // 1. Get the current authenticated user (React cache deduplicates this call)
+  const user = await getSessionUser()
 
   // 2. Null guard before any user.id access
   if (!user) {
     redirect(`/${routing.defaultLocale}/login`)
   }
 
-  // 3. Check the user's role from public.users
-  let role: string | null = null
-  try {
-    const supabase = await createClient()
-    const { data: row } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-    role = row?.role ?? null
-  } catch {
-    role = null
-  }
+  // 3. Check the user's role from public.users (React cache deduplicates this call)
+  const role = await getUserRole(user.id)
 
   // 4. Non-admin users are redirected to the home page with ?denied=1 so the
   //    home page can display a specific "access denied" message (AC4, STORY-06).
