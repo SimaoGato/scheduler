@@ -1,6 +1,7 @@
 # STORY-09: Redirect authenticated users away from the login page
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 15
 
 ## User story
 As a logged-in user, I want to be automatically redirected away from the login
