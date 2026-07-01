@@ -34,11 +34,15 @@
  *        aceder a essa página." banner (driven by ?denied=1 query param).
  *     3. Confirm the admin user table is NOT rendered.
  *
- *   AC5 — Identity visible in shell:
+ *   AC5 — Identity visible in shell (updated for STORY-12):
  *     1. Log in as any user (admin or member).
- *     2. Confirm the header shows the user's name (via "Olá, {name}"), their
- *        role label ("Administrador" or "Membro"), and a "Sair" button.
- *     3. Click "Sair" and confirm redirect to login page.
+ *     2. Confirm the header shows an avatar circle with the user's initial and
+ *        their name (on sm+ viewports). The old "Olá, {name}" span and separate
+ *        "Sair" button have been replaced by a single UserWidget (<details>).
+ *     3. Click/tap the avatar to open the dropdown. Confirm the display name,
+ *        role label ("Administrador" or "Membro"), and a "Sair" button are
+ *        visible inside the dropdown.
+ *     4. Click "Sair" and confirm redirect to the login page.
  */
 
 import { test, expect } from '@playwright/test';
