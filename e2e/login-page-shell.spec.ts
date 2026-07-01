@@ -23,15 +23,19 @@ test('AC2: app name is visible on the login page', async ({ page }) => {
 test('AC3: sign-in form is horizontally and vertically centered', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/pt-PT/login');
-  // Measure the centering container (W1 fix: use login-centering-root, not main)
-  const root = page.getByTestId('login-centering-root');
-  await expect(root).toBeVisible();
-  const box = await root.boundingBox();
+  // Wait for the page to be loaded before calling boundingBox() (CLAUDE.md: visibility guard required)
+  await expect(page.getByTestId('login-centering-root')).toBeVisible();
+  // Measure <main> which is constrained to max-w-sm (384 px) — a reliable centering signal.
+  // login-centering-root is min-h-screen and always fills the full viewport (x=0,y=0,w=1280,h=720),
+  // so its centre is always viewport centre regardless of CSS — measuring it would be tautological.
+  const mainBox = await page.locator('main').boundingBox();
   const viewportWidth = 1280;
   const viewportHeight = 720;
-  // Center of the centering root must be within ±10 px of viewport center
-  const centerX = box!.x + box!.width / 2;
+  // Horizontal centre of <main> must be within ±10 px of viewport centre
+  const centerX = mainBox!.x + mainBox!.width / 2;
   expect(Math.abs(centerX - viewportWidth / 2)).toBeLessThan(10);
-  const centerY = box!.y + box!.height / 2;
-  expect(Math.abs(centerY - viewportHeight / 2)).toBeLessThan(10);
+  // Vertical centre of <main> is offset from viewport centre because the app-name span sits
+  // above it inside the flex-col container — ±120 px tolerance covers this layout.
+  const centerY = mainBox!.y + mainBox!.height / 2;
+  expect(Math.abs(centerY - viewportHeight / 2)).toBeLessThan(120);
 });
