@@ -47,7 +47,7 @@ import { test, expect } from '@playwright/test';
 
 // AC1: Header identity area is a single interactive element with pointer cursor.
 test('AC1: header identity widget is a single interactive element (cursor-pointer)', async ({ page }) => {
-  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
   const trigger = page.getByTestId('user-widget-trigger');
   await expect(trigger).toBeVisible();
@@ -58,7 +58,7 @@ test('AC1: header identity widget is a single interactive element (cursor-pointe
 // AC2: Activating the widget makes the sign-out action accessible.
 // Note: <details> does not close on outside click — this is accepted; ACs do not require it.
 test('AC2: activating the identity widget makes sign-out accessible', async ({ page }) => {
-  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
   const trigger = page.getByTestId('user-widget-trigger');
   await expect(trigger).toBeVisible();
@@ -69,7 +69,7 @@ test('AC2: activating the identity widget makes sign-out accessible', async ({ p
 
 // AC3: Display name and role label are visible inside the open widget.
 test('AC3: display name and role label are visible inside the identity widget', async ({ page }) => {
-  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
   const trigger = page.getByTestId('user-widget-trigger');
   await expect(trigger).toBeVisible();
@@ -80,18 +80,20 @@ test('AC3: display name and role label are visible inside the identity widget', 
 
 // AC4: Admin header renders without horizontal overflow at 375 px viewport width.
 test('AC4: admin header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
-  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
+  // TODO when auth fixtures added: log in as admin (3 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
 });
 
 // AC5: Member header renders without horizontal overflow at 375 px viewport width.
 test('AC5: member header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
-  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
+  // TODO when auth fixtures added: log in as member (1 nav link) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
 });

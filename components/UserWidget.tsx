@@ -15,10 +15,10 @@ export default async function UserWidget({ displayName, roleLabel }: Props) {
       <summary
         aria-label={`${displayName} — ${t('userMenuAriaLabel')}`}
         data-testid="user-widget-trigger"
-        className="list-none cursor-pointer flex items-center gap-2 min-h-[44px] px-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors [&::-webkit-details-marker]:hidden"
+        className="list-none cursor-pointer flex items-center gap-2 min-h-[44px] px-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden"
       >
         <span
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium"
         >
           {initial}
         </span>
