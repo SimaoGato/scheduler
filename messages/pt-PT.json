@@ -1,6 +1,7 @@
 {
   "App": {
-    "name": "Escala"
+    "name": "Escala",
+    "tagline": "Gestão de escalas para equipas de serviço"
   },
   "Nav": {
     "ariaLabel": "Navegação principal",

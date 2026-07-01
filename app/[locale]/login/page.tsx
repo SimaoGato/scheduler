@@ -18,11 +18,22 @@ function getErrorMessage(
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error } = await searchParams;
   const t = await getTranslations('Auth');
+  const tApp = await getTranslations('App');
   const errorMessage = getErrorMessage(error, t);
 
   return (
-    <main className="w-full max-w-sm px-4">
-      <h1 className="text-2xl font-semibold mb-6 text-center">{t('signInTitle')}</h1>
+    <main className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
+      <div className="mb-8 text-center">
+        <h1
+          className="text-3xl font-bold tracking-tight"
+          data-testid="login-app-name"
+        >
+          {tApp('name')}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {tApp('tagline')}
+        </p>
+      </div>
 
       {errorMessage && (
         <div
