@@ -5,19 +5,15 @@ test('home route returns HTTP 200', async ({ page }) => {
   expect(response?.status()).toBe(200);
 });
 
-test('responsive shell: header, nav and main content area present at desktop width', async ({ page }) => {
+test('login shell: main content area present at desktop width', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
-  await expect(page.locator('header')).toBeVisible();
-  await expect(page.locator('nav')).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
 });
 
-test('responsive shell: no horizontal overflow at mobile width (375 px)', async ({ page }) => {
+test('login shell: no horizontal overflow at mobile width (375 px)', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
-  await expect(page.locator('header')).toBeVisible();
-  await expect(page.locator('nav')).toBeVisible();
   await expect(page.locator('main')).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
@@ -27,8 +23,7 @@ test('app name rendered from i18n catalog', async ({ page }) => {
   // Unauthenticated visitors are redirected to /pt-PT/login, which is where
   // the i18n strings are now shown.
   await page.goto('/');
-  await expect(page.locator('header')).toContainText('Escala');
-  await expect(page.locator('nav')).toContainText('Início');
+  await expect(page.getByTestId('login-app-name')).toContainText('Escala');
   // The login page is shown for unauthenticated users; verify sign-in button is present
   await expect(page.getByRole('button', { name: 'Continuar com Google' })).toBeVisible();
 });
