@@ -47,20 +47,15 @@ import { test, expect } from '@playwright/test';
  * AC2 (partial) — Automated / CI-safe
  *
  * When no user is authenticated (placeholder Supabase creds or genuinely
- * logged out), proxy.ts redirects to /pt-PT/login. The nav is still rendered
- * in the shell. We assert:
- *   - "Início" IS visible (always-shown link)
- *   - "Utilizadores" is NOT visible (admin-only link; role=null → hidden)
- *
- * This is the CI-safe proxy for the member experience: role=null produces the
- * same nav as role='member' — the admin link is absent.
+ * logged out), proxy.ts redirects to /pt-PT/login. After STORY-10 the login
+ * page renders a minimal shell with NO AppHeader/nav — so "Utilizadores" is
+ * definitively absent (no nav at all, not merely hidden within one).
  */
-test('AC2 (partial): nav hides "Utilizadores" for unauthenticated users (role=null)', async ({ page }) => {
+test('AC2 (partial): nav is absent on login page — unauthenticated users cannot see "Utilizadores"', async ({ page }) => {
   await page.goto('/');
-  // proxy.ts redirects to login; the shell (header+nav) is still present
+  // proxy.ts redirects to /pt-PT/login; STORY-10 removed AppHeader from the
+  // login shell, so there is no nav element at all for unauthenticated users.
+  await expect(page).toHaveURL(/\/login/);
   const nav = page.getByRole('navigation', { name: 'Navegação principal' });
-  await expect(nav).toBeVisible();
-  await expect(nav).toContainText('Início');
-  // The admin-only link must NOT appear when role is null / member
-  await expect(nav).not.toContainText('Utilizadores');
+  await expect(nav).toHaveCount(0);
 });
