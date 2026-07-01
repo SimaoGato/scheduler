@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const errorMessage = getErrorMessage(error, t);
 
   return (
-    <main className="flex-1 container mx-auto px-4 py-8">
+    <main className="w-full max-w-sm px-4">
       <h1 className="text-2xl font-semibold mb-6">{t('signInTitle')}</h1>
 
       {errorMessage && (
