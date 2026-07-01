@@ -1,0 +1,97 @@
+/**
+ * e2e/header-identity-widget.spec.ts — STORY-12
+ *
+ * AC coverage:
+ *
+ *  All 5 ACs require an authenticated session. AppHeader lives in the
+ *  (app)/ route group — unauthenticated CI runs are always redirected to
+ *  /pt-PT/login, which has no header. Each AC is documented as a manual
+ *  verification step below.
+ *
+ *  Manual verification (requires .env.local + real Supabase + Google OAuth):
+ *
+ *  AC1 — Interactive widget, pointer cursor:
+ *    1. Log in. Inspect the header identity area.
+ *    2. Hover over the avatar/name (data-testid="user-widget-trigger").
+ *       Confirm cursor becomes pointer.
+ *    3. Confirm it is a single <details> element — no plain text span or
+ *       separate sign-out button outside it.
+ *
+ *  AC2 — Sign-out accessible from widget:
+ *    1. Click/tap the identity widget to open the dropdown.
+ *    2. Confirm data-testid="sign-out-button" ("Sair") is visible.
+ *    3. Click "Sair". Confirm redirect to /pt-PT/login.
+ *    Note: <details> does not close on outside click — this is accepted;
+ *    ACs do not require it. The dropdown closes on navigation.
+ *
+ *  AC3 — Name and role visible in widget:
+ *    1. Open the widget dropdown.
+ *    2. Confirm data-testid="user-identity" shows the display name.
+ *    3. Confirm data-testid="user-role-label" shows the role
+ *       ("Administrador" or "Membro").
+ *
+ *  AC4 — Admin, 375 px, no overflow:
+ *    1. Log in as an admin (3 nav links visible: Início, Utilizadores, Equipa).
+ *    2. Set browser to 375 px wide (DevTools device mode).
+ *    3. Confirm no horizontal scrollbar; document.body.scrollWidth === 375.
+ *       (The avatar-only trigger on narrow viewports — name hidden below sm
+ *       breakpoint — keeps the header compact enough to fit.)
+ *
+ *  AC5 — Member, 375 px, no overflow:
+ *    1. Log in as a member (1 nav link visible: Início).
+ *    2. Set browser to 375 px wide.
+ *    3. Confirm no horizontal scrollbar; document.body.scrollWidth === 375.
+ */
+
+import { test, expect } from '@playwright/test';
+
+// AC1: Header identity area is a single interactive element with pointer cursor.
+test('AC1: header identity widget is a single interactive element (cursor-pointer)', async ({ page }) => {
+  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  await page.goto('/');
+  const trigger = page.getByTestId('user-widget-trigger');
+  await expect(trigger).toBeVisible();
+  const cursor = await trigger.evaluate((el) => getComputedStyle(el).cursor);
+  expect(cursor).toBe('pointer');
+});
+
+// AC2: Activating the widget makes the sign-out action accessible.
+// Note: <details> does not close on outside click — this is accepted; ACs do not require it.
+test('AC2: activating the identity widget makes sign-out accessible', async ({ page }) => {
+  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  await page.goto('/');
+  const trigger = page.getByTestId('user-widget-trigger');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  const signOutButton = page.getByTestId('sign-out-button');
+  await expect(signOutButton).toBeVisible();
+});
+
+// AC3: Display name and role label are visible inside the open widget.
+test('AC3: display name and role label are visible inside the identity widget', async ({ page }) => {
+  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  await page.goto('/');
+  const trigger = page.getByTestId('user-widget-trigger');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  await expect(page.getByTestId('user-identity')).toBeVisible();
+  await expect(page.getByTestId('user-role-label')).toBeVisible();
+});
+
+// AC4: Admin header renders without horizontal overflow at 375 px viewport width.
+test('AC4: admin header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
+  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(375);
+});
+
+// AC5: Member header renders without horizontal overflow at 375 px viewport width.
+test('AC5: member header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
+  test.skip(true, 'AppHeader requires authentication; see manual steps in file header.');
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+  expect(scrollWidth).toBeLessThanOrEqual(375);
+});
