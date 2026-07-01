@@ -44,10 +44,14 @@ export default async function AdminUsersPage() {
   let users: UserRow[] = []
   try {
     const serviceClient = createServiceClient()
-    const { data } = await serviceClient
+    const { data, error } = await serviceClient
       .from('users')
       .select('id, email, display_name, role')
       .order('display_name', { ascending: true })
+
+    if (error) {
+      console.error('[AdminUsersPage] DB error:', error)
+    }
 
     users = (data ?? []).map((row) => ({
       id: row.id as string,
