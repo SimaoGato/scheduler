@@ -1,6 +1,7 @@
 # STORY-12: App header — user identity widget
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 20
 
 ## User story
 As a logged-in user, I want a clear, interactive user identity element in the
