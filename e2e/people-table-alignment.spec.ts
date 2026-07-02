@@ -20,6 +20,13 @@
  * as a manual verification step to satisfy the Definition of Done's
  * AC-coverage requirement.
  *
+ * Fixture lifecycle: each test creates (or reuses) a "STORY-14 QA Person"
+ * row via `ensureOnePerson`, uniquely suffixed per Playwright worker index
+ * to avoid name collisions if tests ever run with parallel workers. A
+ * shared `test.afterEach` hook (via `removePersonIfPresent`) deletes that
+ * row after every test, pass or fail, so the fixture never leaks into the
+ * live admin people list even if an individual AC assertion throws.
+ *
  * Manual verification (requires .env.local + real Supabase + Google OAuth):
  *
  *  AC1 — Desktop right alignment:
@@ -57,10 +64,45 @@ async function ensureOnePerson(page: Page, name: string): Promise<void> {
   await expect(page.locator('tr', { hasText: name })).toBeVisible();
 }
 
+// Removes the fixture row created by ensureOnePerson, if it still exists.
+// Handles the row being mid-edit (Save/Cancel visible instead of
+// Editar/Remover) by cancelling first, so this is safe to call
+// unconditionally regardless of which test ran or whether it passed.
+async function removePersonIfPresent(page: Page, name: string): Promise<void> {
+  await page.goto('/pt-PT/admin/people');
+  const row = page.locator('tr', { hasText: name });
+  if ((await row.count()) === 0) return;
+
+  const cancelButton = row.locator('[data-testid^="pm-cancel-"]');
+  if ((await cancelButton.count()) > 0) {
+    await cancelButton.click();
+  }
+
+  const removeButton = row.locator('[data-testid^="pm-remove-"]');
+  if ((await removeButton.count()) > 0) {
+    await removeButton.click();
+    await expect(page.locator('tr', { hasText: name })).toHaveCount(0);
+  }
+}
+
 test.describe('STORY-14: people table actions-column alignment', () => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Admin pages require authentication; see manual steps in file header.');
 
-  const testPersonName = 'STORY-14 QA Person';
+  // Unique per worker so concurrent local runs (workers: undefined outside CI)
+  // can't collide on the same fixture name and break the single-row-match
+  // assumption used by `row.locator(...)` throughout this file.
+  let testPersonName: string;
+
+  test.beforeEach(({}, testInfo) => {
+    testPersonName = `STORY-14 QA Person (w${testInfo.workerIndex})`;
+  });
+
+  // Cleanup runs after every test regardless of pass/fail, so a leaked
+  // fixture row from AC1/AC3 (which never removed it) or an AC4 failure
+  // before its own cleanup step can't persist in the live admin people list.
+  test.afterEach(async ({ page }) => {
+    await removePersonIfPresent(page, testPersonName);
+  });
 
   test('AC1: Editar/Remover buttons right-aligned at desktop viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -129,9 +171,7 @@ test.describe('STORY-14: people table actions-column alignment', () => {
     expect(saveBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
     expect(cancelBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
 
-    // Cleanup: cancel edit mode and remove the test fixture row.
+    // Leave edit mode; the shared afterEach hook removes the fixture row.
     await cancelButton.click();
-    await row.locator('[data-testid^="pm-remove-"]').click();
-    await expect(page.locator('tr', { hasText: testPersonName })).toHaveCount(0);
   });
 });
