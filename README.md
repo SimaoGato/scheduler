@@ -19,7 +19,7 @@ Team members log in with Google to block dates they can't serve. The coordinator
 
 ## Local development
 
-**Prerequisites:** Node 20+, npm, a Supabase project.
+**Prerequisites:** Node 24+, npm, a Supabase project.
 
 ```bash
 git clone <repo>
