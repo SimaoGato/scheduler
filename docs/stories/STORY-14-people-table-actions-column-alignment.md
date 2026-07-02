@@ -1,6 +1,6 @@
 # STORY-14: Actions column alignment in management tables
 Epic: EPIC-02
-Status: draft
+Status: in-progress (implementation complete, pending review)
 
 ## User story
 As an admin, I want the Editar/Remover buttons in the people list to sit in
@@ -279,3 +279,29 @@ wired up, with real risk of subtly breaking Enter-to-submit or hydration if
 done incorrectly. Not `complex` (no auth, data integrity, concurrency, or
 money concerns, and it's confined to two sibling components with an
 identical, well-understood pattern), but clearly above `trivial`.
+
+## Implementation notes (post-implementation)
+
+- **Testids added** (not previously present): `pm-save-${id}`,
+  `pm-cancel-${id}` on `PeopleTable.tsx`'s edit-mode buttons; `um-promote-${id}`,
+  `um-demote-${id}` on `UserTable.tsx`'s role-change button (warning raised
+  during plan review — these had no testid at all before this story).
+- **Accessibility fix folded in**: the edit-mode `<input>` in `PeopleTable.tsx`
+  now has `aria-label={t('namePlaceholder')}` (reuses the existing
+  `PeopleManagement.namePlaceholder` i18n key already used by the add-person
+  input) — closes a pre-existing WCAG SC 1.3.1 gap on the same input this
+  story was already restructuring.
+- **AC coverage / test execution status:** `e2e/people-table-alignment.spec.ts`
+  (AC1, AC3, AC4) and `e2e/user-table-alignment.spec.ts` (AC2) were written
+  test-first per the auth-gated pattern (`test.skip(!process.env.E2E_WITH_AUTH, ...)`).
+  They cannot execute against a real Supabase/Google OAuth session in CI or in
+  this implementation environment (no live credentials available), so they
+  skip cleanly (`17 skipped`, `0 failed` in the full `npm run test:e2e` run).
+  Each spec file's header comment documents the equivalent manual verification
+  steps, satisfying the Definition of Done's "AC coverage" requirement via
+  the documented-manual-step escape hatch. A developer with `.env.local` +
+  real credentials can run `E2E_WITH_AUTH=1 npm run test:e2e` locally to
+  execute them for real.
+- **Full gate results at implementation time:** `npm run lint` — 0 errors;
+  `npx tsc --noEmit` — 0 errors; `npm run build` — succeeded; `npm run test:e2e`
+  — 26 passed, 17 skipped (auth-gated), 0 failed, exit code 0.
