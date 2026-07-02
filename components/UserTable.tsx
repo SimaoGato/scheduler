@@ -55,7 +55,11 @@ export default function UserTable({ initialUsers }: Props) {
               <th className="px-4 py-3 text-left font-medium">{t('columnName')}</th>
               <th className="px-4 py-3 text-left font-medium">{t('columnEmail')}</th>
               <th className="px-4 py-3 text-left font-medium">{t('columnRole')}</th>
-              <th className="px-4 py-3 text-left font-medium"></th>
+              {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap makes
+                  auto-layout give this column only the width its content needs,
+                  so the other (unconstrained) columns absorb the remaining
+                  width and this column stays pinned to the table's right edge. */}
+              <th className="w-[1%] whitespace-nowrap px-4 py-3 text-right font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -68,9 +72,10 @@ export default function UserTable({ initialUsers }: Props) {
                   <td className="px-4 py-3">
                     {user.role === 'admin' ? t('roleAdmin') : t('roleMember')}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="w-[1%] whitespace-nowrap px-4 py-3 text-right">
                     {user.role === 'member' ? (
                       <button
+                        data-testid={`um-promote-${user.id}`}
                         onClick={() => handleRoleChange(user.id, 'admin')}
                         disabled={isLoading}
                         className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -79,6 +84,7 @@ export default function UserTable({ initialUsers }: Props) {
                       </button>
                     ) : (
                       <button
+                        data-testid={`um-demote-${user.id}`}
                         onClick={() => handleRoleChange(user.id, 'member')}
                         disabled={isLoading}
                         className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
