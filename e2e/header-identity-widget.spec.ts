@@ -21,8 +21,8 @@
  *    1. Click/tap the identity widget to open the dropdown.
  *    2. Confirm data-testid="sign-out-button" ("Sair") is visible.
  *    3. Click "Sair". Confirm redirect to /pt-PT/login.
- *    Note: <details> does not close on outside click — this is accepted;
- *    ACs do not require it. The dropdown closes on navigation.
+ *    Note: as of STORY-13, the dropdown also closes on outside click and
+ *    Escape — see e2e/user-widget-click-outside.spec.ts for that coverage.
  *
  *  AC3 — Name and role visible in widget:
  *    1. Open the widget dropdown.
@@ -33,14 +33,16 @@
  *  AC4 — Admin, 375 px, no overflow:
  *    1. Log in as an admin (3 nav links visible: Início, Utilizadores, Equipa).
  *    2. Set browser to 375 px wide (DevTools device mode).
- *    3. Confirm no horizontal scrollbar; document.body.scrollWidth === 375.
+ *    3. Confirm no horizontal scrollbar;
+ *       document.documentElement.scrollWidth <= 375.
  *       (The avatar-only trigger on narrow viewports — name hidden below sm
  *       breakpoint — keeps the header compact enough to fit.)
  *
  *  AC5 — Member, 375 px, no overflow:
  *    1. Log in as a member (1 nav link visible: Início).
  *    2. Set browser to 375 px wide.
- *    3. Confirm no horizontal scrollbar; document.body.scrollWidth === 375.
+ *    3. Confirm no horizontal scrollbar;
+ *       document.documentElement.scrollWidth <= 375.
  */
 
 import { test, expect } from '@playwright/test';
@@ -56,7 +58,8 @@ test('AC1: header identity widget is a single interactive element (cursor-pointe
 });
 
 // AC2: Activating the widget makes the sign-out action accessible.
-// Note: <details> does not close on outside click — this is accepted; ACs do not require it.
+// Note: as of STORY-13, the widget also closes on outside click and Escape —
+// see e2e/user-widget-click-outside.spec.ts for that coverage.
 test('AC2: activating the identity widget makes sign-out accessible', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
