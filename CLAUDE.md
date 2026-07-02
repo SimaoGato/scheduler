@@ -46,6 +46,9 @@ When in doubt, classify as `standard`.
 
 ## Stack notes
 
+**Node.js and TypeScript:**
+- When bumping the Node.js runtime version (in `.github/workflows/ci.yml` and `package.json`'s `engines` field), also bump `@types/node` to the same major version (e.g., Node 24 → `@types/node@^24`). TypeScript relies on `@types/node` for Node.js API definitions; mismatched versions cause false-positive type errors or incomplete intellisense.
+
 **Next.js 16 + next-intl versioning:**
 - Next.js 16 renamed `middleware.ts` → `proxy.ts`. The file **must** be named `proxy.ts`; `middleware.ts` is deprecated.
 - `next-intl@^3` does not peer with Next.js 16; use `next-intl@^4`. The v4 API surface (e.g. `defineRouting`, `createNavigation`, `createMiddleware`, `getRequestConfig`) is identical for our usage.
