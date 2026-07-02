@@ -1,6 +1,7 @@
 # STORY-13: User identity widget — click outside to dismiss
 Epic: EPIC-01
-Status: in-progress (implementation complete, pending review)
+Status: done ✅
+PR: 22
 
 ## User story
 As a logged-in user, I want the user menu to close when I click anywhere
