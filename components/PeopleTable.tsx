@@ -160,32 +160,58 @@ export default function PeopleTable({ initialPeople }: Props) {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium">{t('columnName')}</th>
-                <th className="px-4 py-3 text-left font-medium"></th>
+                {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap makes
+                    auto-layout give this column only the width its content needs,
+                    so the other (unconstrained) columns absorb the remaining
+                    width and this column stays pinned to the table's right edge. */}
+                <th className="w-[1%] whitespace-nowrap px-4 py-3 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((person) => {
                 const isLoading = loadingId === person.id
                 const isEditing = editingId === person.id
+                // Save/Cancel must render in the actions <td>, not this name
+                // <td>, so the actions column position doesn't jump between
+                // view/edit mode (AC4). A <form> can't validly wrap both
+                // <td>s of a row, so the <input> here is form-associated by
+                // id via the `form` attribute to the <form> that lives in
+                // the actions cell below — Enter-to-submit still works.
+                const editFormId = `pm-edit-form-${person.id}`
                 return (
                   <tr key={person.id} className="border-b last:border-0 hover:bg-muted/25">
                     <td className="px-4 py-3">
                       {isEditing ? (
+                        <input
+                          type="text"
+                          form={editFormId}
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder={t('namePlaceholder')}
+                          aria-label={t('namePlaceholder')}
+                          className="w-full rounded-md border px-3 py-1 text-sm"
+                          disabled={isLoading}
+                          autoFocus
+                        />
+                      ) : (
+                        person.name
+                      )}
+                    </td>
+                    {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap
+                        makes auto-layout give this column only the width its
+                        content needs, so the name column absorbs the
+                        remaining width and this column stays pinned to the
+                        table's right edge. */}
+                    <td className="w-[1%] whitespace-nowrap px-4 py-3 text-right">
+                      {isEditing ? (
                         <form
+                          id={editFormId}
                           onSubmit={(e) => handleEdit(e, person.id)}
-                          className="flex gap-2"
+                          className="flex justify-end gap-2"
                         >
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder={t('namePlaceholder')}
-                            className="flex-1 rounded-md border px-3 py-1 text-sm"
-                            disabled={isLoading}
-                            autoFocus
-                          />
                           <button
                             type="submit"
+                            data-testid={`pm-save-${person.id}`}
                             disabled={isLoading}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
@@ -193,6 +219,7 @@ export default function PeopleTable({ initialPeople }: Props) {
                           </button>
                           <button
                             type="button"
+                            data-testid={`pm-cancel-${person.id}`}
                             onClick={cancelEdit}
                             disabled={isLoading}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -201,12 +228,7 @@ export default function PeopleTable({ initialPeople }: Props) {
                           </button>
                         </form>
                       ) : (
-                        person.name
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {!isEditing && (
-                        <div className="flex gap-2">
+                        <div className="flex justify-end gap-2">
                           <button
                             data-testid={`pm-edit-${person.id}`}
                             onClick={() => startEdit(person)}
