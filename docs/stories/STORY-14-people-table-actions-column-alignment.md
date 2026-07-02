@@ -1,6 +1,7 @@
 # STORY-14: Actions column alignment in management tables
 Epic: EPIC-02
-Status: in-progress (implementation complete, pending review)
+Status: done ✅
+PR: 23
 
 ## User story
 As an admin, I want the Editar/Remover buttons in the people list to sit in
