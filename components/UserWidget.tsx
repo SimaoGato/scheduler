@@ -17,6 +17,7 @@ export default async function UserWidget({ displayName, roleLabel }: Props) {
       initial={initial}
       roleLabel={roleLabel}
       triggerAriaLabel={`${displayName} — ${t('userMenuAriaLabel')}`}
+      settingsLabel={t('settingsLink')}
       signOutLabel={t('signOut')}
       signOutAction={signOut}
     />
