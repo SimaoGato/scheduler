@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from '@/i18n/navigation';
+import {
+  SIGNOUT_MARKER_COOKIE,
+  SIGNOUT_MARKER_MAX_AGE_SECONDS,
+} from '@/lib/auth/signout-marker';
 
 interface Props {
   displayName: string;
@@ -42,7 +46,22 @@ export default function UserWidgetMenu({
   // app/auth/callback/route.ts for where the marker is cleared again on the
   // next successful login.
   function handleSignOut() {
-    document.cookie = 'app-signout-pending=1; path=/; max-age=15; SameSite=Lax; Secure';
+    document.cookie = `${SIGNOUT_MARKER_COOKIE}=1; path=/; max-age=${SIGNOUT_MARKER_MAX_AGE_SECONDS}; SameSite=Lax; Secure`;
+
+    // Defensive readback: `Secure` means the browser silently no-ops the
+    // write outside a secure context (fine on production HTTPS and on
+    // Chromium/Firefox against http://localhost, but not guaranteed in
+    // every environment, e.g. a non-localhost http dev hostname). If the
+    // marker didn't actually get set, proxy.ts's reverse-guard race this
+    // story fixes would silently reopen. Log loudly so that failure is
+    // visible instead of silent — but never block navigation on this check.
+    if (!document.cookie.includes(`${SIGNOUT_MARKER_COOKIE}=1`)) {
+      console.error(
+        '[UserWidgetMenu] Sign-out marker cookie was not set (non-secure context?). ' +
+          'proxy.ts may briefly treat this browser as still signed in.'
+      );
+    }
+
     router.push('/login');
     void signOutAction().catch((err) => {
       console.error('[UserWidgetMenu] signOutAction invocation error:', err);
