@@ -9,7 +9,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 /**
  * provisionUser — Upserts the application user record in public.users.
  *
- * - Existing user: UPDATE email + display_name, leaving role unchanged (AC2).
+ * - Existing user: UPDATE email always; display_name is only populated from
+ *   the Google profile name when the current DB value is empty. A non-empty
+ *   display_name (user-set via STORY-21's settings page, or otherwise
+ *   already populated) is preserved on every returning login — it is never
+ *   overwritten by the Google name (STORY-21/AC5).
  * - New user: count all rows; if count === 0 assign 'admin' (AC3 bootstrap),
  *   otherwise assign 'member' (AC1). Then INSERT.
  *
@@ -30,10 +34,11 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
     (user.user_metadata?.name as string | undefined) ??
     '';
 
-  // 1. Check if a row already exists for this user.
+  // 1. Check if a row already exists for this user. Also fetch display_name
+  //    so the update below can decide whether to touch it (STORY-21/AC5).
   const { data: existing, error: selectError } = await serviceClient
     .from('users')
-    .select('id')
+    .select('id, display_name')
     .eq('id', user.id)
     .maybeSingle(); // maybeSingle returns null data (not an error) for 0 rows
 
@@ -42,10 +47,21 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
   }
 
   if (existing !== null) {
-    // 2. Existing user — update email and display_name only; preserve role (AC2).
+    // 2. Existing user — update email always; preserve role (AC2). Only
+    //    populate display_name from Google when the DB value is currently
+    //    empty (STORY-21/AC5: never overwrite a user-set name on a
+    //    returning login).
+    const existingDisplayName = (existing.display_name as string | null) ?? '';
+    const updatePayload: { email: string; display_name?: string } = {
+      email: user.email,
+    };
+    if (existingDisplayName === '') {
+      updatePayload.display_name = displayName;
+    }
+
     const { error: updateError } = await serviceClient
       .from('users')
-      .update({ email: user.email, display_name: displayName })
+      .update(updatePayload)
       .eq('id', user.id);
 
     if (updateError) {
