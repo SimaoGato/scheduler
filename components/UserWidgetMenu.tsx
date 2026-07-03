@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useRouter } from '@/i18n/navigation';
 
 interface Props {
   displayName: string;
@@ -21,6 +22,32 @@ export default function UserWidgetMenu({
 }: Props) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const triggerRef = useRef<HTMLElement>(null);
+  const router = useRouter();
+
+  // STORY-15: makes sign-out feel instant by navigating to /login before
+  // the server-side signOut() round trip completes, instead of waiting on
+  // it.
+  //
+  // WHY the marker cookie exists (do not "simplify" this away): setting
+  // `app-signout-pending=1` synchronously, before router.push, forces
+  // proxy.ts's auth guard to treat this browser as signed-out immediately.
+  // Without it, proxy.ts's reverse-guard (`user && isLoginPath`) would
+  // bounce the /login navigation straight back to / for as long as the
+  // real (still in-flight, unawaited) supabase.auth.signOut() call hasn't
+  // yet cleared the actual session cookie — the real cookie is never
+  // cleared synchronously, only after its own network round trip resolves.
+  // The 15s max-age bounds how long a hung/failed real signOut() (see
+  // actions.ts's try/catch + console.error) can keep the guard in this
+  // stricter treatment. See proxy.ts for the read side and
+  // app/auth/callback/route.ts for where the marker is cleared again on the
+  // next successful login.
+  function handleSignOut() {
+    document.cookie = 'app-signout-pending=1; path=/; max-age=15; SameSite=Lax; Secure';
+    router.push('/login');
+    void signOutAction().catch((err) => {
+      console.error('[UserWidgetMenu] signOutAction invocation error:', err);
+    });
+  }
 
   useEffect(() => {
     // Outside-click dismissal.
@@ -91,15 +118,16 @@ export default function UserWidgetMenu({
           )}
         </div>
         <div className="border-t" />
-        <form action={signOutAction} className="p-1">
+        <div className="p-1">
           <button
-            type="submit"
+            type="button"
+            onClick={handleSignOut}
             data-testid="sign-out-button"
             className="w-full min-h-[44px] flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
           >
             {signOutLabel}
           </button>
-        </form>
+        </div>
       </div>
     </details>
   );
