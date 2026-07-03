@@ -35,9 +35,21 @@
  *   items 8 and 9.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+import { SIGNOUT_MARKER_COOKIE } from '../lib/auth/signout-marker';
 
-const SIGNOUT_MARKER_COOKIE = 'app-signout-pending';
+// Shared "open widget → click sign-out" sequence, used by both AC1 and AC2
+// Test B. Extracted so a future change to the widget markup/data-testid
+// only needs updating in one place.
+async function clickSignOut(page: Page) {
+  const trigger = page.getByTestId('user-widget-trigger');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+
+  const signOutButton = page.getByTestId('sign-out-button');
+  await expect(signOutButton).toBeVisible();
+  await signOutButton.click();
+}
 
 test.describe('STORY-15: instant sign-out navigation', () => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Sign-out flow requires authentication; see manual steps in file header.');
@@ -47,13 +59,7 @@ test.describe('STORY-15: instant sign-out navigation', () => {
     context,
   }) => {
     await page.goto('/');
-    const trigger = page.getByTestId('user-widget-trigger');
-    await expect(trigger).toBeVisible();
-    await trigger.click();
-
-    const signOutButton = page.getByTestId('sign-out-button');
-    await expect(signOutButton).toBeVisible();
-    await signOutButton.click();
+    await clickSignOut(page);
 
     // Check the marker cookie FIRST, before awaiting the URL assertion —
     // this proves the cookie was set synchronously on click, not after any
@@ -61,8 +67,14 @@ test.describe('STORY-15: instant sign-out navigation', () => {
     const cookies = await context.cookies();
     const marker = cookies.find((c) => c.name === SIGNOUT_MARKER_COOKIE);
     expect(marker?.value).toBe('1');
+    // Also assert the attributes proxy.ts's guard depends on being sent
+    // back correctly on subsequent requests, so a future regression in the
+    // document.cookie string (e.g. a dropped `path=/` or `SameSite=Lax`)
+    // fails this test instead of silently reopening the race.
+    expect(marker?.path).toBe('/');
+    expect(marker?.sameSite).toBe('Lax');
 
-    await expect(page).toHaveURL(/\/login/, { timeout: 500 });
+    await expect(page).toHaveURL(/\/pt-PT\/login/, { timeout: 500 });
   });
 
   test('AC2 Test A: setting the marker cookie directly (no click) forces a protected route to redirect to /login', async ({
@@ -73,6 +85,11 @@ test.describe('STORY-15: instant sign-out navigation', () => {
     await page.goto('/');
     await expect(page.getByTestId('user-widget-trigger')).toBeVisible();
 
+    // Deliberately omits `secure: true`, unlike the real marker cookie set
+    // by the click handler (UserWidgetMenu.tsx). This test isolates
+    // proxy.ts's guard logic from the cookie-write mechanism itself (AC1
+    // already exercises the real Secure write), so the fixture cookie only
+    // needs to match what proxy.ts reads, not the full real-world write.
     await context.addCookies([
       {
         name: SIGNOUT_MARKER_COOKIE,
@@ -88,13 +105,7 @@ test.describe('STORY-15: instant sign-out navigation', () => {
 
   test('AC2 Test B: end-to-end sign-out then protected route access redirects to /login', async ({ page }) => {
     await page.goto('/');
-    const trigger = page.getByTestId('user-widget-trigger');
-    await expect(trigger).toBeVisible();
-    await trigger.click();
-
-    const signOutButton = page.getByTestId('sign-out-button');
-    await expect(signOutButton).toBeVisible();
-    await signOutButton.click();
+    await clickSignOut(page);
 
     await expect(page).toHaveURL(/\/pt-PT\/login/);
 
