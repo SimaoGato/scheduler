@@ -31,7 +31,8 @@
  *       ("Administrador" or "Membro").
  *
  *  AC4 — Admin, 375 px, no overflow:
- *    1. Log in as an admin (3 nav links visible: Início, Utilizadores, Equipa).
+ *    1. Log in as an admin (2 nav links visible: Utilizadores, Equipa; see
+ *       STORY-16).
  *    2. Set browser to 375 px wide (DevTools device mode).
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
@@ -39,7 +40,8 @@
  *       breakpoint — keeps the header compact enough to fit.)
  *
  *  AC5 — Member, 375 px, no overflow:
- *    1. Log in as a member (1 nav link visible: Início).
+ *    1. Log in as a member (0 nav links visible; no <nav> element rendered
+ *       for Members, see STORY-16).
  *    2. Set browser to 375 px wide.
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
@@ -84,7 +86,7 @@ test('AC3: display name and role label are visible inside the identity widget', 
 // AC4: Admin header renders without horizontal overflow at 375 px viewport width.
 test('AC4: admin header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
-  // TODO when auth fixtures added: log in as admin (3 nav links) before checking overflow
+  // TODO when auth fixtures added: log in as admin (2 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -94,7 +96,7 @@ test('AC4: admin header has no horizontal overflow at 375 px viewport width', as
 // AC5: Member header renders without horizontal overflow at 375 px viewport width.
 test('AC5: member header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
-  // TODO when auth fixtures added: log in as member (1 nav link) before checking overflow
+  // TODO when auth fixtures added: log in as member (0 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
