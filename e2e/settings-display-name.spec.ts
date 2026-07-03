@@ -18,7 +18,11 @@
  *     - AC3: saving a new name updates the DB and the header/account-menu
  *       reflect the new name immediately, without a full page reload.
  *     - AC4 (authenticated half): submitting a blank/whitespace-only name
- *       is rejected with 400 and display_name is left unchanged.
+ *       is rejected with 400 and display_name is left unchanged (UI test),
+ *       plus a direct authenticated PATCH with an empty displayName
+ *       asserting a 400 from the route handler itself — the UI test alone
+ *       only exercises DisplayNameForm's client-side short-circuit
+ *       (`!value.trim()`), never the server's own validation.
  *     - AC8: no horizontal overflow at 375px; tap targets >= 44px.
  *
  *   Manual verification only (see notes below):
@@ -134,12 +138,21 @@ test('AC3: saving a new display name updates the header without a full reload', 
   // depend on reopening the account menu or on viewport width).
   await expect(page.getByTestId('display-name-success')).toBeVisible();
 
-  // Navigate via the router (not page.reload()) to actually exercise
-  // router.refresh() rather than a full page load.
-  await page.goto('/');
+  // Navigate via an in-app Link click (the "Escala" wordmark in the
+  // persistent AppHeader), not page.goto('/') — page.goto() is always a
+  // full browser navigation and would re-render the Server Component tree
+  // from scratch regardless of whether DisplayNameForm's router.refresh()
+  // call exists, giving zero regression coverage for this AC. Clicking a
+  // next/link Link performs a client-side transition that only re-fetches
+  // the RSC payload; the assertion below is only meaningful because
+  // router.refresh() (called on save, before this click) is what causes the
+  // persistent AppHeader — which is not remounted by this client-side nav —
+  // to reflect the new name.
+  await page.getByRole('link', { name: 'Escala' }).click();
+  await expect(page).toHaveURL(/\/pt-PT\/?$/);
   const trigger = page.getByTestId('user-widget-trigger');
   await expect(trigger).toBeVisible();
-  await trigger.click(); // dropdown open/closed state is not preserved across navigation to a fresh page load
+  await trigger.click();
   await expect(page.getByTestId('user-identity')).toHaveText(newName);
 });
 
@@ -155,6 +168,27 @@ test('AC4: submitting a blank name is rejected with 400', async ({ page }) => {
   await page.getByTestId('display-name-save').click();
 
   await expect(page.getByTestId('display-name-error')).toBeVisible();
+});
+
+// AC4 (server-side regression guard): DisplayNameForm.handleSubmit
+// short-circuits client-side on `!value.trim()` before any fetch call, so
+// the UI test above never actually reaches the server's own validation.
+// Issue a direct authenticated PATCH (via page.request, which shares the
+// logged-in browser context's cookies) so a regression in the route
+// handler's own validation would be caught even if the client-side guard
+// were ever removed or bypassed.
+test('AC4: authenticated PATCH with a blank displayName is rejected with 400 by the server', async ({
+  page,
+}) => {
+  test.skip(!process.env.E2E_WITH_AUTH, 'Settings page requires authentication; see manual steps in file header.');
+  await page.goto('/pt-PT/settings');
+
+  const response = await page.request.patch('/api/settings/display-name', {
+    data: { displayName: '' },
+  });
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body.error).toBeTruthy();
 });
 
 // AC8: no horizontal overflow at 375px viewport width.
