@@ -81,6 +81,17 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
   }
 }
 
+// STORY-15: every response this route returns represents a successful (or
+// at least resolved) pass through the login flow, so the short-lived
+// sign-out marker cookie (see proxy.ts, components/UserWidgetMenu.tsx) must
+// never be allowed to shadow a fresh session. Wrapping all redirect() exit
+// points through this helper guarantees none of the five return paths below
+// is missed.
+function clearSignoutMarker(response: NextResponse): NextResponse {
+  response.cookies.set('app-signout-pending', '', { path: '/', maxAge: 0 });
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const error = searchParams.get('error');
@@ -89,8 +100,8 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     const encodedError = encodeURIComponent(error);
-    return NextResponse.redirect(
-      new URL(`/${defaultLocale}/login?error=${encodedError}`, request.url)
+    return clearSignoutMarker(
+      NextResponse.redirect(new URL(`/${defaultLocale}/login?error=${encodedError}`, request.url))
     );
   }
 
@@ -105,7 +116,7 @@ export async function GET(request: NextRequest) {
       if (!user) {
         console.error('[auth/callback] Exchange succeeded but session or user is null.');
         // Still redirect to home — the session cookie may have been set.
-        return NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url));
+        return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
       }
 
       // Provision the user record; errors are non-fatal (user still reaches home).
@@ -118,14 +129,14 @@ export async function GET(request: NextRequest) {
         // Do NOT block the redirect — degraded mode is better than a broken login.
       }
 
-      return NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url));
+      return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
     }
 
-    return NextResponse.redirect(
-      new URL(`/${defaultLocale}/login?error=exchange_failed`, request.url)
+    return clearSignoutMarker(
+      NextResponse.redirect(new URL(`/${defaultLocale}/login?error=exchange_failed`, request.url))
     );
   }
 
   // Fallback: no code, no error
-  return NextResponse.redirect(new URL(`/${defaultLocale}/login`, request.url));
+  return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/login`, request.url)));
 }
