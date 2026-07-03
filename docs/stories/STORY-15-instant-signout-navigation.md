@@ -1,6 +1,7 @@
 # STORY-15: Make sign-out feel instant (navigate before backend cleanup completes)
 Epic: EPIC-01
-Status: refined
+Status: done ✅
+PR: 24
 
 ## User story
 As a signed-in user, I want clicking "Sign out" to take me to the login page
