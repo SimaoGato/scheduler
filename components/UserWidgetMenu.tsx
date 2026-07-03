@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import {
   SIGNOUT_MARKER_COOKIE,
   SIGNOUT_MARKER_MAX_AGE_SECONDS,
@@ -12,6 +12,7 @@ interface Props {
   initial: string;
   roleLabel: string | null;
   triggerAriaLabel: string;
+  settingsLabel: string;
   signOutLabel: string;
   signOutAction: () => Promise<void>;
 }
@@ -21,6 +22,7 @@ export default function UserWidgetMenu({
   initial,
   roleLabel,
   triggerAriaLabel,
+  settingsLabel,
   signOutLabel,
   signOutAction,
 }: Props) {
@@ -138,6 +140,21 @@ export default function UserWidgetMenu({
         </div>
         <div className="border-t" />
         <div className="p-1">
+          <Link
+            href="/settings"
+            data-testid="settings-link"
+            onClick={() => {
+              // STORY-21: /settings is inside the same (app)/ route group as
+              // /, so client-side navigation does not remount this layout
+              // (unlike sign-out, which navigates to /login outside the
+              // group). Explicitly close the menu before navigating —
+              // mirrors the Escape handler's `details.open = false` below.
+              if (detailsRef.current) detailsRef.current.open = false;
+            }}
+            className="w-full min-h-[44px] flex items-center px-3 py-2 text-sm rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+          >
+            {settingsLabel}
+          </Link>
           <button
             type="button"
             onClick={handleSignOut}
