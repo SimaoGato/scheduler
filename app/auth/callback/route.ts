@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { routing } from '@/i18n/routing';
+import { SIGNOUT_MARKER_COOKIE } from '@/lib/auth/signout-marker';
 import type { User } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -88,55 +89,68 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
 // points through this helper guarantees none of the five return paths below
 // is missed.
 function clearSignoutMarker(response: NextResponse): NextResponse {
-  response.cookies.set('app-signout-pending', '', { path: '/', maxAge: 0 });
+  response.cookies.set(SIGNOUT_MARKER_COOKIE, '', { path: '/', maxAge: 0 });
   return response;
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const error = searchParams.get('error');
-  const code = searchParams.get('code');
   const defaultLocale = routing.defaultLocale;
 
-  if (error) {
-    const encodedError = encodeURIComponent(error);
-    return clearSignoutMarker(
-      NextResponse.redirect(new URL(`/${defaultLocale}/login?error=${encodedError}`, request.url))
-    );
-  }
+  // STORY-15: wrap the whole handler so that even an unexpected synchronous
+  // throw (e.g. createClient() or exchangeCodeForSession() throwing instead
+  // of returning { error }) still clears the sign-out marker on whatever
+  // error response is ultimately returned, preserving the "every response
+  // this route returns clears the marker" invariant end to end.
+  try {
+    const error = searchParams.get('error');
+    const code = searchParams.get('code');
 
-  if (code) {
-    const supabase = await createClient();
-    // Destructure data (not just error) to extract the session user.
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      const encodedError = encodeURIComponent(error);
+      return clearSignoutMarker(
+        NextResponse.redirect(new URL(`/${defaultLocale}/login?error=${encodedError}`, request.url))
+      );
+    }
 
-    if (!exchangeError) {
-      // Guard against null session even when there is no exchange error.
-      const user = data.session?.user;
-      if (!user) {
-        console.error('[auth/callback] Exchange succeeded but session or user is null.');
-        // Still redirect to home — the session cookie may have been set.
+    if (code) {
+      const supabase = await createClient();
+      // Destructure data (not just error) to extract the session user.
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (!exchangeError) {
+        // Guard against null session even when there is no exchange error.
+        const user = data.session?.user;
+        if (!user) {
+          console.error('[auth/callback] Exchange succeeded but session or user is null.');
+          // Still redirect to home — the session cookie may have been set.
+          return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
+        }
+
+        // Provision the user record; errors are non-fatal (user still reaches home).
+        try {
+          const serviceClient = createServiceClient();
+          await provisionUser(serviceClient, user);
+        } catch (provisionErr) {
+          // NOTE 1: log the error so it surfaces in server logs / Vercel logs.
+          console.error('[auth/callback] provisionUser failed:', provisionErr);
+          // Do NOT block the redirect — degraded mode is better than a broken login.
+        }
+
         return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
       }
 
-      // Provision the user record; errors are non-fatal (user still reaches home).
-      try {
-        const serviceClient = createServiceClient();
-        await provisionUser(serviceClient, user);
-      } catch (provisionErr) {
-        // NOTE 1: log the error so it surfaces in server logs / Vercel logs.
-        console.error('[auth/callback] provisionUser failed:', provisionErr);
-        // Do NOT block the redirect — degraded mode is better than a broken login.
-      }
-
-      return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
+      return clearSignoutMarker(
+        NextResponse.redirect(new URL(`/${defaultLocale}/login?error=exchange_failed`, request.url))
+      );
     }
 
+    // Fallback: no code, no error
+    return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/login`, request.url)));
+  } catch (err) {
+    console.error('[auth/callback] Unexpected error:', err);
     return clearSignoutMarker(
-      NextResponse.redirect(new URL(`/${defaultLocale}/login?error=exchange_failed`, request.url))
+      NextResponse.redirect(new URL(`/${defaultLocale}/login?error=unexpected`, request.url))
     );
   }
-
-  // Fallback: no code, no error
-  return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/login`, request.url)));
 }
