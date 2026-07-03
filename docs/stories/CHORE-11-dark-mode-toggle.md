@@ -383,3 +383,51 @@ plan's AC1 and AC7 test-plan entries.
   human-observed) could not be performed in this sandbox (no browser
   available) — recommend a human do a quick Slow-3G-throttled load with OS
   dark preference set, per the plan, before or shortly after merge.
+
+## PR #27 review fixes
+
+**CRITICAL — hydration mismatch, not avoidance**: The original
+`ThemeToggle.tsx` branched on `theme === undefined` to decide whether to
+render the placeholder. Verified against the bundled `next-themes@0.4.6`
+source that this does NOT defer to a post-hydration render: on the client
+bundle, `useTheme()` synchronously reads `localStorage` and returns a real
+theme string on the very first client render (the hydration pass itself), so
+SSR renders one branch and hydration renders another — a genuine mismatch.
+`suppressHydrationWarning` on `<html>` (app/[locale]/layout.tsx) does not
+cover this since it only suppresses the exact node it's applied to, not
+descendants.
+
+Fixed with a `mounted` guard, per the plan's original intent (step 4), but
+implemented via `useSyncExternalStore` rather than a literal
+`useState`+`useEffect(() => setMounted(true), [])` pair: the repo's
+`react-hooks/set-state-in-effect` lint rule (part of
+`eslint-plugin-react-hooks@7.1.1`'s recommended config, bundled with
+`eslint-config-next@16.2.9`) flags any direct `setState` call in a `useEffect`
+body as an error, with no exception for the mount-detection idiom. The
+`useSyncExternalStore(subscribe, () => true, () => false)` pattern achieves
+the identical hydration contract — `getServerSnapshot` (`false`) is used for
+both the server render and the client's initial hydration render so they
+match, then React performs exactly one client-only re-render with
+`getSnapshot` (`true`) right after hydration commits — without any `setState`
+call in an effect body, so it satisfies the lint rule while preserving the
+same "post-hydration-only" render-order guarantee the plan called for. See
+`components/ThemeToggle.tsx` for the implementation and inline rationale.
+
+Also addressed in the same review pass:
+- `i18n/routing.ts`: added an inline comment explaining why
+  `localeDetection: false` is required (prevents next-intl's Accept-Language
+  negotiation from auto-redirecting `/` away from pt-PT).
+- `e2e/dark-mode.spec.ts` AC5: replaced the `[^}]*\{[^}]*\}` regex (which only
+  captured the first CSS rule inside a `@media (prefers-color-scheme: dark)`
+  block) with a brace-balancing extraction function so the full block is
+  inspected regardless of how many rules it contains.
+- `e2e/dark-mode.spec.ts` AC1: added `/pt-PT/settings` to the path list (the
+  only page where `ThemeToggle` renders), so a real hydration-mismatch
+  regression is caught by CI instead of only manual inspection.
+- `components/ThemeToggle.tsx`: removed the inner `role="group"`'s redundant
+  `aria-label` (the enclosing `<section aria-labelledby="theme-section-title">`
+  in `settings/page.tsx` already supplies the accessible name; the duplicate
+  caused some screen readers to announce "Tema" twice).
+- `components/LanguageSwitcher.tsx`: mirrored the same
+  `id`/`aria-labelledby` pattern on its `<section>` for consistency with
+  `ThemeToggle`'s section.
