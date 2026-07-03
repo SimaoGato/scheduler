@@ -54,6 +54,16 @@
     "errorExchangeFailed": "Não foi possível completar o início de sessão. Tente novamente.",
     "errorDefault": "Ocorreu um erro durante o início de sessão. Tente novamente.",
     "userMenuAriaLabel": "Menu de utilizador",
-    "userFallback": "utilizador"
+    "userFallback": "utilizador",
+    "settingsLink": "Definições"
+  },
+  "Settings": {
+    "title": "Definições",
+    "nameLabel": "Nome apresentado",
+    "saveButton": "Guardar",
+    "savingLabel": "A guardar...",
+    "successMessage": "Guardado",
+    "errorEmpty": "O nome não pode estar vazio.",
+    "errorGeneric": "Ocorreu um erro. Tente novamente."
   }
 }
