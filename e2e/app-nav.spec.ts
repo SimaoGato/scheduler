@@ -16,7 +16,7 @@
  *    1. Log in as an admin. Navigate to /pt-PT/admin/people.
  *    2. Confirm the "Equipa" admin page is showing (not the home page).
  *    3. Click the "Escala" wordmark in the header.
- *    4. Confirm the browser lands back on the home page (/pt-PT/ or /).
+ *    4. Confirm the browser lands back on the home page (/pt-PT/).
  *
  *  AC3 — Admin nav shows exactly "Utilizadores" and "Equipa":
  *    1. Log in as an admin.
@@ -45,11 +45,19 @@ import { test, expect } from '@playwright/test';
 // toHaveURL check would fail.
 test('AC2: clicking the Escala wordmark from a non-home route navigates to home', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
-  await page.goto('/admin/people');
-  await expect(page).toHaveURL(/\/admin\/people/);
+  await page.goto('/pt-PT/admin/people');
+  await expect(page).toHaveURL(/\/pt-PT\/admin\/people/);
 
   await page.getByRole('link', { name: 'Escala' }).click();
-  await expect(page).toHaveURL(/\/(pt-PT)?\/?$/);
+  // Right-anchored (not left-anchored): Playwright's toHaveURL(RegExp) tests
+  // against the full URL string including origin (e.g.
+  // "http://localhost:3000/pt-PT/"), so a left `^` anchor would never match
+  // and would make this assertion silently always fail. The `$` anchor is
+  // what makes this assertion meaningful and locale-specific: it requires
+  // nothing follows "/pt-PT" (ruling out e.g. "/pt-PT/admin/people"), while
+  // still matching the suite's convention of hardcoding the single
+  // supported locale (cf. `/\/pt-PT\/login/` in auth.spec.ts).
+  await expect(page).toHaveURL(/\/pt-PT\/?$/);
 });
 
 // AC3: Admin nav shows exactly "Utilizadores" and "Equipa" — "Início" is
