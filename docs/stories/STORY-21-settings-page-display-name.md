@@ -445,7 +445,21 @@ blocking ambiguities.
   `.env.local` — returned `200` with the updated row. This is the same
   grant/RLS path `createServiceClient()` uses in the Route Handler, so the
   "missing `service_role` GRANT" class of bug (see CLAUDE.md) does **not**
-  affect this story's write path. No migration change was needed.
+  currently affect this story's write path (the real dev project must have
+  been provisioned with a broader grant at some point).
+- **Review fix (PR #26, retry cycle 1)**: even though the live dev project
+  works today, no migration in this repo ever explicitly grants
+  `service_role` privileges on `public.users` — re-provisioning a fresh
+  Supabase project from the migrations alone would hit `42501` on this
+  story's PATCH route. Added
+  `supabase/migrations/20260703000001_grant_users_service_role.sql`
+  (`GRANT SELECT, INSERT, UPDATE ON public.users TO service_role;`),
+  following the same pattern as
+  `20260701000002_grant_people_service_role.sql`, for explicitness and
+  robustness against project re-provisioning. `authenticated` was
+  intentionally left without INSERT/UPDATE grants — see the migration's
+  inline comment for why (defense-in-depth invariant documented in
+  `20260628000002_rls_admin_policies.sql`).
 - **AC5 remains manual-verification only**, as scoped in the plan above —
   Supabase rejects any `code` param with placeholder CI credentials, so
   `provisionUser()`'s "existing user" branch is never reached in CI (same

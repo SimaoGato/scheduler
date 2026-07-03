@@ -1,0 +1,17 @@
+-- Grant table privileges to service_role on public.users so the
+-- service-role Route Handler client (e.g. STORY-21's self-service
+-- PATCH /api/settings/display-name, and the callback route's provisionUser())
+-- can read/write rows. PostgreSQL checks table-level privileges before RLS
+-- is ever consulted, and no prior migration explicitly granted this —
+-- 20260628000001/20260628000003 only granted SELECT to `authenticated`.
+-- Missing this grant causes 42501 (permission denied) for service_role
+-- writes even though the row exists and the caller is authorized by the
+-- route handler's own auth guard.
+--
+-- NOTE: `authenticated` is intentionally NOT granted INSERT/UPDATE here.
+-- 20260628000002 documents the defense-in-depth guarantee that mutations to
+-- public.users go only through the service-role client (no RLS UPDATE/
+-- DELETE policy exists for `authenticated`); adding a table-level INSERT/
+-- UPDATE grant for `authenticated` would be unused by any current code path
+-- and would undermine that documented invariant.
+GRANT SELECT, INSERT, UPDATE ON public.users TO service_role;
