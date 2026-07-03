@@ -1,6 +1,7 @@
 # STORY-16: Use "Escala" wordmark as the home link, remove redundant "Início" nav item
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: #25
 
 ## User story
 As a user, I want the "Escala" wordmark in the header to take me home, so
