@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
 import AppNav from './AppNav';
 import UserWidget from './UserWidget';
 import { getSessionUser, getUserRole } from '@/lib/auth/session';
@@ -30,7 +31,12 @@ export default async function AppHeader() {
   return (
     <header className="border-b bg-background px-4 py-3">
       <div className="container mx-auto flex items-center justify-between">
-        <span className="text-lg font-semibold">{t('name')}</span>
+        <Link
+          href="/"
+          className="inline-flex items-center min-h-[44px] text-lg font-semibold"
+        >
+          {t('name')}
+        </Link>
         <div className="flex items-center gap-4">
           <AppNav role={role} />
           {user && (
