@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import { getSessionUser, getUserProfile } from '@/lib/auth/session';
 import DisplayNameForm from '@/components/DisplayNameForm';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 /**
  * /[locale]/settings — Account settings page (STORY-21).
@@ -34,10 +35,14 @@ export default async function SettingsPage() {
   return (
     <main className="flex-1 container mx-auto px-4 py-8">
       <h1 className="text-xl font-semibold mb-6">{t('title')}</h1>
-      <DisplayNameForm
-        initialDisplayName={profile?.displayName ?? ''}
-        googleNamePlaceholder={googleName}
-      />
+      <div className="flex flex-col gap-8">
+        <DisplayNameForm
+          initialDisplayName={profile?.displayName ?? ''}
+          googleNamePlaceholder={googleName}
+        />
+        <LanguageSwitcher />
+        {/* CHORE-11 adds <ThemeToggle /> here as a third sibling */}
+      </div>
     </main>
   );
 }
