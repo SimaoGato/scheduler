@@ -63,6 +63,32 @@ function findCssFiles(dir: string): string[] {
   return files;
 }
 
+// Extract the FULL contents of every `@media (prefers-color-scheme: dark)`
+// block in `css`, tracking brace depth rather than stopping at the first
+// `}`. A naive `[^}]*\{[^}]*\}` regex only captures up to the first closing
+// brace, so a multi-rule block (`@media (...) { .a{} .b{} }`) would only be
+// partially inspected. Balancing braces guarantees the whole block —
+// however many rules it contains — is returned.
+function extractPrefersColorSchemeDarkBlocks(css: string): string[] {
+  const blocks: string[] = [];
+  const openerRe = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{/g;
+  let match: RegExpExecArray | null;
+  while ((match = openerRe.exec(css)) !== null) {
+    const bodyStart = match.index + match[0].length;
+    let depth = 1;
+    let i = bodyStart;
+    for (; i < css.length && depth > 0; i += 1) {
+      if (css[i] === '{') depth += 1;
+      else if (css[i] === '}') depth -= 1;
+    }
+    // i is now one past the matching closing brace (or css.length if
+    // unterminated); include the full block including its own braces.
+    blocks.push(css.slice(match.index, i));
+    openerRe.lastIndex = i;
+  }
+  return blocks;
+}
+
 test('AC5: compiled CSS gates dark: utilities behind .dark class, not prefers-color-scheme', async () => {
   const nextStaticDir = join(process.cwd(), '.next', 'static');
   const cssFiles = findCssFiles(nextStaticDir);
@@ -80,7 +106,9 @@ test('AC5: compiled CSS gates dark: utilities behind .dark class, not prefers-co
 
   // Guard against the pre-fix behaviour: no dark:-prefixed utility class
   // name should still be gated by a bare prefers-color-scheme media query.
-  const mediaQueryBlocks = combined.match(/@media\s*\(prefers-color-scheme:\s*dark\)[^}]*\{[^}]*\}/g) ?? [];
+  // Brace-balanced extraction (not a `[^}]*\{[^}]*\}` regex) so multi-rule
+  // media-query blocks are inspected in full, not just their first rule.
+  const mediaQueryBlocks = extractPrefersColorSchemeDarkBlocks(combined);
   const mediaQueryGatesDarkUtility = mediaQueryBlocks.some((block) => /\.dark\\:/.test(block));
   expect(mediaQueryGatesDarkUtility).toBe(false);
 });
@@ -120,7 +148,7 @@ test('AC4: .dark class is present on <html> at domcontentloaded, before hydratio
 
 // --- AC1: pages render with .dark palette when the theme is dark --------
 
-test('AC1: home, admin/users, admin/people render with .dark when theme is dark', async ({
+test('AC1: home, admin/users, admin/people, settings render with .dark when theme is dark', async ({
   page,
 }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Admin/home pages require authentication.');
@@ -128,7 +156,12 @@ test('AC1: home, admin/users, admin/people render with .dark when theme is dark'
     window.localStorage.setItem('theme', 'dark');
   });
 
-  for (const path of ['/', '/pt-PT/admin/users', '/pt-PT/admin/people']) {
+  // /pt-PT/settings is included because it's the only page where
+  // ThemeToggle actually renders — visiting it here catches a real
+  // hydration-mismatch regression (e.g. a `theme === undefined` guard that
+  // doesn't actually defer to a post-hydration render) via the console-error
+  // assertion below, not just manual inspection.
+  for (const path of ['/', '/pt-PT/admin/users', '/pt-PT/admin/people', '/pt-PT/settings']) {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
