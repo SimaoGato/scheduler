@@ -67,6 +67,10 @@
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "languageLabel": "Idioma",
     "switchToPortuguese": "Mudar para português",
-    "switchToEnglish": "Mudar para inglês"
+    "switchToEnglish": "Mudar para inglês",
+    "themeSectionTitle": "Tema",
+    "themeSystem": "Sistema",
+    "themeLight": "Claro",
+    "themeDark": "Escuro"
   }
 }

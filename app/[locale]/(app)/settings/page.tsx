@@ -4,6 +4,7 @@ import { routing } from '@/i18n/routing';
 import { getSessionUser, getUserProfile } from '@/lib/auth/session';
 import DisplayNameForm from '@/components/DisplayNameForm';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ThemeToggle from '@/components/ThemeToggle';
 
 /**
  * /[locale]/settings — Account settings page (STORY-21).
@@ -41,7 +42,12 @@ export default async function SettingsPage() {
           googleNamePlaceholder={googleName}
         />
         <LanguageSwitcher />
-        {/* CHORE-11 adds <ThemeToggle /> here as a third sibling */}
+        <section aria-labelledby="theme-section-title" className="flex flex-col gap-3 max-w-sm">
+          <h2 id="theme-section-title" className="text-sm font-medium">
+            {t('themeSectionTitle')}
+          </h2>
+          <ThemeToggle />
+        </section>
       </div>
     </main>
   );
