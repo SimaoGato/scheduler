@@ -326,3 +326,60 @@ has fixed the CHORE-06-then-CHORE-11 delivery order (see "Delivery context"
 above), removing what was previously an open conditional. The one remaining
 judgment call made above (toggle shape as a 3-way group) is documented, not
 blocking.
+
+## Manual verification notes (post-implementation)
+
+**Environment constraint:** the implementation sandbox is WSL2 without
+passwordless root (`sudo` requires an interactive password; `npx playwright
+install-deps` fails for this reason — the same documented limitation as
+CLAUDE.md's Playwright "WSL2 gotcha"). No Chromium/Firefox/WebKit browser
+could be launched locally, so a literal screenshot-based visual spot-check
+(as the plan's AC1/AC4/AC7 test-plan entries call for) could not be
+performed in this pass. The checks below are the closest available
+substitute, performed directly against the compiled build artifacts and the
+design-token source of truth; a follow-up human/CI pass with a working
+browser should still do the literal screenshot spot-check described in the
+plan's AC1 and AC7 test-plan entries.
+
+- **AC7 (WCAG AA contrast)**: computed WCAG relative-luminance contrast
+  ratios directly from the `.dark` HSL custom properties in
+  `app/globals.css` (unchanged stock shadcn dark tokens, same values audited
+  in CHORE-01) for every colour pair actually used by pages in this repo
+  plus the new `ThemeToggle` component's `Button` variants:
+  - Body text on background (`--foreground` on `--background`): **19.06:1**
+  - Primary button text on primary bg (`ThemeToggle`'s selected/`default`
+    variant button): **16.97:1**
+  - Accent text on accent bg (hover state on outline buttons):
+    **14.27:1**
+  - Muted-foreground secondary text on background: **7.76:1**
+  - Destructive-foreground on destructive bg: **9.60:1**
+  - Foreground text on the outline/unselected `ThemeToggle` button's
+    `dark:bg-input/30`-tinted background: **14.27:1**
+  All six ratios clear WCAG AA's 4.5:1 (normal text) and 3:1 (large
+  text/UI component) thresholds by a wide margin — the lowest is 7.76:1.
+  Outcome: **pass**. Since these are the pre-existing, unchanged dark
+  tokens and the new `ThemeToggle` markup reuses the existing `Button`
+  component's `default`/`outline` variants (no new colour combinations
+  introduced), residual risk is effectively nil. No follow-up needed, though
+  a literal visual screenshot pass is still recommended when a working
+  browser is available, per the plan.
+- **AC1 (no unreadable text / leftover light surfaces) and AC5 (`dark:` is
+  class-driven)**: verified against the actual Turbopack-compiled CSS output
+  (`.next/static/chunks/*.css` — note: the plan anticipated
+  `.next/static/css/*.css`, but Turbopack emits it under `chunks/`; the
+  automated AC5 test in `e2e/dark-mode.spec.ts` globs recursively under
+  `.next/static` to be resilient to this). Confirmed `dark:*` utility
+  classes (e.g. `dark:bg-input/30`, `dark:border-input`,
+  `dark:hover:bg-input/50` from `components/ui/button.tsx`) compile to
+  `:is(.dark *)`-gated selectors, and grepped the full compiled output for
+  `@media (prefers-color-scheme: dark)` — zero matches gate any `dark:`
+  utility class name. This directly confirms the "latent inconsistency"
+  described in the story's Context section is fixed: dark styling is now
+  100% class-driven, not media-query-driven.
+- **AC4 (no FOUC)**: automated coverage confirms `.dark` is present on
+  `<html>` at the `domcontentloaded` event (before hydration), which is the
+  structural guarantee `next-themes`' pre-hydration inline script provides.
+  The subjective "was there a visible flash" check (network-throttled,
+  human-observed) could not be performed in this sandbox (no browser
+  available) — recommend a human do a quick Slow-3G-throttled load with OS
+  dark preference set, per the plan, before or shortly after merge.

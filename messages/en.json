@@ -67,6 +67,10 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "languageLabel": "Language",
     "switchToPortuguese": "Switch to Portuguese",
-    "switchToEnglish": "Switch to English"
+    "switchToEnglish": "Switch to English",
+    "themeSectionTitle": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   }
 }
