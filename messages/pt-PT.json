@@ -64,6 +64,9 @@
     "savingLabel": "A guardar...",
     "successMessage": "Guardado",
     "errorEmpty": "O nome não pode estar vazio.",
-    "errorGeneric": "Ocorreu um erro. Tente novamente."
+    "errorGeneric": "Ocorreu um erro. Tente novamente.",
+    "languageLabel": "Idioma",
+    "switchToPortuguese": "Mudar para português",
+    "switchToEnglish": "Mudar para inglês"
   }
 }

@@ -1,0 +1,72 @@
+{
+  "App": {
+    "name": "Escala",
+    "tagline": "Schedule management for service teams"
+  },
+  "Nav": {
+    "ariaLabel": "Main navigation",
+    "userManagement": "Users",
+    "people": "Team"
+  },
+  "UserManagement": {
+    "title": "User management",
+    "columnName": "Name",
+    "columnEmail": "Email",
+    "columnRole": "Role",
+    "roleAdmin": "Administrator",
+    "roleMember": "Member",
+    "promoteButton": "Promote to Administrator",
+    "demoteButton": "Demote to Member",
+    "errorLastAdmin": "Cannot remove the only Administrator.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "actionLoading": "Processing..."
+  },
+  "Member": {
+    "noAccessTitle": "Welcome to Escala!",
+    "noAccessDescription": "Your account is active, but you don't have access to any features yet. Talk to an administrator to get permissions.",
+    "noRoleError": "Error loading your profile. Please contact the administrator.",
+    "accessDenied": "You don't have permission to access this page."
+  },
+  "Home": {
+    "welcome": "Welcome to Escala.",
+    "description": "Schedule management for service teams.",
+    "cta": "View schedule"
+  },
+  "PeopleManagement": {
+    "title": "Team",
+    "columnName": "Name",
+    "addPersonLabel": "Add person",
+    "namePlaceholder": "Name",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "editButton": "Edit",
+    "removeButton": "Remove",
+    "emptyList": "No people on the team.",
+    "errorNameRequired": "Name is required.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "actionLoading": "Processing..."
+  },
+  "Auth": {
+    "signInTitle": "Sign in to Escala",
+    "continueWithGoogle": "Continue with Google",
+    "signOut": "Sign out",
+    "errorAccessDenied": "Sign-in cancelled.",
+    "errorExchangeFailed": "Could not complete sign-in. Please try again.",
+    "errorDefault": "Something went wrong during sign-in. Please try again.",
+    "userMenuAriaLabel": "User menu",
+    "userFallback": "user",
+    "settingsLink": "Settings"
+  },
+  "Settings": {
+    "title": "Settings",
+    "nameLabel": "Display name",
+    "saveButton": "Save",
+    "savingLabel": "Saving...",
+    "successMessage": "Saved",
+    "errorEmpty": "Name cannot be empty.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "languageLabel": "Language",
+    "switchToPortuguese": "Switch to Portuguese",
+    "switchToEnglish": "Switch to English"
+  }
+}
