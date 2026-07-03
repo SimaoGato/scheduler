@@ -47,3 +47,37 @@ export const getUserRole = cache(async (userId: string) => {
     return null;
   }
 });
+
+/**
+ * getUserProfile — Returns { role, displayName } from public.users, or null.
+ *
+ * STORY-21/AC6: this is the single source of truth for the displayed name
+ * across the app (AppHeader, UserWidgetMenu, the settings page) — callers
+ * must not read `user.user_metadata` directly for display purposes.
+ *
+ * Decorated with React cache() so that within a single server render tree the
+ * profile SELECT query is made exactly once per unique userId.
+ */
+export const getUserProfile = cache(async (userId: string) => {
+  try {
+    const supabase = await createClient();
+    const { data: row, error } = await supabase
+      .from('users')
+      .select('role, display_name')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('[getUserProfile] DB error:', error);
+      return null;
+    }
+
+    return {
+      role: row.role === 'admin' ? ('admin' as const) : ('member' as const),
+      displayName: (row.display_name as string | null) ?? '',
+    };
+  } catch (err) {
+    console.error('[getUserProfile] unexpected error:', err);
+    return null;
+  }
+});
