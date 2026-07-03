@@ -7,9 +7,11 @@
  * Automated (CI-safe with placeholder Supabase credentials):
  *   - AC2 (partial): unauthenticated visitor → nav hides "Utilizadores" link.
  *     Because proxy.ts always redirects unauthenticated users to /pt-PT/login,
- *     we cannot reach the authenticated home page in CI. We verify the nav
- *     renders with "Início" and without "Utilizadores" — which mirrors the
- *     role=null / member state the nav adopts when no admin role is present.
+ *     we cannot reach the authenticated home page in CI. We verify that no
+ *     <nav> element is rendered at all for unauthenticated visitors
+ *     (redirected to the chrome-less login page per STORY-10) — which
+ *     mirrors the role=null / member state the nav adopts (no <nav> at all,
+ *     see STORY-16) when no admin role is present.
  *
  * Manual verification steps (requires real Supabase credentials in .env.local,
  * Google OAuth configured, and at least one admin + one member account):
@@ -21,12 +23,12 @@
  *        no-access description, and does NOT show the "Ver escala" button.
  *
  *   AC2 — Member nav hides admin links:
- *     1. While logged in as a Member, confirm the nav shows "Início" only —
- *        the "Utilizadores" link is absent.
+ *     1. While logged in as a Member, confirm no <nav> element is rendered
+ *        at all (see STORY-16) — the "Utilizadores" link is absent.
  *
  *   AC3 — Admin nav shows admin links:
  *     1. Log in with a Google account whose row has role = 'admin'.
- *     2. Confirm the nav shows both "Início" and "Utilizadores".
+ *     2. Confirm the nav shows "Utilizadores" and "Equipa" (see STORY-16).
  *
  *   AC4 — Member blocked from admin route (unauthorized view, not a blank screen):
  *     1. While logged in as a Member, navigate directly to /pt-PT/admin/users.
