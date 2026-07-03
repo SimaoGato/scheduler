@@ -16,7 +16,7 @@
  *    1. Log in. Open the identity widget (click data-testid="user-widget-trigger").
  *    2. Confirm data-testid="user-widget-menu" is visible.
  *    3. Click somewhere outside the widget (header background, page body, or
- *       another nav link such as "Início").
+ *       the "Escala" wordmark link).
  *    4. Confirm data-testid="user-widget-menu" is no longer visible.
  *
  *  AC2 — Trigger click still closes the menu (regression):
@@ -57,9 +57,10 @@ test('AC1: clicking outside the open menu closes it', async ({ page }) => {
   await expect(menu).not.toBeVisible();
 });
 
-// AC1 (nav link case): Clicking another nav link ("Início", a safe no-op
-// navigation since we're already on /) closes the menu. AppHeader/UserWidget
-// live in a persistent layout, so this won't falsely pass due to unmounting.
+// AC1 (nav link case): Clicking the Escala wordmark, a safe no-op
+// navigation link since we're already on /, closes the menu. AppHeader/
+// UserWidget live in a persistent layout, so this won't falsely pass due to
+// unmounting.
 test('AC1: clicking another nav link closes the open menu', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
@@ -69,7 +70,7 @@ test('AC1: clicking another nav link closes the open menu', async ({ page }) => 
   const menu = page.getByTestId('user-widget-menu');
   await expect(menu).toBeVisible();
 
-  await page.getByRole('link', { name: 'Início' }).click();
+  await page.getByRole('link', { name: 'Escala' }).click();
   await expect(menu).not.toBeVisible();
 });
 
