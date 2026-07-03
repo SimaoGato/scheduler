@@ -2,13 +2,13 @@ import { type NextRequest, NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { createServerClient } from '@supabase/ssr';
 import { routing } from './i18n/routing';
+import { SIGNOUT_MARKER_COOKIE } from './lib/auth/signout-marker';
 
 const intlMiddleware = createMiddleware(routing);
 
 // STORY-15: marker cookie set synchronously by UserWidgetMenu's sign-out
 // click handler, before the real (server-side, unawaited) signOut() call
 // resolves. See UserWidgetMenu.tsx and app/auth/callback/route.ts.
-const SIGNOUT_MARKER_COOKIE = 'app-signout-pending';
 
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
