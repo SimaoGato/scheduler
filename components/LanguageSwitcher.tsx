@@ -20,9 +20,11 @@ export default function LanguageSwitcher() {
   const otherLocaleLabel = LOCALE_LABELS[otherLocale] ?? otherLocale;
 
   return (
-    <section className="flex flex-col gap-3 max-w-sm">
-      <h2 className="text-sm font-medium">{t('languageLabel')}</h2>
-      <div className="flex items-center gap-2" role="group" aria-label={t('languageLabel')}>
+    <section aria-labelledby="language-section-title" className="flex flex-col gap-3 max-w-sm">
+      <h2 id="language-section-title" className="text-sm font-medium">
+        {t('languageLabel')}
+      </h2>
+      <div className="flex items-center gap-2" role="group">
         <span
           data-testid="language-switcher-current"
           aria-current="true"
