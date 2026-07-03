@@ -429,3 +429,37 @@ ref needed).
 
 None of these block writing code — they are documented defaults, not
 blocking ambiguities.
+
+## Implementation notes (post-implementation)
+
+- **Challenger WARNING fixes incorporated**: (1) the PATCH response body
+  returns `{ displayName: trimmedName }`, not `{ ok: true }`
+  (`app/api/settings/display-name/route.ts`), so `DisplayNameForm` syncs its
+  input to the actual persisted value. (2) `DisplayNameForm` shows a
+  transient inline "Guardado" confirmation (`data-testid="display-name-success"`,
+  `aria-live="polite"`, auto-clears after 3s or on next edit) directly on the
+  settings page, independent of reopening the account menu or viewport width.
+- **Service-role UPDATE verified against the real dev Supabase project**:
+  confirmed via a direct `PATCH` to the Supabase REST API
+  (`/rest/v1/users?id=eq.<uuid>`) using `SUPABASE_SERVICE_ROLE_KEY` from
+  `.env.local` — returned `200` with the updated row. This is the same
+  grant/RLS path `createServiceClient()` uses in the Route Handler, so the
+  "missing `service_role` GRANT" class of bug (see CLAUDE.md) does **not**
+  affect this story's write path. No migration change was needed.
+- **AC5 remains manual-verification only**, as scoped in the plan above —
+  Supabase rejects any `code` param with placeholder CI credentials, so
+  `provisionUser()`'s "existing user" branch is never reached in CI (same
+  limitation documented in `e2e/provision.spec.ts`). Manual steps are
+  documented in `e2e/settings-display-name.spec.ts`'s file header.
+- **Sandbox environment note**: in this implementation sandbox (WSL2,
+  no root), all Playwright browser-based tests fail to launch Chromium
+  (`libnspr4.so` missing — the pre-existing "WSL2 gotcha" documented in
+  CLAUDE.md). This affects every browser-based test in the suite, including
+  pre-existing ones (`smoke.spec.ts`, `provision.spec.ts`, etc.), not just
+  this story's new tests — confirmed by running the full suite before and
+  after this change. `request`-fixture-only tests (no browser) run and pass
+  normally, including this story's `AC4: unauthenticated PATCH` test and
+  AC7's redirect behavior (independently verified via `curl`, since the
+  Playwright `page`-based AC7 test cannot launch a browser here). CI (with
+  `--with-deps`) is expected to run all tests, including the browser-based
+  ones, without this limitation.
