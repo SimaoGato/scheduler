@@ -4,8 +4,8 @@ Status: draft
 
 ## Task
 Add US English (`en`) as a second locale alongside pt-PT, and expose a
-language switcher in the app shell so users can toggle between the two.
-Default locale remains pt-PT.
+language switcher so users can toggle between the two. Default locale remains
+pt-PT.
 
 ## Context
 The app currently has `localePrefix: 'always'` and a single `pt-PT` locale.
@@ -14,12 +14,21 @@ Adding `en` requires registering it in `i18n/routing.ts`, creating a full
 No DB, API, or auth changes are needed — next-intl handles the rest via the
 existing dynamic `[locale]` route segment.
 
+**Placement update (superseding the original plan):** the switcher does
+**not** live as a bare control in `AppHeader`/`AppNav`. STORY-21 introduces a
+`/[locale]/settings` page reachable from the account menu, consolidating
+account-level preferences (display name, and later CHORE-11's theme toggle)
+in one place instead of scattering controls across the header — this keeps
+the nav decluttered (see STORY-16, which is actively removing a redundant nav
+item for the same reason). This chore depends on STORY-21 shipping first (or
+lands in the same PR if it's simpler to build the settings page shell once).
+
 ## Acceptance criteria
 1. Given any user, when they visit `/pt-PT/*`, then all UI text is in
    European Portuguese (existing behaviour, no regression).
 2. Given any user, when they visit `/en/*`, then all UI text is in US English.
-3. Given any user on any page, when the app shell renders, then a language
-   switcher is visible in the header/nav showing the current locale and
+3. Given any user, when they open `/[locale]/settings` (STORY-21), then a
+   language switcher is visible there showing the current locale and
    allowing a one-click switch to the other locale.
 4. Given a user on `/pt-PT/`, when they click the language switcher, then
    they are taken to `/en/` and all text updates to English without a full
@@ -44,12 +53,13 @@ existing dynamic `[locale]` route segment.
 - `messages/en.json`: create as a full translation of `messages/pt-PT.json`.
   Every key must exist; missing keys cause next-intl runtime warnings.
   Use US English conventions (e.g. "Sign in", "Administrator", "Member").
-- Language switcher: a small component in `AppHeader` (or alongside
-  `AppNav`). Use next-intl's `Link` with a `locale` prop pointing to the
-  other locale and `href={pathname}` (current path) — this produces a
-  locale-switched link with no extra JS. Alternatively use `useRouter` +
-  `usePathname` from `@/i18n/navigation` for a button. Both approaches are
-  valid; prefer the `Link` approach (zero client JS).
+- Language switcher: a small component rendered on the `/[locale]/settings`
+  page (STORY-21), not in `AppHeader`/`AppNav`. Use next-intl's `Link` with a
+  `locale` prop pointing to the other locale and `href={pathname}` (current
+  path) — this produces a locale-switched link with no extra JS.
+  Alternatively use `useRouter` + `usePathname` from `@/i18n/navigation` for
+  a button. Both approaches are valid; prefer the `Link` approach (zero
+  client JS).
 - The switcher label can be the locale code itself ("PT" / "EN") or a flag
   emoji — keep it simple.
 - `proxy.ts` and `app/[locale]/layout.tsx` require no changes.
