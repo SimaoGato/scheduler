@@ -1,6 +1,7 @@
 # STORY-21: Account settings page (display name override), reachable from the user menu
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 26
 
 ## User story
 As a logged-in user, I want to open "Definições" from my account menu and set
