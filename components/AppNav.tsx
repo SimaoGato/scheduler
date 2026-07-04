@@ -24,6 +24,11 @@ export default function AppNav({ role }: Props) {
             <Link href="/admin/people">{t('people')}</Link>
           </Button>
         </li>
+        <li>
+          <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+            <Link href="/admin/roles">{t('roles')}</Link>
+          </Button>
+        </li>
       </ul>
     </nav>
   );
