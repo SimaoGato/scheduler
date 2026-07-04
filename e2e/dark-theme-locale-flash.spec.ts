@@ -85,6 +85,32 @@ test('AC5: SSR <html> does not carry the dark class when the resolved-theme cook
   expect(htmlTagMatch?.[0] ?? '').not.toMatch(/class="[^"]*\bdark\b[^"]*"/);
 });
 
+test('resolved-theme cookie is written with Secure and SameSite=Lax attributes', async ({
+  page,
+  context,
+}) => {
+  // Regression guard for the code-review WARNING on this story: the
+  // ThemeCookieSync write must carry `Secure`, matching the established
+  // convention in components/UserWidgetMenu.tsx's SIGNOUT_MARKER_COOKIE
+  // write. Inspecting document.cookie alone can't reveal the Secure/
+  // SameSite attributes (the browser strips them from that string), so this
+  // reads the attributes back via the browser context's cookie jar instead.
+  await page.goto('/pt-PT/login');
+  // ThemeCookieSync writes the cookie from a post-hydration useEffect, so
+  // poll rather than reading the cookie jar immediately after goto()
+  // resolves (which only waits for the load event, not hydration).
+  await expect
+    .poll(async () => {
+      const cookies = await context.cookies();
+      return cookies.some((c) => c.name === THEME_COOKIE_NAME);
+    })
+    .toBe(true);
+  const cookies = await context.cookies();
+  const themeCookie = cookies.find((c) => c.name === THEME_COOKIE_NAME);
+  expect(themeCookie?.secure).toBe(true);
+  expect(themeCookie?.sameSite).toBe('Lax');
+});
+
 // --- AC1/AC2/AC3/AC5 (E2E_WITH_AUTH-gated): real click-through -----------
 
 // Samples `document.documentElement`'s `.dark` class on every animation

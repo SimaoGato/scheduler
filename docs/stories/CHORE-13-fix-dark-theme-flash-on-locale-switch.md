@@ -269,13 +269,21 @@ source (`node_modules/next-themes/dist/index.mjs`). Findings:
 - **Risk**: cookie and `localStorage` diverging (e.g., manual cookie
   deletion, third-party cookie blocking in unusual browser configs). Impact
   is cosmetic only and strictly *less* severe than the pre-fix baseline: a
-  stale/missing cookie on the very next soft navigation after the divergence
-  causes a transient reappearance of the *original* bug (one wrong-color
-  frame, self-healed by next-themes' post-mount effect within that same
-  frame) — it is not equivalent to, or worse than, today's cold-load worst
-  case; it is the cold-load worst case, occurring on a soft nav instead of a
-  full load, and only in this specific divergence scenario. No functional/
-  data risk.
+  stale/missing cookie on a soft navigation after the divergence causes a
+  reappearance of the *original* bug (one wrong-color frame, self-healed by
+  next-themes' post-mount effect within that same frame) — it is not
+  equivalent to, or worse than, today's cold-load worst case; it is the
+  cold-load worst case, occurring on a soft nav instead of a full load, and
+  only in this specific divergence scenario. No functional/data risk. Note
+  the duration differs by cause: for a one-off divergence (e.g. a manually
+  deleted cookie) this is transient and self-heals once `ThemeCookieSync`
+  rewrites the cookie on the next mount. For a user with cookies
+  *permanently* blocked, the write silently no-ops on every page load, so
+  the wrong-color frame recurs on *every* soft navigation for that user —
+  persistent-for-that-user, not transient — but each individual occurrence
+  is still capped at the same single-frame, self-healing severity described
+  above, so the severity ceiling is unchanged even though the frequency for
+  that subset of users is higher.
 - **Risk**: `cookies()` in the layout forces the locale layout to be fully
   dynamic per request. This is very likely already true (the layout calls
   `getMessages({ locale })` per request and the app has no static-export
