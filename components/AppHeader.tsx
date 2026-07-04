@@ -49,7 +49,7 @@ export default async function AppHeader() {
         >
           {t('name')}
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
           <AppNav role={role} />
           {user && (
             <UserWidget displayName={displayName} roleLabel={roleLabel} />
