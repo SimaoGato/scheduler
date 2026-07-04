@@ -37,14 +37,11 @@ test('AC1: admin nav links show cursor: pointer', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Nav links require authentication to be visible in the (app)/ route group.');
 
   await page.goto('/');
-  // Find the admin nav buttons; they are rendered as Button with asChild
-  // and have their text visible in the (app)/ nav group
-  const adminLinks = page.getByRole('button', { name: /Utilizadores|Equipa/ });
-  const count = await adminLinks.count();
-  expect(count).toBeGreaterThan(0);
-
-  // Test the first admin link
-  const firstLink = adminLinks.first();
+  // Admin nav links are rendered as `<Button asChild><Link ...></Button>`;
+  // `asChild` swaps the rendered element for the Link (an `<a>`), whose ARIA
+  // role is "link", not "button". Match the exact pt-PT strings from
+  // messages/pt-PT.json (Nav.userManagement, Nav.people).
+  const firstLink = page.getByRole('link', { name: 'Utilizadores' });
   await expect(firstLink).toBeVisible();
 
   const cursor = await firstLink.evaluate((el) => window.getComputedStyle(el).cursor);
@@ -57,7 +54,8 @@ test('AC1: home page CTA button shows cursor: pointer', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Home page CTA button requires authentication to be visible in the (app)/ route group.');
 
   await page.goto('/');
-  const cta = page.getByRole('button', { name: /Ativar|Disabled/ });
+  // Home.cta in messages/pt-PT.json is "Ver escala".
+  const cta = page.getByRole('button', { name: 'Ver escala' });
   await expect(cta).toBeVisible();
 
   const cursor = await cta.evaluate((el) => window.getComputedStyle(el).cursor);
@@ -71,7 +69,8 @@ test('AC2: disabled button has pointer-events: none', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Home page CTA button requires authentication to be visible in the (app)/ route group.');
 
   await page.goto('/');
-  const cta = page.getByRole('button', { name: /Ativar|Disabled/ });
+  // Home.cta in messages/pt-PT.json is "Ver escala".
+  const cta = page.getByRole('button', { name: 'Ver escala' });
   await expect(cta).toBeVisible();
 
   const pointerEvents = await cta.evaluate((el) => window.getComputedStyle(el).pointerEvents);
