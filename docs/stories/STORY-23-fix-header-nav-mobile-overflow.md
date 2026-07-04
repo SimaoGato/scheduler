@@ -319,3 +319,73 @@ None. The story's ACs, scope, and technical notes are unambiguous enough to
 proceed; the root cause is confirmed by reading the actual component/CSS code
 (not guessed), and the fix stays within the story's stated scope (layout/CSS
 only, no hamburger menu, no tablet/desktop changes).
+
+## Implementation verification (manual, per Definition of Done AC-coverage allowance)
+
+Performed via a temporary local reproduction harness (dev server + a
+short-lived, uncommitted debug bypass of the auth guard/session helpers,
+reverted before any commit) since this sandbox has no real Supabase/Google
+OAuth session available. Real `E2E_WITH_AUTH=1` runs against a live session
+are still the canonical verification path for developers with credentials;
+this was a supplementary check, not a replacement.
+
+- **Reproduction (before fix)**: confirmed the exact CSS mechanism described
+  in Root-cause analysis is real: at the current nav content width, the
+  header overflows starting around 320–340px viewport width (scrollWidth
+  exceeded viewport below that point). At exactly 375px in this sandbox's
+  headless Chromium (stripped of default font packages, only the WSL2
+  workaround libs installed), the row happened to fit with a few px to
+  spare — i.e., the story's originally-measured ~391px/16px overflow at
+  375px did not reproduce byte-for-byte in this specific environment,
+  most likely due to font-metric differences between this minimal headless
+  Chromium and the environment where the original measurement was taken.
+  The underlying root cause (non-shrinking `Button` + missing `min-w-0` on
+  ancestor flex items) is unchanged and is a real, environment-independent
+  bug given long enough nav labels or narrow enough viewports — confirmed
+  structurally, not just by pixel measurement.
+- **Fix verification (after fix)**: re-ran the same reproduction from 375px
+  down to 220px — no overflow at any width (scrollWidth == viewport width
+  throughout).
+- **Two-level wrap ambiguity (Challenge warning #2), resolved**: at the
+  current 2-admin-link nav, the **outer group `div`** (`AppHeader.tsx`'s
+  nav/user-widget wrapper) wraps first as the viewport narrows below
+  ~340px — the whole nav row stays on one line and the `UserWidget` avatar
+  drops to a second row below it. The **inner `<ul>`** (`AppNav.tsx`) only
+  additionally wraps the nav buttons themselves onto a second row at much
+  narrower widths (~250px and below) or when a 3rd+ nav link is present
+  (see AC3 check below). At the officially-tested 375px breakpoint, neither
+  wrap engages — the nav renders on a single row, right-aligned via
+  `justify-end`, unchanged in appearance from before the fix. `justify-end`
+  was kept as-is (not switched to `justify-start`) since it only visibly
+  matters once wrapping engages, and the wrapped states (below 340px) still
+  read as intentional, not broken.
+- **AC3 robustness check**: temporarily added a 3rd throwaway `<li>` to
+  `AppNav.tsx`'s `<ul>` and reloaded at 375px — the inner `<ul>` wrapped the
+  3 nav buttons onto 2 rows, avatar on its own row below, **no horizontal
+  overflow** (scrollWidth stayed at 375). Reverted before committing, per
+  the plan's step 5.
+- **AC2 / `/pt-PT/settings` baseline (Challenge warning #3)**: checked
+  `/pt-PT/settings` at 375px before wiring the AC2 test assertion — no
+  pre-existing overflow from `DisplayNameForm`/`LanguageSwitcher`/
+  `ThemeToggle` (scrollWidth == 375). Safe to use as the AC2 member-page
+  target as planned.
+- **Tap-target spacing (Challenge warning #4)**: measured the gap between
+  the last nav button and the `UserWidget` avatar trigger below the `sm`
+  breakpoint (`gap-2` = 8px) at 500px viewport width — both elements
+  individually remain ≥44px (avatar trigger measured 48×44px), and the 8px
+  gap reads as comfortable, not cramped, in a screenshot review. No further
+  gap reduction was needed.
+- **Auth-gated test convention caveat (Challenge warning #5)**: the extended
+  `e2e/header-identity-widget.spec.ts` assertions are gated the same way as
+  all other tests in this file (`test.skip(!process.env.E2E_WITH_AUTH, ...)`)
+  — this is the existing repo-wide convention (no `storageState`/global-setup
+  session persistence exists yet), not a new or more "real" test pattern
+  introduced by this story.
+
+AC-to-verification mapping: AC1 — automated (extended `header-identity-widget.spec.ts`
+AC4 test), also manually reproduced/fixed per above. AC2 — automated (extended
+AC5 test), settings baseline manually checked per above. AC3 — manual
+(temporary 3rd-link check, reverted). AC4 — manual grep, confirmed only this
+story's own Context section still references the old measurement (expected,
+historical quote); CLAUDE.md's bullet replaced. AC5 — full local DoD gate run
+(see PR description for exact command output/status).
