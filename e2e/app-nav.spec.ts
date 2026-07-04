@@ -18,11 +18,12 @@
  *    3. Click the "Escala" wordmark in the header.
  *    4. Confirm the browser lands back on the home page (/pt-PT/).
  *
- *  AC3 — Admin nav shows exactly "Utilizadores" and "Equipa":
+ *  AC3 — Admin nav shows exactly three links: Utilizadores, Equipa, and
+ *  Funções (STORY-17 added the "Funções" roles-management link):
  *    1. Log in as an admin.
  *    2. Confirm the "Navegação principal" nav landmark is present and
- *       contains exactly two links: "Utilizadores" and "Equipa" — no
- *       "Início" link.
+ *       contains exactly three links: "Utilizadores", "Equipa", and
+ *       "Funções" — no "Início" link.
  *
  *  AC3 — Member nav renders no <nav> element:
  *    1. Log in as a member (role = 'member' in public.users).
@@ -60,18 +61,19 @@ test('AC2: clicking the Escala wordmark from a non-home route navigates to home'
   await expect(page).toHaveURL(/\/pt-PT\/?$/);
 });
 
-// AC3: Admin nav shows exactly "Utilizadores" and "Equipa" — "Início" is
-// gone.
-test('AC3: Admin nav shows exactly Utilizadores and Equipa', async ({ page }) => {
+// AC3: Admin nav shows exactly "Utilizadores", "Equipa", and "Funções"
+// (STORY-17) — "Início" is gone.
+test('AC3: Admin nav shows exactly Utilizadores, Equipa, and Funções', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'Navegação principal' });
   await expect(nav).toHaveCount(1);
 
   const links = nav.getByRole('link');
-  await expect(links).toHaveCount(2);
+  await expect(links).toHaveCount(3);
   await expect(nav.getByRole('link', { name: 'Utilizadores' })).toBeVisible();
   await expect(nav.getByRole('link', { name: 'Equipa' })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Funções' })).toBeVisible();
 });
 
 // AC3: Member nav renders no <nav> element at all — not an empty one.

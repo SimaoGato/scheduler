@@ -6,7 +6,8 @@
   "Nav": {
     "ariaLabel": "Navegação principal",
     "userManagement": "Utilizadores",
-    "people": "Equipa"
+    "people": "Equipa",
+    "roles": "Funções"
   },
   "UserManagement": {
     "title": "Gestão de utilizadores",
@@ -43,6 +44,24 @@
     "removeButton": "Remover",
     "emptyList": "Sem pessoas na equipa.",
     "errorNameRequired": "O nome é obrigatório.",
+    "errorGeneric": "Ocorreu um erro. Tente novamente.",
+    "actionLoading": "A processar..."
+  },
+  "RoleManagement": {
+    "title": "Funções",
+    "columnName": "Nome",
+    "columnSlots": "Vagas por domingo",
+    "addRoleLabel": "Adicionar função",
+    "namePlaceholder": "Nome",
+    "slotsPlaceholder": "Vagas",
+    "saveButton": "Guardar",
+    "cancelButton": "Cancelar",
+    "editButton": "Editar",
+    "removeButton": "Remover",
+    "emptyList": "Sem funções configuradas.",
+    "errorNameRequired": "O nome é obrigatório.",
+    "errorInvalidSlots": "O número de vagas deve ser um número inteiro positivo.",
+    "errorDuplicateName": "Já existe uma função com este nome.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "actionLoading": "A processar..."
   },
