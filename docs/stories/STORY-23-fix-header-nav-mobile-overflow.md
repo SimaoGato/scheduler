@@ -1,6 +1,7 @@
 # STORY-23: Fix header/nav horizontal overflow at 375px viewport
 Epic: EPIC-01
-Status: draft
+Status: done ✅
+PR: 28
 
 ## User story
 As a user on a phone, I want the app header and navigation to fit my screen
