@@ -1,6 +1,7 @@
 # CHORE-11: Introduce dark mode (class-based toggle over existing tokens)
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 27
 Priority: low
 
 ## Task statement

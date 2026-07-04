@@ -1,6 +1,7 @@
 # CHORE-06: Add US English locale and language switcher
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 27
 
 ## Task
 Add US English (`en`) as a second locale alongside pt-PT, and expose a

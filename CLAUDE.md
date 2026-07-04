@@ -44,6 +44,20 @@ is escalated to a human.
 
 When in doubt, classify as `standard`.
 
+## Multi-story delivery (combined PRs)
+
+When two stories are delivered together in a single PR and both touch a shared
+file (e.g. two settings-page features editing the same parent page, or two
+locale features editing the same translation JSON), assign an explicit
+landing order at the orchestrator level (e.g. "story A's implementer lands
+first, story B's implementer rebases onto it") rather than leaving ownership
+of the shared file ambiguous between two independently-refined plans. Add a
+shared re-check step to the second story's plan (e.g. re-verify translation
+key parity across both locale files) so integration gaps are caught before
+Review, not during it. See CHORE-06/CHORE-11 (PR #27) for a worked example:
+the settings page and `messages/*.json` were shared between both stories, and
+the Challenge stage flagged the ambiguity before Implementation started.
+
 ## Stack notes
 
 **Node.js and TypeScript:**
@@ -56,6 +70,8 @@ When in doubt, classify as `standard`.
 
 **Tailwind v4:**
 - `create-next-app` with Next.js 16 installs Tailwind v4, which uses `@import "tailwindcss"` instead of the old `@tailwind base/components/utilities` directives. Do not replace with the old syntax.
+- **Dark mode class-driven strategy** (CHORE-11): In `globals.css`, add `@custom-variant dark (&:is(.dark *));` to force all `dark:` utilities to be class-driven (`.dark` class on root element) rather than system media-query-driven. Verify via compiled CSS that no `@media (prefers-color-scheme: dark)` blocks remain and all `dark:` selectors are gated by `:is(.dark *)`. This resolves component-level inconsistencies (e.g., button `dark:` responding to OS media query while theme state is class-driven) project-wide.
+- **Compiled CSS output location under Turbopack**: `.next/static/chunks/*.css`, not `.next/static/css/*.css` (webpack-era assumption). Relevant for filesystem-based CSS assertion tests.
 - **Shrink-to-fit trailing column for right-aligned table columns** (STORY-14): When an HTML `<table>` uses the browser's default `auto` layout (no `table-layout: fixed`) and needs a trailing column (e.g. actions) right-aligned at the table's edge without magic pixel widths, apply `w-[1%] whitespace-nowrap text-right` to both the `<th>` and `<td>` of that column. The `width: 1%` tells auto-layout to give the column only the bare minimum width; `white-space: nowrap` prevents the content from wrapping or shrinking below its intrinsic width, forcing auto-layout to assign remaining space to unconstrained (wider) columns. The result: the trailing column always stays shrink-to-fit and right-aligned at the table's trailing edge, regardless of translation string length or viewport width. This is more robust for i18n'd tables than hardcoded pixel widths with `table-layout: fixed`. Example: `<th className="w-[1%] whitespace-nowrap px-4 py-3 text-right font-medium">Actions</th>`.
 
 **HTML tables with inline-edit actions (STORY-14):**
@@ -85,7 +101,7 @@ When in doubt, classify as `standard`.
 - **AO90 spelling for pt-PT**: Modern Portuguese (post-2012 Acordo Ortográfico) uses "ativa" (not "activa"), "ato" (not "acto"), "fato" (not "facto"). All new pt-PT strings must follow AO90.
 
 **Playwright:**
-- **WSL2 gotcha**: Chromium headless requires `libnspr4.so` and other system libs that cannot be installed without root. In CI, use `npx playwright install --with-deps chromium`. Locally, developers can use `npx playwright install chromium` and accept that some tests may fail if libs are missing.
+- **WSL2 Chromium libraries workaround**: Chromium headless requires `libnspr4.so` and other system libs. Contrary to earlier documentation stating "some tests may fail if libs are missing," there is a **non-root workaround**: run `apt-get download libnspr4 libnss3 libasound2t64` (download only, no installation), extract the `.deb` files with `dpkg -x <file.deb> <extract_dir>` into a local directory, then set `export LD_LIBRARY_PATH=/path/to/extracted/libs` before running Playwright. This allows full real-browser e2e runs in sandboxed WSL2 environments without root. In CI, use `npx playwright install --with-deps chromium`. Exact package names may vary per Ubuntu/Debian version — query `apt-cache search libnspr4` if names differ.
 - **Config**: Always set `retries: process.env.CI ? 2 : 0` and `workers: process.env.CI ? 1 : undefined` in `playwright.config.ts`.
 - **boundingBox() guard**: Always call `await expect(locator).toBeVisible()` before `boundingBox()`. The `boundingBox()` method is not auto-retried; calling it without a visibility wait produces confusing null failures on slow CI runners.
 - **Tap targets (WCAG 44px minimum)**: Use `min-h-[44px]` (not `h-11`) for interactive elements. `h-11` (2.75rem) computes to exactly 44px only at the browser's default 16px/rem. `min-h-[44px]` is a hard pixel floor that holds regardless of font scale and makes tests flake-proof. When an interactive element contains a decorative icon or avatar, apply `min-h-[44px]` to the outer interactive element (e.g., `<summary>` or button), not to the inner visual component — the inner component can be smaller (e.g. `h-8 w-8` for an avatar) for compactness while the outer element provides the full tap target.
