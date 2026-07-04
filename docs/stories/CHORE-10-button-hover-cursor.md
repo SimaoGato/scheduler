@@ -1,6 +1,7 @@
 # CHORE-10: Add pointer cursor to the shared Button component on hover
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 30
 
 ## Task statement
 As a user, I want buttons across the app (starting with "Continuar com
