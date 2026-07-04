@@ -30,16 +30,21 @@
  *    3. Confirm data-testid="user-role-label" shows the role
  *       ("Administrador" or "Membro").
  *
- *  AC4 — Admin, 375 px, no overflow:
+ *  AC4 — Admin, 375 px, no overflow (STORY-23 extends this to the admin nav's
+ *  widest page, `/pt-PT/admin/people`, not just `/`):
  *    1. Log in as an admin (2 nav links visible: Utilizadores, Equipa; see
  *       STORY-16).
  *    2. Set browser to 375 px wide (DevTools device mode).
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
  *       (The avatar-only trigger on narrow viewports — name hidden below sm
- *       breakpoint — keeps the header compact enough to fit.)
+ *       breakpoint — keeps the header compact enough to fit. As of STORY-23,
+ *       `AppNav.tsx`'s `<ul>` also wraps admin nav links onto additional
+ *       rows via `flex-wrap` + `min-w-0` when they don't fit on one line —
+ *       see CLAUDE.md's Playwright section for the resolved pattern.)
  *
- *  AC5 — Member, 375 px, no overflow:
+ *  AC5 — Member, 375 px, no overflow (STORY-23 extends this to
+ *  `/pt-PT/settings`, a member-accessible page beyond `/`):
  *    1. Log in as a member (0 nav links visible; no <nav> element rendered
  *       for Members, see STORY-16).
  *    2. Set browser to 375 px wide.
@@ -84,21 +89,34 @@ test('AC3: display name and role label are visible inside the identity widget', 
 });
 
 // AC4: Admin header renders without horizontal overflow at 375 px viewport width.
+// STORY-23/AC1: also checks /admin/people, the admin nav's widest page
+// (Utilizadores + Equipa links), not just the home page.
 test('AC4: admin header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   // TODO when auth fixtures added: log in as admin (2 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
+
   await page.goto('/');
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(375);
+  const homeScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(homeScrollWidth).toBeLessThanOrEqual(375);
+
+  await page.goto('/admin/people');
+  const peopleScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(peopleScrollWidth).toBeLessThanOrEqual(375);
 });
 
 // AC5: Member header renders without horizontal overflow at 375 px viewport width.
+// STORY-23/AC2: also checks /settings, a member-accessible page beyond home.
 test('AC5: member header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
   // TODO when auth fixtures added: log in as member (0 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
+
   await page.goto('/');
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(375);
+  const homeScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(homeScrollWidth).toBeLessThanOrEqual(375);
+
+  await page.goto('/settings');
+  const settingsScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(settingsScrollWidth).toBeLessThanOrEqual(375);
 });
