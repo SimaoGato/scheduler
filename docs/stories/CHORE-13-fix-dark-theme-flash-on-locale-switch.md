@@ -1,6 +1,7 @@
 # CHORE-13: Fix white flash when switching language in dark mode
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 29
 Priority: low
 
 ## Task statement
