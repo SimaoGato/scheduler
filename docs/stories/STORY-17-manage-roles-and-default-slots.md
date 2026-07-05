@@ -1,6 +1,7 @@
 # STORY-17: Manage roles (create / rename / remove) with default slots per Sunday
 Epic: EPIC-02
-Status: in progress 🔨
+Status: done ✅
+PR: 31
 
 ## User story
 As an Admin, I want to create, rename, and remove configurable roles and set
