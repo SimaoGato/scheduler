@@ -45,7 +45,8 @@
     "emptyList": "No people on the team.",
     "errorNameRequired": "Name is required.",
     "errorGeneric": "Something went wrong. Please try again.",
-    "actionLoading": "Processing..."
+    "actionLoading": "Processing...",
+    "skillsButton": "Skills"
   },
   "RoleManagement": {
     "title": "Roles",
@@ -102,6 +103,20 @@
     "skipButton": "None of these are me",
     "errorAlreadyClaimed": "That person has already been linked to another account. Choose another name or skip this step.",
     "errorAlreadyLinked": "Your account is already linked to another person. Refresh the page and try again.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
+  "SkillManagement": {
+    "title": "{name}'s skills",
+    "backToTeam": "Back to team",
+    "level1": "Beginner",
+    "level2": "Intermediate",
+    "level3": "Expert",
+    "noLevelOption": "No level",
+    "levelOptionAria": "{role} — level {level}",
+    "noLevelOptionAria": "{role} — no level",
+    "savingIndicator": "Saving...",
+    "emptyRoles": "No roles configured yet. Create a role first.",
+    "errorInvalidLevel": "Invalid level.",
     "errorGeneric": "Something went wrong. Please try again."
   }
 }

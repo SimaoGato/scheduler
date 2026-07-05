@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import type { PersonRow } from '@/types/people'
 
 interface Props {
@@ -229,6 +230,13 @@ export default function PeopleTable({ initialPeople }: Props) {
                         </form>
                       ) : (
                         <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/admin/people/${person.id}/skills`}
+                            data-testid={`pm-skills-${person.id}`}
+                            className="flex min-h-[44px] items-center rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {t('skillsButton')}
+                          </Link>
                           <button
                             data-testid={`pm-edit-${person.id}`}
                             onClick={() => startEdit(person)}

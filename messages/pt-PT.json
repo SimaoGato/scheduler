@@ -45,7 +45,8 @@
     "emptyList": "Sem pessoas na equipa.",
     "errorNameRequired": "O nome é obrigatório.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
-    "actionLoading": "A processar..."
+    "actionLoading": "A processar...",
+    "skillsButton": "Competências"
   },
   "RoleManagement": {
     "title": "Funções",
@@ -103,5 +104,19 @@
     "errorAlreadyClaimed": "Essa pessoa já foi associada a outra conta. Escolhe outro nome ou salta este passo.",
     "errorAlreadyLinked": "A tua conta já está associada a outra pessoa. Atualiza a página e tenta novamente.",
     "errorGeneric": "Ocorreu um erro. Tenta novamente."
+  },
+  "SkillManagement": {
+    "title": "Competências de {name}",
+    "backToTeam": "Voltar à equipa",
+    "level1": "Iniciante",
+    "level2": "Intermédio",
+    "level3": "Especialista",
+    "noLevelOption": "Sem nível",
+    "levelOptionAria": "{role} — nível {level}",
+    "noLevelOptionAria": "{role} — sem nível",
+    "savingIndicator": "A guardar...",
+    "emptyRoles": "Não existem funções configuradas. Crie uma função primeiro.",
+    "errorInvalidLevel": "Nível inválido.",
+    "errorGeneric": "Ocorreu um erro. Tente novamente."
   }
 }
