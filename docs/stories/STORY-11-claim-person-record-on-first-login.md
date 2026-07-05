@@ -1,6 +1,7 @@
 # STORY-11: Claim existing person record on first login
 Epic: EPIC-02
-Status: draft
+Status: done ✅
+PR: 33
 
 ## User story
 As a team member logging in with Google for the first time, I want to be able
