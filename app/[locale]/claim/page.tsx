@@ -30,11 +30,16 @@ export default async function ClaimPage() {
   const serviceClient = createServiceClient();
 
   // AC5: a user who already has a linked person record never sees /claim.
+  // This must NOT filter on is_active — the DB unique index (one
+  // linked_user_id per user, migration 20260705000001) is keyed on any
+  // non-null linked_user_id regardless of is_active, so this check must
+  // match that invariant exactly. Filtering by is_active here would let a
+  // user whose linked person was later deactivated see /claim again, only
+  // to hit a confusing 409 already_linked when trying to claim someone else.
   const { data: existingLink, error: existingLinkError } = await serviceClient
     .from('people')
     .select('id')
     .eq('linked_user_id', user.id)
-    .eq('is_active', true)
     .maybeSingle();
 
   if (existingLinkError) {
