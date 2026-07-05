@@ -93,11 +93,6 @@ test('unauthenticated GET /pt-PT/claim redirects to /pt-PT/login', async ({ page
   await expect(page).toHaveURL(/\/pt-PT\/login/);
 });
 
-let testPersonName: string;
-test.beforeEach(({}, testInfo) => {
-  testPersonName = `Claim Test Person (w${testInfo.workerIndex})`;
-});
-
 // AC7: only unlinked + active people render in the claim list.
 test('AC7: claim page lists only unlinked, active people', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, '/claim requires authentication; see manual steps in file header.');
@@ -106,8 +101,10 @@ test('AC7: claim page lists only unlinked, active people', async ({ page }) => {
   await expect(list).toBeVisible();
   // Manual verification for the exact seeded fixtures (depends on the test
   // project's current public.people state); this only asserts the list
-  // renders as a proper radiogroup with labeled options.
-  await expect(page.getByRole('radiogroup')).toBeVisible();
+  // renders as a proper grouped set of labeled radio options (<fieldset>
+  // exposes an accessible "group" role; each option is a "radio").
+  await expect(page.getByRole('group')).toBeVisible();
+  await expect(page.getByRole('radio').first()).toBeVisible();
 });
 
 // AC2: select + confirm links the record, redirects home.

@@ -93,5 +93,15 @@
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark"
+  },
+  "Claim": {
+    "title": "Are you one of these people?",
+    "instructions": "Select your name from the list, or choose \"None of these are me\" to continue without linking.",
+    "confirmButton": "Confirm",
+    "confirming": "Confirming...",
+    "skipButton": "None of these are me",
+    "errorAlreadyClaimed": "That person has already been linked to another account. Choose another name or skip this step.",
+    "errorAlreadyLinked": "Your account is already linked to another person. Refresh the page and try again.",
+    "errorGeneric": "Something went wrong. Please try again."
   }
 }
