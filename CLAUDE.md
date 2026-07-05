@@ -14,7 +14,10 @@ A story is done when ALL of the following are true:
    or a documented manual verification step in the story file.
 6. **No hardcoded UI strings** — all user-facing text comes from
    `messages/pt-PT.json`; no raw Portuguese (or any language) string literals
-   in component JSX.
+   in component JSX. New keys must be added to **every** locale file in
+   `messages/` (`pt-PT.json` AND `en.json`) — key parity is enforced by
+   `e2e/i18n-key-parity.spec.ts` (added after BUGFIX-01: STORY-17 shipped
+   keys only to pt-PT.json and `/en/*` rendered raw key names in production).
 7. **No regressions** — previously passing tests still pass.
 
 ## Quality gates (CI enforces these)
