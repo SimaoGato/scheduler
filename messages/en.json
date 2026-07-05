@@ -96,7 +96,7 @@
   },
   "Claim": {
     "title": "Are you one of these people?",
-    "instructions": "Select your name from the list, or choose \"None of these are me\" to continue without linking.",
+    "instructions": "Select your name from the list, or choose \"{skipButton}\" to continue without linking.",
     "confirmButton": "Confirm",
     "confirming": "Confirming...",
     "skipButton": "None of these are me",
