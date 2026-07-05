@@ -1,6 +1,7 @@
 # STORY-18: Assign per-role skill levels (1–3) to a person
 Epic: EPIC-02
-Status: draft
+Status: done ✅
+PR: #34
 
 ## User story
 As an Admin, I want to record each person's skill level (1 Beginner /
