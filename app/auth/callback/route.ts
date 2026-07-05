@@ -23,8 +23,17 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *
  * Null count throws rather than falling back, preventing an incorrect admin
  * promotion when the count query itself fails.
+ *
+ * Returns `{ isNewUser: boolean }` (STORY-11): `false` for the existing-row
+ * branch, `true` after a successful INSERT in the new-row branch. The
+ * caller uses this to decide whether to check for unlinked person records
+ * and route to `/claim` — a returning user is never routed there (AC5),
+ * regardless of unlinked-people state.
  */
-async function provisionUser(serviceClient: SupabaseClient, user: User): Promise<void> {
+async function provisionUser(
+  serviceClient: SupabaseClient,
+  user: User
+): Promise<{ isNewUser: boolean }> {
   if (!user.email) {
     throw new Error(`[provisionUser] User ${user.id} has no email; cannot provision record.`);
   }
@@ -67,7 +76,7 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
     if (updateError) {
       throw updateError;
     }
-    return;
+    return { isNewUser: false };
   }
 
   // 3. New user — determine role via bootstrap guard.
@@ -96,6 +105,8 @@ async function provisionUser(serviceClient: SupabaseClient, user: User): Promise
   if (insertError) {
     throw insertError;
   }
+
+  return { isNewUser: true };
 }
 
 // STORY-15: every response this route returns represents a successful (or
@@ -143,17 +154,71 @@ export async function GET(request: NextRequest) {
           return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
         }
 
-        // Provision the user record; errors are non-fatal (user still reaches home).
+        // STORY-11: serviceClient is hoisted (out of the provisionUser
+        // try/catch below) so it can be reused by the unlinked-people check
+        // after provisioning completes, and so `isNewUser` stays visible
+        // past that try/catch's scope.
+        //
+        // createServiceClient() is a synchronous, non-throwing factory call
+        // per lib/supabase/service.ts under normal conditions, but it is
+        // still wrapped in its own try/catch here: previously this call
+        // lived *inside* provisionUser's try/catch (see below), so a
+        // missing/malformed Supabase env var degraded to the home redirect.
+        // Hoisting it out must not silently change that behavior — without
+        // this guard, such an error would propagate to the outer handler
+        // try/catch and bounce the user to /login?error=unexpected instead.
+        let serviceClient: SupabaseClient | null = null;
         try {
-          const serviceClient = createServiceClient();
-          await provisionUser(serviceClient, user);
-        } catch (provisionErr) {
-          // NOTE 1: log the error so it surfaces in server logs / Vercel logs.
-          console.error('[auth/callback] provisionUser failed:', provisionErr);
-          // Do NOT block the redirect — degraded mode is better than a broken login.
+          serviceClient = createServiceClient();
+        } catch (serviceClientErr) {
+          console.error('[auth/callback] createServiceClient failed:', serviceClientErr);
         }
 
-        return clearSignoutMarker(NextResponse.redirect(new URL(`/${defaultLocale}/`, request.url)));
+        let isNewUser = false;
+
+        if (serviceClient) {
+          // Provision the user record; errors are non-fatal (user still reaches home).
+          try {
+            isNewUser = (await provisionUser(serviceClient, user)).isNewUser;
+          } catch (provisionErr) {
+            // NOTE 1: log the error so it surfaces in server logs / Vercel logs.
+            console.error('[auth/callback] provisionUser failed:', provisionErr);
+            // Do NOT block the redirect — degraded mode is better than a broken login.
+          }
+        }
+
+        // STORY-11 (AC1/AC4/AC5): only a brand-new user (never a returning
+        // one, regardless of unlinked-people state — AC5) is offered the
+        // claim page, and only when unlinked+active person records exist
+        // (AC4). This check runs in its own try/catch, after the
+        // provisioning try/catch above (not inside it), and never blocks
+        // login: any DB error here degrades to "no claim page, straight
+        // home", the same non-blocking principle already used for
+        // provisionUser failures.
+        let redirectTarget = `/${defaultLocale}/`;
+        if (isNewUser && serviceClient) {
+          try {
+            const { data, error } = await serviceClient
+              .from('people')
+              .select('id')
+              .is('linked_user_id', null)
+              .eq('is_active', true)
+              .limit(1);
+
+            if (error) {
+              console.error('[auth/callback] unlinked-people check DB error:', error);
+            } else if (data && data.length > 0) {
+              redirectTarget = `/${defaultLocale}/claim`;
+            }
+          } catch (unlinkedCheckErr) {
+            console.error('[auth/callback] unlinked-people check unexpected error:', unlinkedCheckErr);
+          }
+        }
+
+        // Single return path for both the home and claim redirects —
+        // every response this handler returns must clear the sign-out
+        // marker (see clearSignoutMarker's doc comment above).
+        return clearSignoutMarker(NextResponse.redirect(new URL(redirectTarget, request.url)));
       }
 
       return clearSignoutMarker(
