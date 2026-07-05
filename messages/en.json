@@ -6,7 +6,8 @@
   "Nav": {
     "ariaLabel": "Main navigation",
     "userManagement": "Users",
-    "people": "Team"
+    "people": "Team",
+    "roles": "Roles"
   },
   "UserManagement": {
     "title": "User management",
@@ -43,6 +44,26 @@
     "removeButton": "Remove",
     "emptyList": "No people on the team.",
     "errorNameRequired": "Name is required.",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "actionLoading": "Processing..."
+  },
+  "RoleManagement": {
+    "title": "Roles",
+    "columnName": "Name",
+    "columnSlots": "Slots per Sunday",
+    "addRoleLabel": "Add role",
+    "namePlaceholder": "Name",
+    "slotsPlaceholder": "Slots",
+    "addNameLabel": "New role name",
+    "addSlotsLabel": "New role slots",
+    "saveButton": "Save",
+    "cancelButton": "Cancel",
+    "editButton": "Edit",
+    "removeButton": "Remove",
+    "emptyList": "No roles configured.",
+    "errorNameRequired": "Name is required.",
+    "errorInvalidSlots": "The number of slots must be a positive whole number.",
+    "errorDuplicateName": "A role with this name already exists.",
     "errorGeneric": "Something went wrong. Please try again.",
     "actionLoading": "Processing..."
   },
