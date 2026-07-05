@@ -1,29 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth/guard'
 import { createServiceClient } from '@/lib/supabase/service'
+import { parseDefaultSlots } from '@/lib/validation/roles'
 import type { RoleRow } from '@/types/roles'
-
-/**
- * parseDefaultSlots — Returns the validated slot count, or null if invalid.
- *
- * `undefined`/`null` (key omitted from the request body) is NOT invalid — it
- * means "not specified" and defaults to 1 (AC2). An explicit blank string,
- * zero, negative, decimal, or non-numeric value IS invalid (AC3) and must
- * return null so the caller can 400.
- */
-export function parseDefaultSlots(raw: unknown): number | null {
-  if (raw === undefined || raw === null) return 1 // AC2: not specified → default 1
-  if (typeof raw === 'number') {
-    return Number.isInteger(raw) && raw >= 1 ? raw : null
-  }
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim()
-    if (trimmed === '' || !/^\d+$/.test(trimmed)) return null // blank/non-numeric/negative/decimal
-    const n = Number(trimmed)
-    return Number.isInteger(n) && n >= 1 ? n : null
-  }
-  return null
-}
 
 /**
  * GET /api/admin/roles — Return all active roles, ordered by name.

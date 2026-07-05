@@ -185,18 +185,19 @@ export default function RoleTable({ initialRoles }: Props) {
           value={addName}
           onChange={(e) => setAddName(e.target.value)}
           placeholder={t('namePlaceholder')}
-          aria-label={t('namePlaceholder')}
-          className="flex-1 rounded-md border px-3 py-2 text-sm"
+          aria-label={t('addNameLabel')}
+          className="min-h-[44px] flex-1 rounded-md border px-3 py-2 text-sm"
           disabled={loadingId === 'add'}
         />
         <input
           data-testid="rm-add-slots-input"
           type="text"
+          inputMode="numeric"
           value={addSlots}
           onChange={(e) => setAddSlots(e.target.value)}
           placeholder={t('slotsPlaceholder')}
-          aria-label={t('slotsPlaceholder')}
-          className="w-24 rounded-md border px-3 py-2 text-sm"
+          aria-label={t('addSlotsLabel')}
+          className="min-h-[44px] w-24 rounded-md border px-3 py-2 text-sm"
           disabled={loadingId === 'add'}
         />
         <button
@@ -248,7 +249,7 @@ export default function RoleTable({ initialRoles }: Props) {
                           onChange={(e) => setEditName(e.target.value)}
                           placeholder={t('namePlaceholder')}
                           aria-label={t('namePlaceholder')}
-                          className="w-full rounded-md border px-3 py-1 text-sm"
+                          className="min-h-[44px] w-full rounded-md border px-3 py-1 text-sm"
                           disabled={isLoading}
                           autoFocus
                         />
@@ -260,12 +261,13 @@ export default function RoleTable({ initialRoles }: Props) {
                       {isEditing ? (
                         <input
                           type="text"
+                          inputMode="numeric"
                           form={editFormId}
                           value={editSlots}
                           onChange={(e) => setEditSlots(e.target.value)}
                           placeholder={t('slotsPlaceholder')}
                           aria-label={t('slotsPlaceholder')}
-                          className="w-24 rounded-md border px-3 py-1 text-sm"
+                          className="min-h-[44px] w-24 rounded-md border px-3 py-1 text-sm"
                           disabled={isLoading}
                         />
                       ) : (
