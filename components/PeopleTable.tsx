@@ -229,7 +229,11 @@ export default function PeopleTable({ initialPeople }: Props) {
                           </button>
                         </form>
                       ) : (
-                        <div className="flex justify-end gap-2">
+                        // flex-wrap so the three actions (Competências/Editar/
+                        // Remover) wrap onto a new row at narrow viewports
+                        // instead of squeezing below the 44px tap-target
+                        // minimum (same class of fix as STORY-23's nav wrap).
+                        <div className="flex flex-wrap justify-end gap-2">
                           <Link
                             href={`/admin/people/${person.id}/skills`}
                             data-testid={`pm-skills-${person.id}`}

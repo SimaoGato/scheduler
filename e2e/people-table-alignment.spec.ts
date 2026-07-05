@@ -130,15 +130,26 @@ test.describe('STORY-14: people table actions-column alignment', () => {
     await ensureOnePerson(page, testPersonName);
 
     const row = page.locator('tr', { hasText: testPersonName });
+    const skillsButton = row.locator('[data-testid^="pm-skills-"]');
     const editButton = row.locator('[data-testid^="pm-edit-"]');
     const removeButton = row.locator('[data-testid^="pm-remove-"]');
+    await expect(skillsButton).toBeVisible();
     await expect(editButton).toBeVisible();
     await expect(removeButton).toBeVisible();
 
+    const skillsBox = await skillsButton.boundingBox();
     const editBox = await editButton.boundingBox();
     const removeBox = await removeButton.boundingBox();
+    // STORY-18 added a third action (Competências) to this row. Width is
+    // asserted here (not just height) because three actions in a
+    // `flex justify-end` row risk shrinking below the 44px tap-target
+    // minimum at this viewport if they don't wrap — see STORY-18 finding.
+    expect(skillsBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(skillsBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
     expect(editBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(editBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
     expect(removeBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(removeBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
 
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollWidth).toBeLessThanOrEqual(375);
