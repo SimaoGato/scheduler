@@ -2,6 +2,7 @@
 Epic: EPIC-02
 Status: done ✅
 PR: 31
+Bug fix: fix/en-locale-i18n-key-parity — STORY-17 keys were added to messages/pt-PT.json only; /en/* rendered raw key names (PR #32)
 
 ## User story
 As an Admin, I want to create, rename, and remove configurable roles and set
