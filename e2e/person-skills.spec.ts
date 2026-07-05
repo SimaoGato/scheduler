@@ -22,6 +22,10 @@
  *   AC9 — mobile (375px): no horizontal scroll, 44x44px tap targets, one
  *         tap per level change (no separate Save button).
  *
+ * Also covers a PR #34 review regression: the cross-role race in
+ * `savingRoleId` (single scalar → per-role Set), see the
+ * "cross-role race" test below.
+ *
  * CI-safe tests (no real Supabase session) run unconditionally below. The
  * E2E_WITH_AUTH-gated tests further down require .env.local + a real
  * Supabase admin session and are skipped in CI (see auth-gated test
@@ -200,6 +204,53 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
     // Extracted from messages/pt-PT.json's SkillManagement.level2 at
     // test-write time (per CLAUDE.md's button-text-extraction discipline).
     await expect(page.locator('fieldset', { hasText: roleName })).toContainText('Intermédio');
+  });
+
+  test('cross-role race: saving role A stays disabled while role B save starts and resolves independently', async ({ page }, testInfo) => {
+    // Regression test for the WARNING found in PR #34 review: savingRoleId
+    // was a single scalar, so starting a save on role B while role A's
+    // request was still in-flight silently un-gated role A's disabled
+    // state, and whichever role's request resolved last unconditionally
+    // cleared the shared state for both. Fixed by tracking in-flight saves
+    // per-role (a Set of role_ids) instead of one shared scalar.
+    const roleBName = `STORY-18 QA Role B (w${testInfo.workerIndex})`;
+    const roleB = await createRole(page, roleBName);
+
+    try {
+      // Delay role A's PUT response so we can observe the in-flight window.
+      await page.route(`**/api/admin/people/${personId}/skills/${roleId}`, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await route.continue();
+      });
+
+      await page.goto(`/pt-PT/admin/people/${personId}/skills`);
+
+      const roleAOption = page.getByTestId(`skills-role-${roleId}-1`);
+      const roleBOption = page.getByTestId(`skills-role-${roleB.id}-2`);
+      await expect(roleAOption).toBeVisible();
+      await expect(roleBOption).toBeVisible();
+
+      // Start role A's save (delayed) — its input becomes disabled while
+      // in-flight.
+      await roleAOption.click();
+      await expect(roleAOption.locator('input')).toBeDisabled();
+
+      // Start role B's save while role A is still in-flight. With the fix,
+      // this must NOT clear role A's disabled state.
+      await roleBOption.click();
+      await expect(roleAOption.locator('input')).toBeDisabled();
+
+      // Once both requests resolve, each role reflects its own selection
+      // and neither is left permanently disabled.
+      await expect(roleAOption.locator('input')).toBeChecked({ timeout: 5000 });
+      await expect(roleAOption.locator('input')).toBeEnabled();
+      await expect(roleBOption.locator('input')).toBeChecked();
+      await expect(roleBOption.locator('input')).toBeEnabled();
+    } finally {
+      await page.unroute(`**/api/admin/people/${personId}/skills/${roleId}`);
+      await page.request.delete(`/api/admin/people/${personId}/skills/${roleB.id}`);
+      await page.request.delete(`/api/admin/roles/${roleB.id}`);
+    }
   });
 
   test('AC9: mobile viewport (375px) — no horizontal scroll, 44x44px tap targets, single-click assign', async ({ page }) => {

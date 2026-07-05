@@ -36,7 +36,11 @@ function skillsToState(skills: PersonSkill[]): SkillsState {
  * Auto-save per tap (no separate Save button, decision 2): selecting a level
  * fires PUT immediately; selecting "Sem nível" fires DELETE immediately.
  * Double-tap/race guard: every radio input for a given role is disabled
- * while that role's own request is in-flight (`savingRoleId === role.id`).
+ * while that role's own request is in-flight (`savingRoleIds.has(role.id)`).
+ * `savingRoleIds` is a Set (not a single scalar) so that concurrent saves on
+ * different roles are tracked independently — starting a save on role B
+ * while role A is still in-flight must not un-gate role A's disabled state,
+ * and whichever role's request resolves first must only clear its own entry.
  *
  * A 404 from the DELETE call is treated as a benign no-op (state already
  * reflects "no level"), not an error — a raced double-tap unassign lands on
@@ -45,7 +49,7 @@ function skillsToState(skills: PersonSkill[]): SkillsState {
 export default function PersonSkillsEditor({ personId, personName, roles, initialSkills }: Props) {
   const t = useTranslations('SkillManagement')
   const [skills, setSkills] = useState<SkillsState>(() => skillsToState(initialSkills))
-  const [savingRoleId, setSavingRoleId] = useState<string | null>(null)
+  const [savingRoleIds, setSavingRoleIds] = useState<Set<string>>(() => new Set())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   function mapErrorCode(code: unknown): string {
@@ -55,7 +59,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
 
   async function handleSelect(roleId: string, level: 1 | 2 | 3 | null) {
     const previousLevel = skills[roleId]
-    setSavingRoleId(roleId)
+    setSavingRoleIds((prev) => new Set(prev).add(roleId))
     setErrorMessage(null)
     // Optimistic UI update.
     setSkills((prev) => ({ ...prev, [roleId]: level ?? undefined }))
@@ -85,7 +89,11 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
       setSkills((prev) => ({ ...prev, [roleId]: previousLevel }))
       setErrorMessage(t('errorGeneric'))
     } finally {
-      setSavingRoleId(null)
+      setSavingRoleIds((prev) => {
+        const next = new Set(prev)
+        next.delete(roleId)
+        return next
+      })
     }
   }
 
@@ -108,7 +116,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
       ) : (
         <div className="flex flex-col gap-6">
           {roles.map((role) => {
-            const isSaving = savingRoleId === role.id
+            const isSaving = savingRoleIds.has(role.id)
             const currentLevel = skills[role.id]
             return (
               <fieldset key={role.id} className="rounded-md border p-4">
@@ -144,7 +152,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
                         aria-label={t('levelOptionAria', { role: role.name, level })}
                         className="sr-only"
                       />
-                      {level}
+                      {t(`level${level}`)}
                     </label>
                   ))}
                   <span aria-live="polite" className="text-sm text-muted-foreground">
