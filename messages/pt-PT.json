@@ -54,6 +54,8 @@
     "addRoleLabel": "Adicionar função",
     "namePlaceholder": "Nome",
     "slotsPlaceholder": "Vagas",
+    "addNameLabel": "Nome da nova função",
+    "addSlotsLabel": "Vagas da nova função",
     "saveButton": "Guardar",
     "cancelButton": "Cancelar",
     "editButton": "Editar",

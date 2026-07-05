@@ -32,8 +32,8 @@
  *
  *  AC4 — Admin, 375 px, no overflow (STORY-23 extends this to the admin nav's
  *  widest page, `/pt-PT/admin/people`, not just `/`):
- *    1. Log in as an admin (2 nav links visible: Utilizadores, Equipa; see
- *       STORY-16).
+ *    1. Log in as an admin (3 nav links visible: Utilizadores, Equipa,
+ *       Funções; see STORY-16, extended by STORY-17).
  *    2. Set browser to 375 px wide (DevTools device mode).
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
@@ -90,10 +90,10 @@ test('AC3: display name and role label are visible inside the identity widget', 
 
 // AC4: Admin header renders without horizontal overflow at 375 px viewport width.
 // STORY-23/AC1: also checks /admin/people, the admin nav's widest page
-// (Utilizadores + Equipa links), not just the home page.
+// (Utilizadores + Equipa + Funções links), not just the home page.
 test('AC4: admin header has no horizontal overflow at 375 px viewport width', async ({ page }) => {
   test.skip(!process.env.E2E_WITH_AUTH, 'AppHeader requires authentication; see manual steps in file header.');
-  // TODO when auth fixtures added: log in as admin (2 nav links) before checking overflow
+  // TODO when auth fixtures added: log in as admin (3 nav links) before checking overflow
   await page.setViewportSize({ width: 375, height: 812 });
 
   await page.goto('/');

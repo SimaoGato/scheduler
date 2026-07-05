@@ -20,8 +20,7 @@ CREATE TABLE IF NOT EXISTS public.roles (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-DROP INDEX IF EXISTS roles_active_name_lower_idx;
-CREATE UNIQUE INDEX roles_active_name_lower_idx
+CREATE UNIQUE INDEX IF NOT EXISTS roles_active_name_lower_idx
   ON public.roles (lower(name))
   WHERE is_active;
 

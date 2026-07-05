@@ -142,6 +142,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
         data: { name: roleName, default_slots: badValue },
       });
       expect(response.status()).toBe(400);
+      expect((await response.json()).error).toBe('invalid_slots');
     }
 
     // Blank string case, sent as JSON string ''
@@ -149,6 +150,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
       data: { name: roleName, default_slots: '' },
     });
     expect(blankResponse.status()).toBe(400);
+    expect((await blankResponse.json()).error).toBe('invalid_slots');
 
     // No-write assertion: re-GET and confirm the role list is unchanged.
     const afterGet = await page.request.get('/api/admin/roles');
@@ -177,6 +179,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
         data: { name: roleName, default_slots: badValue },
       });
       expect(response.status()).toBe(400);
+      expect((await response.json()).error).toBe('invalid_slots');
     }
 
     // No-write assertion: re-GET and confirm the row is unchanged.
