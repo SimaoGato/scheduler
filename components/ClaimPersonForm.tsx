@@ -13,6 +13,10 @@ interface Props {
   people: PersonOption[];
 }
 
+// Only the 409 conflict codes returned by POST /api/people/claim are mapped
+// here (already_claimed, already_linked). Any other code (invalid_id,
+// invalid_json, internal, or an unrecognized future code) intentionally
+// falls through to the generic errorGeneric message via mapErrorCode below.
 const ERROR_CODE_KEYS: Record<string, string> = {
   already_claimed: 'errorAlreadyClaimed',
   already_linked: 'errorAlreadyLinked',
@@ -90,7 +94,9 @@ export default function ClaimPersonForm({ people }: Props) {
       )}
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium">{t('instructions')}</legend>
+        <legend className="mb-2 text-sm font-medium">
+          {t('instructions', { skipButton: t('skipButton') })}
+        </legend>
         <div data-testid="claim-person-list" className="flex flex-col gap-2">
           {people.map((person) => (
             <label

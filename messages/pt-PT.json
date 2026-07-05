@@ -96,7 +96,7 @@
   },
   "Claim": {
     "title": "És alguma destas pessoas?",
-    "instructions": "Seleciona o teu nome na lista ou escolhe \"Não é nenhuma destas\" para continuar sem associar.",
+    "instructions": "Seleciona o teu nome na lista ou escolhe \"{skipButton}\" para continuar sem associar.",
     "confirmButton": "Confirmar",
     "confirming": "A confirmar...",
     "skipButton": "Não é nenhuma destas",

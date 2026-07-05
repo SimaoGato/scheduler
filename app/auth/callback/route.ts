@@ -113,7 +113,7 @@ async function provisionUser(
 // at least resolved) pass through the login flow, so the short-lived
 // sign-out marker cookie (see proxy.ts, components/UserWidgetMenu.tsx) must
 // never be allowed to shadow a fresh session. Wrapping all redirect() exit
-// points through this helper guarantees none of the five return paths below
+// points through this helper guarantees none of the six return paths below
 // is missed.
 function clearSignoutMarker(response: NextResponse): NextResponse {
   response.cookies.set(SIGNOUT_MARKER_COOKIE, '', { path: '/', maxAge: 0 });
