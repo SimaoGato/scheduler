@@ -87,6 +87,13 @@ export async function PUT(
 
     // Mass-assignment guard: explicit object literal from validated locals
     // only — never upsert(body).
+    //
+    // Accepted risk (low-severity TOCTOU): there is a narrow window between
+    // the role active-check above and this upsert where the role could be
+    // soft-deleted concurrently, which would silently defeat the "no skills
+    // on a soft-deleted role" guard. This is an admin-only surface with a
+    // vanishingly small race window; not worth a transaction/lock for the
+    // current scale of concurrent admin usage.
     const { data, error } = await serviceClient
       .from('person_role_skills')
       .upsert({ person_id: id, role_id: roleId, level }, { onConflict: 'person_id,role_id' })
