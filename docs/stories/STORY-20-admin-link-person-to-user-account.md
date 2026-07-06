@@ -1,7 +1,7 @@
 # STORY-20: Admin links a person record to a user account
 Epic: EPIC-02
 Status: draft
-Priority: low
+Priority: confirmed needed (was "low, reconfirm at Refine" — see note below)
 
 ## User story
 As an Admin, I want to link (and unlink) a person record to a logged-in user
@@ -18,12 +18,22 @@ login (so the claim page never offered them), or a mistaken claim that needs
 correcting. See EPIC-02 scope ("Link a person record to a logged-in user
 account") and PRD §6 FR3.
 
-**Priority: low / uncertainty flag.** STORY-11 already satisfies the epic's
-"a logged-in Member is associated with their person record" acceptance signal
-for the common path. This story is a robustness/admin-override backstop; it may
-be deprioritized until real usage shows the self-claim flow leaves gaps. Sizing
-and even necessity should be reconfirmed at Refine — if self-claim proves
-sufficient in practice, this can be dropped.
+**Priority update (2026-07-06, from triage):** the "reconfirm once real usage
+shows a gap" condition above has now happened. The Admin (Simão) logged in
+before any matching person record existed in Equipa, so STORY-11's claim page
+never offered a match, and there is no other discoverable way (no nav link, no
+admin control) to link a person created afterward to that account — the only
+workaround is manually navigating to the unlinked `/claim` URL, which isn't
+exposed anywhere in the UI. This confirms the gap is real, not hypothetical;
+do not drop this story.
+
+**Original uncertainty flag (superseded above, kept for history).** STORY-11
+already satisfies the epic's "a logged-in Member is associated with their
+person record" acceptance signal for the common path. This story is a
+robustness/admin-override backstop; it may be deprioritized until real usage
+shows the self-claim flow leaves gaps. Sizing and even necessity should be
+reconfirmed at Refine — if self-claim proves sufficient in practice, this can
+be dropped.
 
 ## Acceptance criteria
 1. Given an Admin viewing a person with `linked_user_id IS NULL`, when they
