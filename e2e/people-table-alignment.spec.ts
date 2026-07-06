@@ -17,10 +17,6 @@
  *         viewport, the three view-mode action elements
  *         (Competências/Editar/Remover) render on a single horizontal line
  *         (same y bounding-box position), not stacked vertically.
- *   AC1 — (CI-runnable fixture test) A static rendered fixture of the
- *         actions container with the fix applied renders the three buttons
- *         on a single line at desktop viewport width, verified via same-y
- *         bounding-box assertion without auth dependency.
  *
  * These tests require `/pt-PT/admin/people` to be reachable as an
  * authenticated admin, which this environment/CI cannot provide (no real
@@ -28,7 +24,9 @@
  * auth-gated test pattern (see e2e/user-widget-click-outside.spec.ts), they
  * are skipped unless E2E_WITH_AUTH is set, and each AC is documented below
  * as a manual verification step to satisfy the Definition of Done's
- * AC-coverage requirement.
+ * AC-coverage requirement. A separate CI-safe static source guard (no auth,
+ * no live render, no extra route — see the bottom of this file) provides an
+ * additional automated regression check that runs unconditionally in CI.
  *
  * Fixture lifecycle: each test creates (or reuses) a "STORY-14 QA Person"
  * row via `ensureOnePerson`, uniquely suffixed per Playwright worker index
@@ -234,92 +232,46 @@ test.describe('STORY-14: people table actions-column alignment', () => {
   });
 });
 
-test.describe('BUGFIX-02 AC1 (CI-runnable fixture): Actions container renders buttons on single line', () => {
-  // This test does not require authentication; it uses a static fixture
-  // (a React component rendering the actions container) compiled through
-  // the project's real Tailwind pipeline to verify the fix's CSS is
-  // applied correctly without needing a live /admin/people page.
+// BUGFIX-02 review fix: an earlier revision of this suite included a
+// "CI-runnable fixture" describe block backed by a real Next.js page route
+// at app/[locale]/login/e2e-fixture/people-table-actions/page.tsx. That
+// route was removed — being nested under `login/`, it matched proxy.ts's
+// `isLoginPath` regex and was reachable with no auth in production (QA
+// scaffolding leaking into the production route tree), and its hand-copied
+// markup had already drifted from the real component (missing the
+// `disabled:cursor-not-allowed disabled:opacity-50` classes). A
+// `page.setContent()`-based alternative (rendering the real component to
+// static HTML via `react-dom/server` from within the Playwright test) was
+// evaluated and confirmed NOT viable in this project: Playwright's own test
+// transform applies a JSX pragma to every .tsx file it loads (including
+// plain component modules, not just spec files) that is incompatible with
+// `react-dom`'s runtime, so `renderToStaticMarkup` throws immediately. No
+// other component-test harness (Vitest/RTL) exists in this repo. The
+// remaining coverage is: the auth-gated live-render test above
+// (`BUGFIX-02 AC1: ...`, requires E2E_WITH_AUTH), the documented manual
+// verification steps in this file's header, and the CI-safe static guard
+// below.
+test.describe('BUGFIX-02 (CI-safe, static source guard): actions container keeps breakpoint-gated wrap', () => {
+  // No live render, no auth, no extra route: reads PeopleTable.tsx directly
+  // and asserts the view-mode actions container's className retains both
+  // `flex-wrap` (needed for the 375px mobile case, AC2) and `sm:flex-nowrap`
+  // (the BUGFIX-02 fix, needed for the desktop single-line case, AC1)
+  // together. This guards against the fix being silently reverted or
+  // narrowed without requiring a hand-copied markup fixture.
+  test('view-mode actions container className contains flex-wrap and sm:flex-nowrap', async () => {
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const filePath = path.join(process.cwd(), 'components', 'PeopleTable.tsx');
+    const source = await fs.readFile(filePath, 'utf-8');
 
-  test('Fixture: Three action buttons on single line at desktop width (1280px)', async ({ page }) => {
-    // Render a minimal fixture page with the actions container markup.
-    // This page is served locally via Next.js under the login route (which
-    // doesn't require auth) and includes the compiled Tailwind styles and
-    // the exact markup from PeopleTable.tsx's view-mode actions container.
-    await page.goto('/pt-PT/login/e2e-fixture/people-table-actions');
-
-    await page.setViewportSize({ width: 1280, height: 800 });
-
-    // The fixture page contains three buttons with test ids matching
-    // the pattern used in the real app: pm-skills-fixture, pm-edit-fixture, pm-remove-fixture.
-    const skillsButton = page.locator('[data-testid="pm-skills-fixture"]');
-    const editButton = page.locator('[data-testid="pm-edit-fixture"]');
-    const removeButton = page.locator('[data-testid="pm-remove-fixture"]');
-
-    await expect(skillsButton).toBeVisible();
-    await expect(editButton).toBeVisible();
-    await expect(removeButton).toBeVisible();
-
-    const skillsBox = await skillsButton.boundingBox();
-    const editBox = await editButton.boundingBox();
-    const removeBox = await removeButton.boundingBox();
-
-    expect(skillsBox).not.toBeNull();
-    expect(editBox).not.toBeNull();
-    expect(removeBox).not.toBeNull();
-
-    // All three buttons should share the same y position (within 2px tolerance),
-    // confirming they render on a single horizontal line at desktop width.
-    const y1 = skillsBox!.y;
-    const y2 = editBox!.y;
-    const y3 = removeBox!.y;
-
-    expect(Math.abs(y1 - y2)).toBeLessThanOrEqual(2);
-    expect(Math.abs(y2 - y3)).toBeLessThanOrEqual(2);
-  });
-
-  test('Fixture: Actions wrap onto multiple lines at 375px (mobile)', async ({ page }) => {
-    // Verify that the `sm:flex-nowrap` fix does not break the mobile case:
-    // at 375px, the actions should still wrap and remain usable.
-    await page.goto('/pt-PT/login/e2e-fixture/people-table-actions');
-
-    await page.setViewportSize({ width: 375, height: 812 });
-
-    const skillsButton = page.locator('[data-testid="pm-skills-fixture"]');
-    const editButton = page.locator('[data-testid="pm-edit-fixture"]');
-    const removeButton = page.locator('[data-testid="pm-remove-fixture"]');
-
-    await expect(skillsButton).toBeVisible();
-    await expect(editButton).toBeVisible();
-    await expect(removeButton).toBeVisible();
-
-    const skillsBox = await skillsButton.boundingBox();
-    const editBox = await editButton.boundingBox();
-    const removeBox = await removeButton.boundingBox();
-
-    // At 375px, buttons should wrap, so at least two different y positions.
-    const y1 = skillsBox!.y;
-    const y2 = editBox!.y;
-    const y3 = removeBox!.y;
-
-    // Not all on the same line; at least one pair should differ by more than 2px.
-    const sameLineCount = [
-      Math.abs(y1 - y2) <= 2,
-      Math.abs(y2 - y3) <= 2,
-      Math.abs(y1 - y3) <= 2,
-    ].filter(Boolean).length;
-
-    expect(sameLineCount).toBeLessThan(3);
-
-    // Tap targets should remain >= 44px.
-    expect(skillsBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-    expect(skillsBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-    expect(editBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-    expect(editBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-    expect(removeBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-    expect(removeBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
-
-    // No horizontal overflow at 375px.
-    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-    expect(scrollWidth).toBeLessThanOrEqual(375);
+    const match = source.match(
+      /className="flex flex-wrap justify-end gap-2 sm:flex-nowrap"/
+    );
+    expect(
+      match,
+      'Expected the view-mode actions container in PeopleTable.tsx to keep ' +
+        'both flex-wrap (mobile wrap, AC2) and sm:flex-nowrap (desktop ' +
+        'single-line fix, AC1) — see BUGFIX-02.'
+    ).not.toBeNull();
   });
 });
