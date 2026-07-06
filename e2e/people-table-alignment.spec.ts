@@ -1,7 +1,7 @@
 /**
- * e2e/people-table-alignment.spec.ts — STORY-14: Actions column alignment
+ * e2e/people-table-alignment.spec.ts — STORY-14 + BUGFIX-02 Actions column alignment
  *
- * AC coverage (requires a real authenticated admin session; see the
+ * STORY-14 AC coverage (requires a real authenticated admin session; see the
  * auth-gated test pattern below):
  *   AC1 — Editar/Remover buttons are right-aligned at the trailing edge of
  *         the people-management table row on a desktop viewport (>=1024px).
@@ -11,6 +11,16 @@
  *   AC4 — Entering inline-edit mode does not cause a layout jump: the
  *         Save/Cancel buttons occupy the same actions-column position
  *         (same right edge) as the view-mode Editar/Remover buttons.
+ *
+ * BUGFIX-02 AC coverage:
+ *   AC1 — (Desktop single-row action rendering, auth-gated) At 1280px
+ *         viewport, the three view-mode action elements
+ *         (Competências/Editar/Remover) render on a single horizontal line
+ *         (same y bounding-box position), not stacked vertically.
+ *   AC1 — (CI-runnable fixture test) A static rendered fixture of the
+ *         actions container with the fix applied renders the three buttons
+ *         on a single line at desktop viewport width, verified via same-y
+ *         bounding-box assertion without auth dependency.
  *
  * These tests require `/pt-PT/admin/people` to be reachable as an
  * authenticated admin, which this environment/CI cannot provide (no real
@@ -29,11 +39,17 @@
  *
  * Manual verification (requires .env.local + real Supabase + Google OAuth):
  *
- *  AC1 — Desktop right alignment:
+ *  AC1 (STORY-14) — Desktop right alignment:
  *    1. Log in as an admin with at least one person in the team list.
  *    2. Open /pt-PT/admin/people at a desktop viewport (>=1024px wide).
  *    3. Confirm the Editar/Remover buttons sit flush against the right
  *       edge of the table, not near the middle of the row.
+ *
+ *  AC1 (BUGFIX-02) — Desktop single-line rendering:
+ *    1. Log in as an admin with at least one person in the team list.
+ *    2. Open /pt-PT/admin/people at 1280px wide (desktop width).
+ *    3. Confirm the three action buttons (Competências/Editar/Remover)
+ *       render on a single horizontal line, not stacked vertically.
  *
  *  AC3 — Narrow viewport (375px):
  *    1. Set the browser to 375px wide (DevTools device mode).
@@ -184,5 +200,126 @@ test.describe('STORY-14: people table actions-column alignment', () => {
 
     // Leave edit mode; the shared afterEach hook removes the fixture row.
     await cancelButton.click();
+  });
+
+  test('BUGFIX-02 AC1: Three view-mode actions render on single line at desktop (1280px)', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await ensureOnePerson(page, testPersonName);
+
+    const row = page.locator('tr', { hasText: testPersonName });
+    const skillsButton = row.locator('[data-testid^="pm-skills-"]');
+    const editButton = row.locator('[data-testid^="pm-edit-"]');
+    const removeButton = row.locator('[data-testid^="pm-remove-"]');
+
+    await expect(skillsButton).toBeVisible();
+    await expect(editButton).toBeVisible();
+    await expect(removeButton).toBeVisible();
+
+    const skillsBox = await skillsButton.boundingBox();
+    const editBox = await editButton.boundingBox();
+    const removeBox = await removeButton.boundingBox();
+
+    expect(skillsBox).not.toBeNull();
+    expect(editBox).not.toBeNull();
+    expect(removeBox).not.toBeNull();
+
+    // All three actions should share the same y position (within tolerance),
+    // meaning they render on the same horizontal line, not stacked vertically.
+    const y1 = skillsBox!.y;
+    const y2 = editBox!.y;
+    const y3 = removeBox!.y;
+
+    expect(Math.abs(y1 - y2)).toBeLessThanOrEqual(2);
+    expect(Math.abs(y2 - y3)).toBeLessThanOrEqual(2);
+  });
+});
+
+test.describe('BUGFIX-02 AC1 (CI-runnable fixture): Actions container renders buttons on single line', () => {
+  // This test does not require authentication; it uses a static fixture
+  // (a React component rendering the actions container) compiled through
+  // the project's real Tailwind pipeline to verify the fix's CSS is
+  // applied correctly without needing a live /admin/people page.
+
+  test('Fixture: Three action buttons on single line at desktop width (1280px)', async ({ page }) => {
+    // Render a minimal fixture page with the actions container markup.
+    // This page is served locally via Next.js under the login route (which
+    // doesn't require auth) and includes the compiled Tailwind styles and
+    // the exact markup from PeopleTable.tsx's view-mode actions container.
+    await page.goto('/pt-PT/login/e2e-fixture/people-table-actions');
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // The fixture page contains three buttons with test ids matching
+    // the pattern used in the real app: pm-skills-fixture, pm-edit-fixture, pm-remove-fixture.
+    const skillsButton = page.locator('[data-testid="pm-skills-fixture"]');
+    const editButton = page.locator('[data-testid="pm-edit-fixture"]');
+    const removeButton = page.locator('[data-testid="pm-remove-fixture"]');
+
+    await expect(skillsButton).toBeVisible();
+    await expect(editButton).toBeVisible();
+    await expect(removeButton).toBeVisible();
+
+    const skillsBox = await skillsButton.boundingBox();
+    const editBox = await editButton.boundingBox();
+    const removeBox = await removeButton.boundingBox();
+
+    expect(skillsBox).not.toBeNull();
+    expect(editBox).not.toBeNull();
+    expect(removeBox).not.toBeNull();
+
+    // All three buttons should share the same y position (within 2px tolerance),
+    // confirming they render on a single horizontal line at desktop width.
+    const y1 = skillsBox!.y;
+    const y2 = editBox!.y;
+    const y3 = removeBox!.y;
+
+    expect(Math.abs(y1 - y2)).toBeLessThanOrEqual(2);
+    expect(Math.abs(y2 - y3)).toBeLessThanOrEqual(2);
+  });
+
+  test('Fixture: Actions wrap onto multiple lines at 375px (mobile)', async ({ page }) => {
+    // Verify that the `sm:flex-nowrap` fix does not break the mobile case:
+    // at 375px, the actions should still wrap and remain usable.
+    await page.goto('/pt-PT/login/e2e-fixture/people-table-actions');
+
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    const skillsButton = page.locator('[data-testid="pm-skills-fixture"]');
+    const editButton = page.locator('[data-testid="pm-edit-fixture"]');
+    const removeButton = page.locator('[data-testid="pm-remove-fixture"]');
+
+    await expect(skillsButton).toBeVisible();
+    await expect(editButton).toBeVisible();
+    await expect(removeButton).toBeVisible();
+
+    const skillsBox = await skillsButton.boundingBox();
+    const editBox = await editButton.boundingBox();
+    const removeBox = await removeButton.boundingBox();
+
+    // At 375px, buttons should wrap, so at least two different y positions.
+    const y1 = skillsBox!.y;
+    const y2 = editBox!.y;
+    const y3 = removeBox!.y;
+
+    // Not all on the same line; at least one pair should differ by more than 2px.
+    const sameLineCount = [
+      Math.abs(y1 - y2) <= 2,
+      Math.abs(y2 - y3) <= 2,
+      Math.abs(y1 - y3) <= 2,
+    ].filter(Boolean).length;
+
+    expect(sameLineCount).toBeLessThan(3);
+
+    // Tap targets should remain >= 44px.
+    expect(skillsBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(skillsBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(editBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(editBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(removeBox!.height).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+    expect(removeBox!.width).toBeGreaterThanOrEqual(MIN_TAP_TARGET_PX);
+
+    // No horizontal overflow at 375px.
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(375);
   });
 });

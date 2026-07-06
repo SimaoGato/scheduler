@@ -229,11 +229,15 @@ export default function PeopleTable({ initialPeople }: Props) {
                           </button>
                         </form>
                       ) : (
-                        // flex-wrap so the three actions (Competências/Editar/
-                        // Remover) wrap onto a new row at narrow viewports
-                        // instead of squeezing below the 44px tap-target
-                        // minimum (same class of fix as STORY-23's nav wrap).
-                        <div className="flex flex-wrap justify-end gap-2">
+                        // flex-wrap with sm:flex-nowrap: wrap only below sm (640px,
+                        // Tailwind's default breakpoint), staying above the 375px
+                        // mobile target. At sm and above (tablet/desktop), the three
+                        // actions (Competências/Editar/Remover) render on one line.
+                        // This prevents the buggy "always wraps" behavior where a
+                        // flex-wrap container in a w-[1%] shrink-to-fit auto-layout
+                        // column was reported as narrower than max-content, causing
+                        // unconditional wrapping even at desktop widths.
+                        <div className="flex flex-wrap justify-end gap-2 sm:flex-nowrap">
                           <Link
                             href={`/admin/people/${person.id}/skills`}
                             data-testid={`pm-skills-${person.id}`}
