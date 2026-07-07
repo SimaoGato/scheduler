@@ -17,6 +17,8 @@ export default function PeopleTable({ initialPeople }: Props) {
   const [editName, setEditName] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null)
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -96,17 +98,33 @@ export default function PeopleTable({ initialPeople }: Props) {
     }
   }
 
-  async function handleRemove(personId: string) {
+  // STORY-19 AC4/AC5: symmetric with RoleTable's handleRemove (Locked
+  // decision 6 — people get the same warn+confirm UX as roles, not a
+  // lesser/silent version). confirm defaults to false (first click); a 409
+  // person_in_use response sets the inline confirm prompt instead of the
+  // generic error banner.
+  async function handleRemove(personId: string, confirm = false) {
     setLoadingId(personId)
     setErrorMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/people/${personId}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        `/api/admin/people/${personId}${confirm ? '?confirm=1' : ''}`,
+        { method: 'DELETE' }
+      )
 
       if (response.ok) {
         setRows((prev) => prev.filter((row) => row.id !== personId))
+        setConfirmingRemoveId(null)
+        setConfirmMessage(null)
+      } else if (response.status === 409) {
+        const errorBody = await response.json().catch(() => ({}))
+        if (errorBody.error === 'person_in_use') {
+          setConfirmingRemoveId(personId)
+          setConfirmMessage(t('confirmRemoveInUse', { count: errorBody.count ?? 0 }))
+        } else {
+          setErrorMessage(t('errorGeneric'))
+        }
       } else {
         setErrorMessage(t('errorGeneric'))
       }
@@ -115,6 +133,11 @@ export default function PeopleTable({ initialPeople }: Props) {
     } finally {
       setLoadingId(null)
     }
+  }
+
+  function cancelRemoveConfirm() {
+    setConfirmingRemoveId(null)
+    setConfirmMessage(null)
   }
 
   return (
@@ -126,6 +149,16 @@ export default function PeopleTable({ initialPeople }: Props) {
           className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {errorMessage}
+        </div>
+      )}
+
+      {confirmMessage && (
+        <div
+          data-testid="pm-confirm-banner"
+          aria-live="polite"
+          className="mb-4 rounded-md bg-warning/10 px-4 py-3 text-sm text-warning"
+        >
+          {confirmMessage}
         </div>
       )}
 
@@ -172,6 +205,12 @@ export default function PeopleTable({ initialPeople }: Props) {
               {rows.map((person) => {
                 const isLoading = loadingId === person.id
                 const isEditing = editingId === person.id
+                const isConfirmingRemove = confirmingRemoveId === person.id
+                // STORY-19: block Editar/Remover/Competências on other rows
+                // while a confirm prompt is open on any row — same
+                // convention as RoleTable.tsx.
+                const blockedByOtherConfirm =
+                  confirmingRemoveId !== null && confirmingRemoveId !== person.id
                 // Save/Cancel must render in the actions <td>, not this name
                 // <td>, so the actions column position doesn't jump between
                 // view/edit mode (AC4). A <form> can't validly wrap both
@@ -228,6 +267,26 @@ export default function PeopleTable({ initialPeople }: Props) {
                             {t('cancelButton')}
                           </button>
                         </form>
+                      ) : isConfirmingRemove ? (
+                        <div className="flex flex-wrap justify-end gap-2 sm:flex-nowrap">
+                          <button
+                            data-testid={`pm-remove-confirm-${person.id}`}
+                            onClick={() => handleRemove(person.id, true)}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isLoading ? t('actionLoading') : t('confirmRemoveButton')}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`pm-remove-cancel-${person.id}`}
+                            onClick={cancelRemoveConfirm}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {t('cancelButton')}
+                          </button>
+                        </div>
                       ) : (
                         // flex-wrap with sm:flex-nowrap: wrap only below sm (640px,
                         // Tailwind's default breakpoint), staying above the 375px
@@ -241,14 +300,19 @@ export default function PeopleTable({ initialPeople }: Props) {
                           <Link
                             href={`/admin/people/${person.id}/skills`}
                             data-testid={`pm-skills-${person.id}`}
-                            className="flex min-h-[44px] items-center rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                            aria-disabled={blockedByOtherConfirm}
+                            tabIndex={blockedByOtherConfirm ? -1 : undefined}
+                            onClick={(e) => {
+                              if (blockedByOtherConfirm) e.preventDefault()
+                            }}
+                            className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${blockedByOtherConfirm ? 'pointer-events-none opacity-50' : ''}`}
                           >
                             {t('skillsButton')}
                           </Link>
                           <button
                             data-testid={`pm-edit-${person.id}`}
                             onClick={() => startEdit(person)}
-                            disabled={isLoading || loadingId !== null}
+                            disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('editButton')}
@@ -256,7 +320,7 @@ export default function PeopleTable({ initialPeople }: Props) {
                           <button
                             data-testid={`pm-remove-${person.id}`}
                             onClick={() => handleRemove(person.id)}
-                            disabled={isLoading || loadingId !== null}
+                            disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('removeButton')}
