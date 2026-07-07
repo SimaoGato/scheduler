@@ -124,7 +124,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
                 <div className="flex flex-wrap items-center gap-2">
                   <label
                     data-testid={`skills-role-${role.id}-none`}
-                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-2 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:hover:bg-primary"
                   >
                     <input
                       type="radio"
@@ -141,7 +141,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
                     <label
                       key={level}
                       data-testid={`skills-role-${role.id}-${level}`}
-                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-2 text-sm hover:bg-accent"
+                      className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border px-3 py-2 text-sm hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground has-[:checked]:hover:bg-primary"
                     >
                       <input
                         type="radio"
