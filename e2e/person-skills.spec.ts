@@ -22,6 +22,13 @@
  *   AC9 — mobile (375px): no horizontal scroll, 44x44px tap targets, one
  *         tap per level change (no separate Save button).
  *
+ * BUGFIX-03 coverage (visual indication of selected skill level):
+ *   BUGFIX-03/AC1 — selected level is visually distinguished on fresh render.
+ *   BUGFIX-03/AC2 — "Sem nível" is visually distinguished when no level saved.
+ *   BUGFIX-03/AC3 — visual state reverts if optimistic save fails.
+ *   BUGFIX-03/AC4 — test asserts computed style (not just hidden input checked).
+ *   BUGFIX-03/AC5 — selected differs visually from both unselected and hovered.
+ *
  * Also covers a PR #34 review regression: the cross-role race in
  * `savingRoleId` (single scalar → per-role Set), see the
  * "cross-role race" test below.
@@ -270,5 +277,83 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
     // Single click assigns the level — no secondary Save-button click.
     await option.click();
     await expect(option.locator('input')).toBeChecked();
+  });
+
+  test('BUGFIX-03/AC1/AC2/AC4/AC5: selected level is visually distinguished from unselected options (not just DOM checked)', async ({ page }) => {
+    await page.goto(`/pt-PT/admin/people/${personId}/skills`);
+
+    const noneOption = page.getByTestId(`skills-role-${roleId}-none`);
+    const level1Option = page.getByTestId(`skills-role-${roleId}-1`);
+    const level2Option = page.getByTestId(`skills-role-${roleId}-2`);
+    await expect(noneOption).toBeVisible();
+
+    const bgOf = (locator: typeof noneOption) =>
+      locator.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    // AC2: with no saved skill, "Sem nível" is the visually selected option.
+    const noneBgDefault = await bgOf(noneOption);
+    const level1BgDefault = await bgOf(level1Option);
+    expect(noneBgDefault).not.toBe(level1BgDefault);
+
+    // AC1/AC4: selecting level 2 visually distinguishes it — a computed-style
+    // check, not only `toBeChecked()` on the hidden input.
+    await level2Option.click();
+    await expect(level2Option.locator('input')).toBeChecked();
+
+    const level2BgSelected = await bgOf(level2Option);
+    const level1BgStillUnselected = await bgOf(level1Option);
+    const noneBgNowUnselected = await bgOf(noneOption);
+    expect(level2BgSelected).not.toBe(level1BgStillUnselected);
+    expect(level2BgSelected).not.toBe(noneBgNowUnselected);
+    // The now-deselected option matches the never-selected option's background
+    // (both show the "unselected" style).
+    expect(noneBgNowUnselected).toBe(level1BgStillUnselected);
+
+    // AC5: a hovered-but-unselected option must not look identical to the
+    // selected option.
+    await level1Option.hover();
+    const level1BgHovered = await bgOf(level1Option);
+    expect(level1BgHovered).not.toBe(level2BgSelected);
+  });
+
+  test('BUGFIX-03/AC3: visual selection reverts if the optimistic save fails', async ({ page }) => {
+    await page.route(`**/api/admin/people/${personId}/skills/${roleId}`, async (route) => {
+      if (route.request().method() !== 'PUT') {
+        await route.continue();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'errorGeneric' }),
+      });
+    });
+
+    try {
+      await page.goto(`/pt-PT/admin/people/${personId}/skills`);
+
+      const noneOption = page.getByTestId(`skills-role-${roleId}-none`);
+      const level2Option = page.getByTestId(`skills-role-${roleId}-2`);
+      const bgOf = (locator: typeof noneOption) =>
+        locator.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+      const selectedBg = await bgOf(noneOption); // baseline: none selected by default
+      const unselectedBg = await bgOf(level2Option); // baseline: level2 unselected by default
+
+      await level2Option.click();
+      await expect(level2Option.locator('input')).toBeDisabled();
+
+      // Optimistic: level2 now shows the "selected" style, none shows "unselected".
+      expect(await bgOf(level2Option)).toBe(selectedBg);
+      expect(await bgOf(noneOption)).toBe(unselectedBg);
+
+      // After the mocked 500 resolves, the optimistic update rolls back.
+      await expect(level2Option.locator('input')).toBeEnabled({ timeout: 2000 });
+      expect(await bgOf(noneOption)).toBe(selectedBg);
+      expect(await bgOf(level2Option)).toBe(unselectedBg);
+    } finally {
+      await page.unroute(`**/api/admin/people/${personId}/skills/${roleId}`);
+    }
   });
 });
