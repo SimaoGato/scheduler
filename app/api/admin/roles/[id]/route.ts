@@ -85,6 +85,15 @@ export async function PATCH(
  * Authentication: requireAdmin called BEFORE await params (CLAUDE.md convention).
  * Soft-delete preserves the record, consistent with public.people (STORY-07).
  * Returns 404 if the role is not found or already inactive.
+ *
+ * STORY-19 in-use guard (AC2/AC3/AC5): before deleting, count the role's
+ * person_role_skills rows. If any exist and the request is not confirmed
+ * (?confirm=1), return 409 role_in_use with the count instead of deleting —
+ * this is the server-side authority the client cannot bypass. If confirmed,
+ * explicitly hard-delete the dependent person_role_skills rows FIRST, then
+ * soft-delete the role. Note: the DB's ON DELETE CASCADE never fires here
+ * because this is an UPDATE (soft-delete), not a DELETE FROM roles — see
+ * STORY-19's Implementation Plan "Correction to Technical notes".
  */
 export async function DELETE(
   request: NextRequest,
@@ -100,8 +109,51 @@ export async function DELETE(
     return NextResponse.json({ error: 'invalid_id' }, { status: 400 })
   }
 
+  const confirmed = request.nextUrl.searchParams.get('confirm') === '1'
+
   try {
     const serviceClient = createServiceClient()
+
+    const { count, error: countError } = await serviceClient
+      .from('person_role_skills')
+      .select('*', { count: 'exact', head: true })
+      .eq('role_id', id)
+
+    if (countError) {
+      console.error('[DELETE /api/admin/roles/[id]] count error:', countError)
+      return NextResponse.json({ error: 'internal' }, { status: 500 })
+    }
+
+    const inUseCount = count ?? 0
+
+    if (inUseCount > 0 && !confirmed) {
+      return NextResponse.json({ error: 'role_in_use', count: inUseCount }, { status: 409 })
+    }
+
+    if (inUseCount > 0 && confirmed) {
+      // Explicit hard-delete of dependent rows FIRST, then soft-delete the
+      // parent (see Risks in the Implementation Plan for why this order,
+      // not the reverse: if the parent were soft-deleted first and this
+      // step failed, the role would vanish from the list while its skill
+      // rows survived underneath it invisibly — a genuine silent partial
+      // state, which AC3 forbids).
+      const { error: cascadeError } = await serviceClient
+        .from('person_role_skills')
+        .delete()
+        .eq('role_id', id)
+
+      if (cascadeError) {
+        console.error('[DELETE /api/admin/roles/[id]] cascade delete error:', cascadeError)
+        return NextResponse.json({ error: 'internal' }, { status: 500 })
+      }
+    }
+
+    // Accepted risk: if the cascade delete above succeeded but this
+    // soft-delete fails (transient DB/network fault), the role is left
+    // active while its skill-assignment history is already gone. Not
+    // engineered away in this story — see STORY-19's Implementation Plan
+    // Risks section for the full reasoning (admin-only, low-concurrency
+    // surface; the admin already confirmed intent to delete the rows).
     const { data, error } = await serviceClient
       .from('roles')
       .update({ is_active: false })
