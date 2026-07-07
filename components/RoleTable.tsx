@@ -35,6 +35,8 @@ export default function RoleTable({ initialRoles }: Props) {
   const [editSlots, setEditSlots] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
+  const [confirmMessage, setConfirmMessage] = useState<string | null>(null)
 
   function mapErrorCode(code: unknown): string {
     const key = typeof code === 'string' ? ERROR_CODE_KEYS[code] : undefined
@@ -142,17 +144,31 @@ export default function RoleTable({ initialRoles }: Props) {
     }
   }
 
-  async function handleRemove(roleId: string) {
+  // STORY-19 AC2/AC3/AC5: confirm defaults to false (first click). A 409
+  // role_in_use response sets the inline confirm prompt instead of the
+  // generic error banner; the Confirm button re-calls this with confirm=true.
+  async function handleRemove(roleId: string, confirm = false) {
     setLoadingId(roleId)
     setErrorMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/roles/${roleId}`, {
-        method: 'DELETE',
-      })
+      const response = await fetch(
+        `/api/admin/roles/${roleId}${confirm ? '?confirm=1' : ''}`,
+        { method: 'DELETE' }
+      )
 
       if (response.ok) {
         setRows((prev) => prev.filter((row) => row.id !== roleId))
+        setConfirmingRemoveId(null)
+        setConfirmMessage(null)
+      } else if (response.status === 409) {
+        const errorBody = await response.json().catch(() => ({}))
+        if (errorBody.error === 'role_in_use') {
+          setConfirmingRemoveId(roleId)
+          setConfirmMessage(t('confirmRemoveInUse', { count: errorBody.count ?? 0 }))
+        } else {
+          setErrorMessage(mapErrorCode(errorBody.error))
+        }
       } else {
         const errorBody = await response.json().catch(() => ({}))
         setErrorMessage(mapErrorCode(errorBody.error))
@@ -164,6 +180,11 @@ export default function RoleTable({ initialRoles }: Props) {
     }
   }
 
+  function cancelRemoveConfirm() {
+    setConfirmingRemoveId(null)
+    setConfirmMessage(null)
+  }
+
   return (
     <div>
       {errorMessage && (
@@ -173,6 +194,16 @@ export default function RoleTable({ initialRoles }: Props) {
           className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           {errorMessage}
+        </div>
+      )}
+
+      {confirmMessage && (
+        <div
+          data-testid="rm-confirm-banner"
+          aria-live="polite"
+          className="mb-4 rounded-md bg-warning/10 px-4 py-3 text-sm text-warning"
+        >
+          {confirmMessage}
         </div>
       )}
 
@@ -231,6 +262,12 @@ export default function RoleTable({ initialRoles }: Props) {
               {rows.map((role) => {
                 const isLoading = loadingId === role.id
                 const isEditing = editingId === role.id
+                const isConfirmingRemove = confirmingRemoveId === role.id
+                // STORY-19: block Edit/Remove on other rows while a confirm
+                // prompt is open on any row (consistent with the existing
+                // "block concurrent row actions" convention in this file).
+                const blockedByOtherConfirm =
+                  confirmingRemoveId !== null && confirmingRemoveId !== role.id
                 // Save/Cancel must render in the actions <td>, not the name
                 // or slots <td>, so the actions column position doesn't
                 // jump between view/edit mode (AC4). A <form> can't validly
@@ -304,12 +341,32 @@ export default function RoleTable({ initialRoles }: Props) {
                             {t('cancelButton')}
                           </button>
                         </form>
+                      ) : isConfirmingRemove ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            data-testid={`rm-remove-confirm-${role.id}`}
+                            onClick={() => handleRemove(role.id, true)}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isLoading ? t('actionLoading') : t('confirmRemoveButton')}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`rm-remove-cancel-${role.id}`}
+                            onClick={cancelRemoveConfirm}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {t('cancelButton')}
+                          </button>
+                        </div>
                       ) : (
                         <div className="flex justify-end gap-2">
                           <button
                             data-testid={`rm-edit-${role.id}`}
                             onClick={() => startEdit(role)}
-                            disabled={isLoading || loadingId !== null}
+                            disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('editButton')}
@@ -317,7 +374,7 @@ export default function RoleTable({ initialRoles }: Props) {
                           <button
                             data-testid={`rm-remove-${role.id}`}
                             onClick={() => handleRemove(role.id)}
-                            disabled={isLoading || loadingId !== null}
+                            disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('removeButton')}
