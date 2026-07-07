@@ -197,7 +197,15 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
   test.afterEach(async ({ page }) => {
     // Best-effort cleanup: skill rows first (if any survived), then
     // people/roles. Soft-deletes, so order doesn't matter for CASCADE.
+    // Covers all four person x role fixture combinations (not just the
+    // "matching" pairs) because AC2/AC6 (UI) and AC4/AC6 (UI) assign
+    // person -> role2 / person2 -> role cross-pairs to build up count=2
+    // scenarios; a mid-test assertion failure must not leave an in-use
+    // person/role un-deletable by the unconfirmed DELETE calls below.
     if (personId && roleId) await page.request.delete(`/api/admin/people/${personId}/skills/${roleId}`);
+    if (personId && roleId2) await page.request.delete(`/api/admin/people/${personId}/skills/${roleId2}`);
+    if (personId2 && roleId)
+      await page.request.delete(`/api/admin/people/${personId2}/skills/${roleId}`);
     if (personId2 && roleId2)
       await page.request.delete(`/api/admin/people/${personId2}/skills/${roleId2}`);
     if (personId) await page.request.delete(`/api/admin/people/${personId}`);
@@ -243,17 +251,28 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     expect(roles.some((r) => r.id === roleId)).toBe(true);
   });
 
-  test('AC2/AC6 (UI): clicking Remover on an in-use role shows the count-aware warning banner and does not remove the row', async ({
+  test('AC2/AC6 (UI): clicking Remover on an in-use role shows the count-aware warning banner (singular + plural), blocks other rows, and Confirm actually removes the role', async ({
     page,
   }) => {
     const person = await createPerson(page, personName);
     personId = person.id;
+    const person2 = await createPerson(page, personName2);
+    personId2 = person2.id;
     const role = await createRole(page, roleName);
     roleId = role.id;
+    const role2 = await createRole(page, roleName2);
+    roleId2 = role2.id;
+
+    // role: 1 assignment (singular banner). role2: 2 assignments from two
+    // distinct people (plural banner) — composite PK on person_role_skills
+    // means this is exactly "2 distinct people reference role2".
     await assignSkill(page, personId, roleId, 1);
+    await assignSkill(page, personId, roleId2, 1);
+    await assignSkill(page, personId2, roleId2, 1);
 
     await page.goto('/pt-PT/admin/roles');
     const row = page.locator('tr', { hasText: roleName });
+    const otherRow = page.locator('tr', { hasText: roleName2 });
     await row.locator('[data-testid^="rm-remove-"]').click();
 
     const banner = page.getByTestId('rm-confirm-banner');
@@ -262,17 +281,51 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     // Exact pt-PT count-aware text for count === 1, extracted from
     // messages/pt-PT.json at test-authoring time (CHORE-10 convention).
     const messages = ptMessages();
-    const expectedText = messages.RoleManagement.confirmRemoveInUse
-      .replace('{count, plural, one {# pessoa} other {# pessoas}}', '1 pessoa');
-    await expect(banner).toContainText(expectedText);
+    const singularText = messages.RoleManagement.confirmRemoveInUse.replace(
+      '{count, plural, one {# pessoa} other {# pessoas}}',
+      '1 pessoa'
+    );
+    await expect(banner).toContainText(singularText);
 
     // Row is still present; deletion did not proceed.
     await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
 
-    // Cancel restores Editar/Remover without deleting.
+    // The other role's Editar/Remover are disabled while this row's confirm
+    // prompt is open (mirrors PeopleTable's equivalent assertion).
+    await expect(otherRow.locator('[data-testid^="rm-edit-"]')).toBeDisabled();
+    await expect(otherRow.locator('[data-testid^="rm-remove-"]')).toBeDisabled();
+
+    // Cancel restores Editar/Remover without deleting, and re-enables the
+    // other row.
     await row.locator('[data-testid^="rm-remove-cancel-"]').click();
     await expect(row.locator('[data-testid^="rm-remove-"]')).toBeVisible();
     await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
+    await expect(otherRow.locator('[data-testid^="rm-edit-"]')).toBeEnabled();
+
+    // Confirm actually removes the role (previously only exercised via a
+    // raw page.request.delete(...?confirm=1), never through the UI button).
+    await row.locator('[data-testid^="rm-remove-"]').click();
+    await expect(banner).toBeVisible();
+    await row.locator('[data-testid^="rm-remove-confirm-"]').click();
+    await expect(page.locator('tr', { hasText: roleName })).toHaveCount(0);
+    expect(await countPersonRoleSkillsForRole(roleId)).toBe(0);
+    roleId = ''; // already deleted; afterEach no-op
+
+    // Plural form (count === 2) verified via the UI-rendered banner, not
+    // just the numeric `count` field in an API-only test.
+    await otherRow.locator('[data-testid^="rm-remove-"]').click();
+    const banner2 = page.getByTestId('rm-confirm-banner');
+    await expect(banner2).toBeVisible();
+    const pluralText = messages.RoleManagement.confirmRemoveInUse.replace(
+      '{count, plural, one {# pessoa} other {# pessoas}}',
+      '2 pessoas'
+    );
+    await expect(banner2).toContainText(pluralText);
+
+    await otherRow.locator('[data-testid^="rm-remove-confirm-"]').click();
+    await expect(page.locator('tr', { hasText: roleName2 })).toHaveCount(0);
+    expect(await countPersonRoleSkillsForRole(roleId2)).toBe(0);
+    roleId2 = ''; // already deleted; afterEach no-op
   });
 
   test('AC3: confirming an in-use role delete removes both the role and its person_role_skills rows', async ({
@@ -329,7 +382,7 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     personId = ''; // already deleted; afterEach no-op for the person
   });
 
-  test('AC4/AC6 (UI): full parity with role-side UX, including plural (count=2) rendering, per-row disabling, and confirm/cancel', async ({
+  test('AC4/AC6 (UI): full parity with role-side UX — plural (count=2) then singular (count=1) rendering, per-row disabling, and confirm/cancel', async ({
     page,
   }) => {
     const person = await createPerson(page, personName);
@@ -341,8 +394,12 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     const role2 = await createRole(page, roleName2);
     roleId2 = role2.id;
 
+    // person: 2 assignments (plural banner). person2: 1 assignment to
+    // role2, so once `person` is removed below, person2 is left with
+    // exactly 1 skill row (singular banner).
     await assignSkill(page, personId, roleId, 1);
     await assignSkill(page, personId, roleId2, 2);
+    await assignSkill(page, personId2, roleId2, 1);
 
     await page.goto('/pt-PT/admin/people');
     const row = page.locator('tr', { hasText: personName });
@@ -353,11 +410,11 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await expect(banner).toBeVisible();
 
     const messages = ptMessages();
-    const expectedText = messages.PeopleManagement.confirmRemoveInUse.replace(
+    const pluralText = messages.PeopleManagement.confirmRemoveInUse.replace(
       '{count, plural, one {# competência associada} other {# competências associadas}}',
       '2 competências associadas'
     );
-    await expect(banner).toContainText(expectedText);
+    await expect(banner).toContainText(pluralText);
 
     // Other rows' Editar/Remover/Competências are disabled while the
     // confirm prompt is open.
@@ -382,9 +439,25 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
 
     expect(await countPersonRoleSkillsForPerson(personId)).toBe(0);
     personId = ''; // already deleted; afterEach no-op for this person
+
+    // Singular form (count === 1) verified via the UI-rendered banner, not
+    // just the numeric `count` field in an API-only test.
+    await otherRow.locator('[data-testid^="pm-remove-"]').click();
+    const banner2 = page.getByTestId('pm-confirm-banner');
+    await expect(banner2).toBeVisible();
+    const singularText = messages.PeopleManagement.confirmRemoveInUse.replace(
+      '{count, plural, one {# competência associada} other {# competências associadas}}',
+      '1 competência associada'
+    );
+    await expect(banner2).toContainText(singularText);
+
+    await otherRow.locator('[data-testid^="pm-remove-confirm-"]').click();
+    await expect(page.locator('tr', { hasText: personName2 })).toHaveCount(0);
+    expect(await countPersonRoleSkillsForPerson(personId2)).toBe(0);
+    personId2 = ''; // already deleted; afterEach no-op for this person
   });
 
-  test('AC5: server-side count is authoritative — repeated unconfirmed DELETE stays 409, confirmed DELETE succeeds', async ({
+  test('AC5-role: server-side count is authoritative — repeated unconfirmed DELETE stays 409, confirmed DELETE succeeds', async ({
     page,
   }) => {
     const person = await createPerson(page, personName);
@@ -401,5 +474,24 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     const confirmed = await page.request.delete(`/api/admin/roles/${roleId}?confirm=1`);
     expect(confirmed.status()).toBe(200);
     roleId = ''; // already deleted; afterEach no-op
+  });
+
+  test('AC5-person: server-side count is authoritative — repeated unconfirmed DELETE stays 409, confirmed DELETE succeeds', async ({
+    page,
+  }) => {
+    const person = await createPerson(page, personName);
+    personId = person.id;
+    const role = await createRole(page, roleName);
+    roleId = role.id;
+    await assignSkill(page, personId, roleId, 1);
+
+    const first = await page.request.delete(`/api/admin/people/${personId}`);
+    expect(first.status()).toBe(409);
+    const second = await page.request.delete(`/api/admin/people/${personId}`);
+    expect(second.status()).toBe(409);
+
+    const confirmed = await page.request.delete(`/api/admin/people/${personId}?confirm=1`);
+    expect(confirmed.status()).toBe(200);
+    personId = ''; // already deleted; afterEach no-op
   });
 });
