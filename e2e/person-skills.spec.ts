@@ -54,7 +54,11 @@
  *    3. Confirm the logged status is 403.
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
+
+function backgroundColorOf(locator: Locator) {
+  return locator.evaluate((el) => getComputedStyle(el).backgroundColor);
+}
 
 // ---------------------------------------------------------------------------
 // CI-safe: auth-gate tests (no real Supabase session required)
@@ -300,14 +304,11 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
     const level2Option = page.getByTestId(`skills-role-${roleId}-2`);
     await expect(level2Option).toBeVisible();
 
-    const bgOf = (locator: typeof noneOption) =>
-      locator.evaluate((el) => getComputedStyle(el).backgroundColor);
-
     // AC1/AC4: Level 2 is visually distinguished on fresh render with zero clicks —
     // a computed-style check, not only `toBeChecked()` on the hidden input.
-    const level2BgSelected = await bgOf(level2Option);
-    const level1BgUnselected = await bgOf(level1Option);
-    const noneBgUnselected = await bgOf(noneOption);
+    const level2BgSelected = await backgroundColorOf(level2Option);
+    const level1BgUnselected = await backgroundColorOf(level1Option);
+    const noneBgUnselected = await backgroundColorOf(noneOption);
     expect(level2BgSelected).not.toBe(level1BgUnselected);
     expect(level2BgSelected).not.toBe(noneBgUnselected);
     // Both unselected options have the same background (not visually distinguished).
@@ -324,19 +325,16 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
     const level1Option = page.getByTestId(`skills-role-${roleId}-1`);
     await expect(noneOption).toBeVisible();
 
-    const bgOf = (locator: typeof noneOption) =>
-      locator.evaluate((el) => getComputedStyle(el).backgroundColor);
-
     // AC2: With no saved skill, "Sem nível" is the visually selected option
     // (on fresh page render, zero clicks).
-    const noneBgSelected = await bgOf(noneOption);
-    const level1BgUnselected = await bgOf(level1Option);
+    const noneBgSelected = await backgroundColorOf(noneOption);
+    const level1BgUnselected = await backgroundColorOf(level1Option);
     expect(noneBgSelected).not.toBe(level1BgUnselected);
 
     // AC5: A hovered-but-unselected option must not look identical to the
     // selected option.
     await level1Option.hover();
-    const level1BgHovered = await bgOf(level1Option);
+    const level1BgHovered = await backgroundColorOf(level1Option);
     expect(level1BgHovered).not.toBe(noneBgSelected);
   });
 
@@ -359,23 +357,21 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
 
       const noneOption = page.getByTestId(`skills-role-${roleId}-none`);
       const level2Option = page.getByTestId(`skills-role-${roleId}-2`);
-      const bgOf = (locator: typeof noneOption) =>
-        locator.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-      const selectedBg = await bgOf(noneOption); // baseline: none selected by default
-      const unselectedBg = await bgOf(level2Option); // baseline: level2 unselected by default
+      const selectedBg = await backgroundColorOf(noneOption); // baseline: none selected by default
+      const unselectedBg = await backgroundColorOf(level2Option); // baseline: level2 unselected by default
 
       await level2Option.click();
       await expect(level2Option.locator('input')).toBeDisabled();
 
       // Optimistic: level2 now shows the "selected" style, none shows "unselected".
-      expect(await bgOf(level2Option)).toBe(selectedBg);
-      expect(await bgOf(noneOption)).toBe(unselectedBg);
+      expect(await backgroundColorOf(level2Option)).toBe(selectedBg);
+      expect(await backgroundColorOf(noneOption)).toBe(unselectedBg);
 
       // After the mocked 500 resolves, the optimistic update rolls back.
       await expect(level2Option.locator('input')).toBeEnabled({ timeout: 2000 });
-      expect(await bgOf(noneOption)).toBe(selectedBg);
-      expect(await bgOf(level2Option)).toBe(unselectedBg);
+      expect(await backgroundColorOf(noneOption)).toBe(selectedBg);
+      expect(await backgroundColorOf(level2Option)).toBe(unselectedBg);
     } finally {
       await page.unroute(`**/api/admin/people/${personId}/skills/${roleId}`);
     }
