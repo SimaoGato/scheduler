@@ -1,5 +1,6 @@
 # BUGFIX-03: Person skills editor shows no visual indication of a person's current skill level
-Status: draft
+Status: done ✅
+PR: #36
 Related story: STORY-18 (introduced `components/PersonSkillsEditor.tsx`)
 Epic: EPIC-02
 
