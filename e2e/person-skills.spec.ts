@@ -279,41 +279,65 @@ test.describe('STORY-18: assign per-role skill levels (auth-gated)', () => {
     await expect(option.locator('input')).toBeChecked();
   });
 
-  test('BUGFIX-03/AC1/AC2/AC4/AC5: selected level is visually distinguished from unselected options (not just DOM checked)', async ({ page }) => {
+  test('BUGFIX-03/AC1/AC4: saved skill level is visually distinguished on fresh page render (zero clicks)', async ({ page }) => {
+    // AC1 explicitly requires: "Given a person has a saved skill level for a role...
+    // when their skills editor page renders... [it's visually distinguished]
+    // without requiring any user interaction."
+    // This test uses the pre-loaded pattern (API PUT before page load) to verify
+    // the initial render binding works, not the click-after-load path.
+
+    // Pre-load a saved skill level for this role via API (before page load).
+    const putResponse = await page.request.put(`/api/admin/people/${personId}/skills/${roleId}`, {
+      data: { level: 2 },
+    });
+    expect(putResponse.status()).toBe(200);
+
+    // Now load the page fresh — level 2 should already be visually distinguished.
     await page.goto(`/pt-PT/admin/people/${personId}/skills`);
 
     const noneOption = page.getByTestId(`skills-role-${roleId}-none`);
     const level1Option = page.getByTestId(`skills-role-${roleId}-1`);
     const level2Option = page.getByTestId(`skills-role-${roleId}-2`);
+    await expect(level2Option).toBeVisible();
+
+    const bgOf = (locator: typeof noneOption) =>
+      locator.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    // AC1/AC4: Level 2 is visually distinguished on fresh render with zero clicks —
+    // a computed-style check, not only `toBeChecked()` on the hidden input.
+    const level2BgSelected = await bgOf(level2Option);
+    const level1BgUnselected = await bgOf(level1Option);
+    const noneBgUnselected = await bgOf(noneOption);
+    expect(level2BgSelected).not.toBe(level1BgUnselected);
+    expect(level2BgSelected).not.toBe(noneBgUnselected);
+    // Both unselected options have the same background (not visually distinguished).
+    expect(level1BgUnselected).toBe(noneBgUnselected);
+  });
+
+  test('BUGFIX-03/AC2/AC5: no saved level renders "Sem nível" visually selected, and hover differs from selected', async ({ page }) => {
+    // AC2: With no saved skill, "Sem nível" is the visually indicated option.
+    // AC5: Selected option must differ visually from a hovered-but-unselected option.
+
+    await page.goto(`/pt-PT/admin/people/${personId}/skills`);
+
+    const noneOption = page.getByTestId(`skills-role-${roleId}-none`);
+    const level1Option = page.getByTestId(`skills-role-${roleId}-1`);
     await expect(noneOption).toBeVisible();
 
     const bgOf = (locator: typeof noneOption) =>
       locator.evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    // AC2: with no saved skill, "Sem nível" is the visually selected option.
-    const noneBgDefault = await bgOf(noneOption);
-    const level1BgDefault = await bgOf(level1Option);
-    expect(noneBgDefault).not.toBe(level1BgDefault);
+    // AC2: With no saved skill, "Sem nível" is the visually selected option
+    // (on fresh page render, zero clicks).
+    const noneBgSelected = await bgOf(noneOption);
+    const level1BgUnselected = await bgOf(level1Option);
+    expect(noneBgSelected).not.toBe(level1BgUnselected);
 
-    // AC1/AC4: selecting level 2 visually distinguishes it — a computed-style
-    // check, not only `toBeChecked()` on the hidden input.
-    await level2Option.click();
-    await expect(level2Option.locator('input')).toBeChecked();
-
-    const level2BgSelected = await bgOf(level2Option);
-    const level1BgStillUnselected = await bgOf(level1Option);
-    const noneBgNowUnselected = await bgOf(noneOption);
-    expect(level2BgSelected).not.toBe(level1BgStillUnselected);
-    expect(level2BgSelected).not.toBe(noneBgNowUnselected);
-    // The now-deselected option matches the never-selected option's background
-    // (both show the "unselected" style).
-    expect(noneBgNowUnselected).toBe(level1BgStillUnselected);
-
-    // AC5: a hovered-but-unselected option must not look identical to the
+    // AC5: A hovered-but-unselected option must not look identical to the
     // selected option.
     await level1Option.hover();
     const level1BgHovered = await bgOf(level1Option);
-    expect(level1BgHovered).not.toBe(level2BgSelected);
+    expect(level1BgHovered).not.toBe(noneBgSelected);
   });
 
   test('BUGFIX-03/AC3: visual selection reverts if the optimistic save fails', async ({ page }) => {
