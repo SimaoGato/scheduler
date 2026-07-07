@@ -46,7 +46,9 @@
     "errorNameRequired": "O nome é obrigatório.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "actionLoading": "A processar...",
-    "skillsButton": "Competências"
+    "skillsButton": "Competências",
+    "confirmRemoveInUse": "Esta pessoa tem {count, plural, one {# competência associada} other {# competências associadas}}. Remover mesmo assim?",
+    "confirmRemoveButton": "Remover mesmo assim"
   },
   "RoleManagement": {
     "title": "Funções",
@@ -66,7 +68,9 @@
     "errorInvalidSlots": "O número de vagas deve ser um número inteiro positivo.",
     "errorDuplicateName": "Já existe uma função com este nome.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
-    "actionLoading": "A processar..."
+    "actionLoading": "A processar...",
+    "confirmRemoveInUse": "Esta função está associada a {count, plural, one {# pessoa} other {# pessoas}}. Remover mesmo assim?",
+    "confirmRemoveButton": "Remover mesmo assim"
   },
   "Auth": {
     "signInTitle": "Entrar no Escala",

@@ -46,7 +46,9 @@
     "errorNameRequired": "Name is required.",
     "errorGeneric": "Something went wrong. Please try again.",
     "actionLoading": "Processing...",
-    "skillsButton": "Skills"
+    "skillsButton": "Skills",
+    "confirmRemoveInUse": "This person has {count, plural, one {# associated skill} other {# associated skills}}. Remove anyway?",
+    "confirmRemoveButton": "Remove anyway"
   },
   "RoleManagement": {
     "title": "Roles",
@@ -66,7 +68,9 @@
     "errorInvalidSlots": "The number of slots must be a positive whole number.",
     "errorDuplicateName": "A role with this name already exists.",
     "errorGeneric": "Something went wrong. Please try again.",
-    "actionLoading": "Processing..."
+    "actionLoading": "Processing...",
+    "confirmRemoveInUse": "This role is associated with {count, plural, one {# person} other {# people}}. Remove anyway?",
+    "confirmRemoveButton": "Remove anyway"
   },
   "Auth": {
     "signInTitle": "Sign in to Escala",
