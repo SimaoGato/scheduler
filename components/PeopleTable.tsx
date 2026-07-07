@@ -252,7 +252,7 @@ export default function PeopleTable({ initialPeople }: Props) {
                           <button
                             type="submit"
                             data-testid={`pm-save-${person.id}`}
-                            disabled={isLoading}
+                            disabled={isLoading || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('saveButton')}
@@ -261,7 +261,7 @@ export default function PeopleTable({ initialPeople }: Props) {
                             type="button"
                             data-testid={`pm-cancel-${person.id}`}
                             onClick={cancelEdit}
-                            disabled={isLoading}
+                            disabled={isLoading || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('cancelButton')}

@@ -26,6 +26,9 @@
        composited background. 44% (naively mirroring --destructive's light
        value) only reached 2.83:1 — 30% reaches 5.23:1. */
     --warning: 32 95% 30%;
+    /* Unused by this diff's components (bg-warning/10 banners only use
+       text-warning, not a solid-fill background) — provisioned for future
+       solid-fill warning UI, mirroring --destructive-foreground. */
     --warning-foreground: 0 0% 100%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;

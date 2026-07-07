@@ -326,7 +326,7 @@ export default function RoleTable({ initialRoles }: Props) {
                           <button
                             type="submit"
                             data-testid={`rm-save-${role.id}`}
-                            disabled={isLoading}
+                            disabled={isLoading || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('saveButton')}
@@ -335,7 +335,7 @@ export default function RoleTable({ initialRoles }: Props) {
                             type="button"
                             data-testid={`rm-cancel-${role.id}`}
                             onClick={cancelEdit}
-                            disabled={isLoading}
+                            disabled={isLoading || blockedByOtherConfirm}
                             className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('cancelButton')}
