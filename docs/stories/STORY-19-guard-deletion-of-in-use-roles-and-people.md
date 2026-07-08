@@ -1,6 +1,7 @@
 # STORY-19: Guard deletion of roles and people that are in use
 Epic: EPIC-02
-Status: draft
+Status: done ✅
+PR: #37
 
 ## User story
 As an Admin, I want removing a role or a person that is still referenced by
