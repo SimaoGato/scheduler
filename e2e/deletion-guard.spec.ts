@@ -192,16 +192,25 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     personName2 = `STORY-19 QA Person 2 (${suffix})`;
     roleName = `STORY-19 QA Role (${suffix})`;
     roleName2 = `STORY-19 QA Role 2 (${suffix})`;
+    // Reset fixture-id tracking on every test. No leak currently exists (every
+    // test overwrites the id it uses before use, so stale-id deletes below are
+    // harmless no-ops), but resetting here keeps the pattern robust against
+    // future test additions/reordering that might otherwise read a stale id
+    // left over from a previous test.
+    personId = '';
+    personId2 = '';
+    roleId = '';
+    roleId2 = '';
   });
 
   test.afterEach(async ({ page }) => {
     // Best-effort cleanup: skill rows first (if any survived), then
     // people/roles. Soft-deletes, so order doesn't matter for CASCADE.
-    // Covers all four person x role fixture combinations (not just the
-    // "matching" pairs) because AC2/AC6 (UI) and AC4/AC6 (UI) assign
-    // person -> role2 / person2 -> role cross-pairs to build up count=2
-    // scenarios; a mid-test assertion failure must not leave an in-use
-    // person/role un-deletable by the unconfirmed DELETE calls below.
+    // Covers the three person x role fixture combinations actually created
+    // by tests below (person -> role, person -> role2, person2 -> role2;
+    // person2 -> role is never assigned) so a mid-test assertion failure
+    // doesn't leave an in-use person/role un-deletable by the unconfirmed
+    // DELETE calls below.
     if (personId && roleId) await page.request.delete(`/api/admin/people/${personId}/skills/${roleId}`);
     if (personId && roleId2) await page.request.delete(`/api/admin/people/${personId}/skills/${roleId2}`);
     if (personId2 && roleId)
@@ -326,6 +335,44 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await expect(page.locator('tr', { hasText: roleName2 })).toHaveCount(0);
     expect(await countPersonRoleSkillsForRole(roleId2)).toBe(0);
     roleId2 = ''; // already deleted; afterEach no-op
+  });
+
+  test("AC2 (UI): Save/Cancel on a row mid-edit are disabled while another row's confirm-remove banner is open", async ({
+    page,
+  }) => {
+    const person = await createPerson(page, personName);
+    personId = person.id;
+    const role = await createRole(page, roleName);
+    roleId = role.id;
+    const role2 = await createRole(page, roleName2);
+    roleId2 = role2.id;
+    await assignSkill(page, personId, roleId, 1);
+
+    await page.goto('/pt-PT/admin/roles');
+    const row = page.locator('tr', { hasText: roleName });
+    const otherRow = page.locator('tr', { hasText: roleName2 });
+
+    // Start editing role2 (not in use, no confirm prompt of its own).
+    await otherRow.locator('[data-testid^="rm-edit-"]').click();
+    const otherSave = otherRow.locator(`[data-testid="rm-save-${roleId2}"]`);
+    const otherCancel = otherRow.locator(`[data-testid="rm-cancel-${roleId2}"]`);
+    await expect(otherSave).toBeEnabled();
+    await expect(otherCancel).toBeEnabled();
+
+    // Open the confirm-remove prompt on role (in-use) while role2 is still
+    // mid-edit.
+    await row.locator('[data-testid^="rm-remove-"]').click();
+    const banner = page.getByTestId('rm-confirm-banner');
+    await expect(banner).toBeVisible();
+
+    // role2's Save/Cancel are disabled by blockedByOtherConfirm.
+    await expect(otherSave).toBeDisabled();
+    await expect(otherCancel).toBeDisabled();
+
+    // Cancelling the confirm prompt re-enables role2's Save/Cancel.
+    await row.locator('[data-testid^="rm-remove-cancel-"]').click();
+    await expect(otherSave).toBeEnabled();
+    await expect(otherCancel).toBeEnabled();
   });
 
   test('AC3: confirming an in-use role delete removes both the role and its person_role_skills rows', async ({
