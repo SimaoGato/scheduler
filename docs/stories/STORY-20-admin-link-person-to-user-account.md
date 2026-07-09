@@ -1,6 +1,7 @@
 # STORY-20: Admin links a person record to a user account
 Epic: EPIC-02
-Status: draft
+Status: done ✅
+PR: #38
 Priority: confirmed needed (was "low, reconfirm at Refine" — see note below)
 
 ## User story
