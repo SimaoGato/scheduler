@@ -161,6 +161,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'person_not_found' }, { status: 404 })
     }
 
+    // Accepted TOCTOU (STORY-18/19 pattern): the person could be soft-deleted
+    // or re-linked between this check and the UPDATE below, on this
+    // admin-only, low-concurrency surface. Worst case is a silent no-op
+    // (the `.eq('is_active', true)` guard on the UPDATE means a
+    // just-soft-deleted row simply isn't touched), not data corruption or a
+    // security issue — not worth a transaction/lock for this narrow window.
     const { error } = await serviceClient
       .from('people')
       .update({ linked_user_id: null })
