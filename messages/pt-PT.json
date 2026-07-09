@@ -48,7 +48,16 @@
     "actionLoading": "A processar...",
     "skillsButton": "Competências",
     "confirmRemoveInUse": "Esta pessoa tem {count, plural, one {# competência associada} other {# competências associadas}}. Remover mesmo assim?",
-    "confirmRemoveButton": "Remover mesmo assim"
+    "confirmRemoveButton": "Remover mesmo assim",
+    "columnAccount": "Conta",
+    "unlinkedLabel": "Sem conta",
+    "linkAccountButton": "Ligar conta",
+    "unlinkButton": "Desligar conta",
+    "linkPickerLabel": "Escolher conta a ligar",
+    "linkPickerPlaceholder": "Selecionar utilizador",
+    "confirmLinkButton": "Confirmar",
+    "errorPersonAlreadyLinked": "Esta pessoa já tem uma conta associada. Desligue primeiro.",
+    "errorUserAlreadyLinked": "Esta conta já está associada a outra pessoa."
   },
   "RoleManagement": {
     "title": "Funções",
