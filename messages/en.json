@@ -48,7 +48,16 @@
     "actionLoading": "Processing...",
     "skillsButton": "Skills",
     "confirmRemoveInUse": "This person has {count, plural, one {# associated skill} other {# associated skills}}. Remove anyway?",
-    "confirmRemoveButton": "Remove anyway"
+    "confirmRemoveButton": "Remove anyway",
+    "columnAccount": "Account",
+    "unlinkedLabel": "No account",
+    "linkAccountButton": "Link account",
+    "unlinkButton": "Unlink account",
+    "linkPickerLabel": "Choose account to link",
+    "linkPickerPlaceholder": "Select a user",
+    "confirmLinkButton": "Confirm",
+    "errorPersonAlreadyLinked": "This person already has a linked account. Unlink it first.",
+    "errorUserAlreadyLinked": "This account is already linked to another person."
   },
   "RoleManagement": {
     "title": "Roles",
