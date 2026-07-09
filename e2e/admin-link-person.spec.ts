@@ -17,18 +17,28 @@
  *         automatic) plus a button-text spot check below (per CLAUDE.md's
  *         button-text-extraction discipline: exact strings taken from
  *         messages/pt-PT.json at test-write time, not guessed).
+ *   Design decision 5 — the link picker's client-side proactive exclusion of
+ *         already-linked users (components/PeopleTable.tsx's `unlinkedUsers`)
+ *         is covered separately from AC3/AC4's server-side 409 checks by the
+ *         "picker excludes a user already linked to a different person" test.
  *
  * CI-safe tests (no real Supabase session) run unconditionally below. The
  * E2E_WITH_AUTH-gated tests further down require .env.local + a real
  * Supabase admin session and are skipped in CI.
  *
  * Fixture hygiene: each auth-gated test creates its own worker-indexed
- * fixture person(s) via the admin API in `test.beforeEach`/inline, plus a
- * throwaway linked-user fixture via a direct service-role Supabase client
- * (createThrowawayLinkedUser/deleteThrowawayLinkedUser, adapted from
- * e2e/claim.spec.ts lines ~179-211 — there is no public "create user" API,
- * so tests seed a real auth user + matching public.users row directly).
- * test.afterEach unconditionally cleans up both.
+ * fixture person(s) and user(s) inline, at the top of the test body (no
+ * shared `test.beforeEach`/`test.afterEach` — every test's fixtures and
+ * cleanup are self-contained). Person fixtures are created via the admin API
+ * (createPerson); user fixtures are created via a direct service-role
+ * Supabase client (createThrowawayLinkedUser/deleteThrowawayLinkedUser,
+ * adapted from e2e/claim.spec.ts lines ~179-211 — there is no public
+ * "create user" API, so tests seed a real auth user + matching public.users
+ * row directly). Cleanup runs in a per-test `try/finally` block immediately
+ * wrapping the fixture's usage, so it always runs whether the test passes or
+ * throws. AC1's UI-reflection step creates a *second*, nested pair of
+ * fixtures (secondPerson/secondUser) with their own nested try/finally,
+ * cleaned up before the outer person/user pair.
  *
  * Manual verification (requires .env.local + real Supabase + Google OAuth):
  *
@@ -292,18 +302,72 @@ test.describe('STORY-20: admin links/unlinks a person to a user account (auth-ga
     }
   });
 
-  test('AC6: link/unlink button text matches messages/pt-PT.json exactly', async ({ page }, testInfo) => {
+  // Design decision 5 (component doc comment in components/PeopleTable.tsx,
+  // `unlinkedUsers`): a user already linked to *any* person — including a
+  // person soft-deleted after linking — must not appear as a picker option
+  // for a *different* person. AC3/AC4 above only exercise the server-side
+  // 409 guard; this test exercises the client-side proactive exclusion that
+  // keeps a user from even being selectable in the first place.
+  test('picker excludes a user already linked to a different person', async ({ page }, testInfo) => {
+    const client = serviceClient();
+    const suffix = uniqueSuffix(testInfo);
+    const linkedPerson = await createPerson(page, `STORY-20 QA Picker LinkedPerson (${suffix})`);
+    const otherPerson = await createPerson(page, `STORY-20 QA Picker OtherPerson (${suffix})`);
+    const user = await createThrowawayLinkedUser(client, `picker-${suffix}`);
+
+    try {
+      const putResponse = await page.request.put(`/api/admin/people/${linkedPerson.id}/link`, {
+        data: { user_id: user.id },
+      });
+      expect(putResponse.status()).toBe(200);
+
+      await page.goto('/pt-PT/admin/people');
+      const otherRow = page.locator('tr', { hasText: otherPerson.name });
+      await otherRow.getByTestId(`pm-link-${otherPerson.id}`).click();
+
+      const select = otherRow.getByTestId(`pm-link-select-${otherPerson.id}`);
+      await expect(select).toBeVisible();
+
+      // The already-linked user must not appear as an option by value or by
+      // display text (proactive exclusion via `unlinkedUsers` in PeopleTable.tsx).
+      await expect(select.locator(`option[value="${user.id}"]`)).toHaveCount(0);
+      const optionTexts = await select.locator('option').allTextContents();
+      expect(optionTexts).not.toContain(user.displayName);
+    } finally {
+      await deletePerson(page, linkedPerson.id);
+      await deletePerson(page, otherPerson.id);
+      await deleteThrowawayLinkedUser(client, user.id);
+    }
+  });
+
+  test('AC6: link/unlink button text matches messages/pt-PT.json exactly (both states)', async ({
+    page,
+  }, testInfo) => {
+    const client = serviceClient();
     const suffix = uniqueSuffix(testInfo);
     const personName = `STORY-20 QA AC6 Person (${suffix})`;
     const person = await createPerson(page, personName);
+    const user = await createThrowawayLinkedUser(client, `ac6-${suffix}`);
 
     try {
       await page.goto('/pt-PT/admin/people');
       const row = page.locator('tr', { hasText: personName });
       // Extracted from messages/pt-PT.json's PeopleManagement.linkAccountButton.
       await expect(row.getByTestId(`pm-link-${person.id}`)).toHaveText('Ligar conta');
+
+      // Actually link the fixture (via the API, mirroring AC1/AC2's setup)
+      // so the unlink button actually renders, then reload to check its text.
+      const putResponse = await page.request.put(`/api/admin/people/${person.id}/link`, {
+        data: { user_id: user.id },
+      });
+      expect(putResponse.status()).toBe(200);
+
+      await page.goto('/pt-PT/admin/people');
+      // Extracted from messages/pt-PT.json's PeopleManagement.unlinkButton.
+      await expect(row.getByTestId(`pm-unlink-${person.id}`)).toHaveText('Desligar conta');
     } finally {
       await deletePerson(page, person.id);
+      await deleteThrowawayLinkedUser(client, user.id);
     }
   });
 });
