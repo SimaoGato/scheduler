@@ -12,9 +12,9 @@ interface Props {
   initiallyLinkedUserIds: string[]
 }
 
-// STORY-20: error-map convention matches RoleTable.tsx's mapErrorCode
-// (a local function, not an object-literal "keys record" — kept consistent
-// with the codebase's existing error-mapping shape).
+// STORY-20: error-map convention matches RoleTable.tsx's mapErrorCode, which
+// wraps a local object-literal lookup table (this one) in a local function —
+// kept consistent with the codebase's existing error-mapping shape.
 const LINK_ERROR_CODE_KEYS: Record<string, string> = {
   person_already_linked: 'errorPersonAlreadyLinked',
   user_already_linked: 'errorUserAlreadyLinked',
