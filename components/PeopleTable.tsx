@@ -4,12 +4,23 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import type { PersonRow } from '@/types/people'
+import type { UserRow } from '@/types/user-management'
 
 interface Props {
   initialPeople: PersonRow[]
+  allUsers: UserRow[]
+  initiallyLinkedUserIds: string[]
 }
 
-export default function PeopleTable({ initialPeople }: Props) {
+// STORY-20: error-map convention matches RoleTable.tsx's mapErrorCode
+// (a local function, not an object-literal "keys record" — kept consistent
+// with the codebase's existing error-mapping shape).
+const LINK_ERROR_CODE_KEYS: Record<string, string> = {
+  person_already_linked: 'errorPersonAlreadyLinked',
+  user_already_linked: 'errorUserAlreadyLinked',
+}
+
+export default function PeopleTable({ initialPeople, allUsers, initiallyLinkedUserIds }: Props) {
   const t = useTranslations('PeopleManagement')
   const [rows, setRows] = useState<PersonRow[]>(initialPeople)
   const [addName, setAddName] = useState('')
@@ -19,6 +30,22 @@ export default function PeopleTable({ initialPeople }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null)
+  // STORY-20: link/unlink state. takenUserIds is seeded from
+  // initiallyLinkedUserIds (which is unfiltered by is_active — Design
+  // decision 5) and updated locally on successful link/unlink, no refetch.
+  const [takenUserIds, setTakenUserIds] = useState<Set<string>>(
+    () => new Set(initiallyLinkedUserIds)
+  )
+  const [linkingId, setLinkingId] = useState<string | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState('')
+
+  function mapErrorCode(code: unknown): string {
+    const key = typeof code === 'string' ? LINK_ERROR_CODE_KEYS[code] : undefined
+    return t(key ?? 'errorGeneric')
+  }
+
+  const usersById = new Map(allUsers.map((u) => [u.id, u]))
+  const unlinkedUsers = allUsers.filter((u) => !takenUserIds.has(u.id))
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -140,6 +167,86 @@ export default function PeopleTable({ initialPeople }: Props) {
     setConfirmMessage(null)
   }
 
+  function startLinking(personId: string) {
+    setLinkingId(personId)
+    setSelectedUserId('')
+    setErrorMessage(null)
+  }
+
+  function cancelLinking() {
+    setLinkingId(null)
+    setSelectedUserId('')
+  }
+
+  // STORY-20 AC1/AC3/AC4: link a person to a user account. Follows the same
+  // setLoadingId(personId)/finally gating convention as handleAdd/handleEdit/
+  // handleRemove above.
+  async function handleLink(personId: string) {
+    if (!selectedUserId) return
+
+    setLoadingId(personId)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(`/api/admin/people/${personId}/link`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: selectedUserId }),
+      })
+
+      if (response.ok) {
+        setRows((prev) =>
+          prev.map((row) =>
+            row.id === personId ? { ...row, linked_user_id: selectedUserId } : row
+          )
+        )
+        setTakenUserIds((prev) => new Set(prev).add(selectedUserId))
+        setLinkingId(null)
+        setSelectedUserId('')
+      } else {
+        const errorBody = await response.json().catch(() => ({}))
+        setErrorMessage(mapErrorCode(errorBody.error))
+      }
+    } catch {
+      setErrorMessage(t('errorGeneric'))
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  // STORY-20 AC2: unlink a person from its user account. No confirm step
+  // (unlinking is reversible/re-linkable, unlike role/person removal).
+  async function handleUnlink(personId: string) {
+    setLoadingId(personId)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(`/api/admin/people/${personId}/link`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const unlinkedUserId = rows.find((row) => row.id === personId)?.linked_user_id ?? null
+        setRows((prev) =>
+          prev.map((row) => (row.id === personId ? { ...row, linked_user_id: null } : row))
+        )
+        if (unlinkedUserId) {
+          setTakenUserIds((prev) => {
+            const next = new Set(prev)
+            next.delete(unlinkedUserId)
+            return next
+          })
+        }
+      } else {
+        setErrorMessage(t('errorGeneric'))
+      }
+    } catch {
+      setErrorMessage(t('errorGeneric'))
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
   return (
     <div>
       {errorMessage && (
@@ -194,6 +301,7 @@ export default function PeopleTable({ initialPeople }: Props) {
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium">{t('columnName')}</th>
+                <th className="px-4 py-3 text-left font-medium">{t('columnAccount')}</th>
                 {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap makes
                     auto-layout give this column only the width its content needs,
                     so the other (unconstrained) columns absorb the remaining
@@ -206,11 +314,18 @@ export default function PeopleTable({ initialPeople }: Props) {
                 const isLoading = loadingId === person.id
                 const isEditing = editingId === person.id
                 const isConfirmingRemove = confirmingRemoveId === person.id
+                const isLinking = linkingId === person.id
                 // STORY-19: block Editar/Remover/Competências on other rows
                 // while a confirm prompt is open on any row — same
-                // convention as RoleTable.tsx.
+                // convention as RoleTable.tsx. STORY-20 extends this to also
+                // block other rows while a link picker is open anywhere in
+                // the table.
                 const blockedByOtherConfirm =
-                  confirmingRemoveId !== null && confirmingRemoveId !== person.id
+                  (confirmingRemoveId !== null && confirmingRemoveId !== person.id) ||
+                  (linkingId !== null && linkingId !== person.id)
+                const linkedUser = person.linked_user_id
+                  ? usersById.get(person.linked_user_id)
+                  : null
                 // Save/Cancel must render in the actions <td>, not this name
                 // <td>, so the actions column position doesn't jump between
                 // view/edit mode (AC4). A <form> can't validly wrap both
@@ -236,6 +351,9 @@ export default function PeopleTable({ initialPeople }: Props) {
                       ) : (
                         person.name
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {linkedUser ? linkedUser.display_name ?? linkedUser.email : t('unlinkedLabel')}
                     </td>
                     {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap
                         makes auto-layout give this column only the width its
@@ -287,6 +405,44 @@ export default function PeopleTable({ initialPeople }: Props) {
                             {t('cancelButton')}
                           </button>
                         </div>
+                      ) : isLinking ? (
+                        <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
+                          <select
+                            data-testid={`pm-link-select-${person.id}`}
+                            aria-label={t('linkPickerLabel')}
+                            value={selectedUserId}
+                            onChange={(e) => setSelectedUserId(e.target.value)}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-2 text-sm"
+                          >
+                            <option value="" disabled>
+                              {t('linkPickerPlaceholder')}
+                            </option>
+                            {unlinkedUsers.map((user) => (
+                              <option key={user.id} value={user.id}>
+                                {user.display_name ?? user.email}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            data-testid={`pm-link-confirm-${person.id}`}
+                            onClick={() => handleLink(person.id)}
+                            disabled={isLoading || !selectedUserId}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isLoading ? t('actionLoading') : t('confirmLinkButton')}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid={`pm-link-cancel-${person.id}`}
+                            onClick={cancelLinking}
+                            disabled={isLoading}
+                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {t('cancelButton')}
+                          </button>
+                        </div>
                       ) : (
                         // flex-wrap with sm:flex-nowrap: wrap only below sm (640px,
                         // Tailwind's default breakpoint), staying above the 375px
@@ -325,6 +481,25 @@ export default function PeopleTable({ initialPeople }: Props) {
                           >
                             {isLoading ? t('actionLoading') : t('removeButton')}
                           </button>
+                          {person.linked_user_id === null ? (
+                            <button
+                              data-testid={`pm-link-${person.id}`}
+                              onClick={() => startLinking(person.id)}
+                              disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
+                              className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {t('linkAccountButton')}
+                            </button>
+                          ) : (
+                            <button
+                              data-testid={`pm-unlink-${person.id}`}
+                              onClick={() => handleUnlink(person.id)}
+                              disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
+                              className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {isLoading ? t('actionLoading') : t('unlinkButton')}
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
