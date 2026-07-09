@@ -5,6 +5,7 @@ import { getSessionUser, getUserRole } from '@/lib/auth/session'
 import { createServiceClient } from '@/lib/supabase/service'
 import PeopleTable from '@/components/PeopleTable'
 import type { PersonRow } from '@/types/people'
+import type { UserRow } from '@/types/user-management'
 
 /**
  * /[locale]/admin/people — Admin-only people management page (Server Component).
@@ -66,10 +67,63 @@ export default async function AdminPeoplePage() {
     people = []
   }
 
+  // 7. STORY-20: fetch all users (for the "Conta" column display-name lookup
+  //    and the link picker's unlinked-users pool) and the full set of
+  //    already-linked user ids (unfiltered by is_active — see Design
+  //    decision 5: a user linked to a soft-deleted person still occupies
+  //    that user's "one link" slot at the DB level, so the picker must
+  //    exclude them too, not just users linked to visible/active rows).
+  let allUsers: UserRow[] = []
+  try {
+    const serviceClient = createServiceClient()
+    const { data, error } = await serviceClient
+      .from('users')
+      .select('id, email, display_name, role')
+      .order('display_name', { ascending: true })
+
+    if (error) {
+      console.error('[AdminPeoplePage] users fetch error:', error)
+    }
+
+    allUsers = (data ?? []).map((row) => ({
+      id: row.id as string,
+      email: row.email as string,
+      display_name: (row.display_name as string | null) ?? null,
+      role: row.role === 'admin' ? ('admin' as const) : ('member' as const),
+    }))
+  } catch (err) {
+    console.error('[AdminPeoplePage] users fetch exception:', err)
+    allUsers = []
+  }
+
+  let initiallyLinkedUserIds: string[] = []
+  try {
+    const serviceClient = createServiceClient()
+    const { data, error } = await serviceClient
+      .from('people')
+      .select('linked_user_id')
+      .not('linked_user_id', 'is', null)
+
+    if (error) {
+      console.error('[AdminPeoplePage] linked-user-ids fetch error:', error)
+    }
+
+    initiallyLinkedUserIds = (data ?? [])
+      .map((row) => row.linked_user_id as string | null)
+      .filter((id): id is string => id !== null)
+  } catch (err) {
+    console.error('[AdminPeoplePage] linked-user-ids fetch exception:', err)
+    initiallyLinkedUserIds = []
+  }
+
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">{t('title')}</h1>
-      <PeopleTable initialPeople={people} />
+      <PeopleTable
+        initialPeople={people}
+        allUsers={allUsers}
+        initiallyLinkedUserIds={initiallyLinkedUserIds}
+      />
     </main>
   )
 }
