@@ -193,7 +193,13 @@ test.describe('STORY-20: admin links/unlinks a person to a user account (auth-ga
         await page.goto('/pt-PT/admin/people');
         const row2 = page.locator('tr', { hasText: secondPerson.name });
         await row2.getByTestId(`pm-link-${secondPerson.id}`).click();
-        await row2.getByTestId(`pm-link-select-${secondPerson.id}`).selectOption(secondUser.id);
+        // BUGFIX-05: the link picker is now a Radix Select (SelectTrigger +
+        // Portal-rendered SelectContent), not a native <select> — no more
+        // .selectOption(). Open the trigger, then click the option by its
+        // accessible name; the option is rendered outside the row's DOM
+        // subtree (Portal), so it must be queried via `page`, not `row2`.
+        await row2.getByTestId(`pm-link-select-${secondPerson.id}`).click();
+        await page.getByRole('option', { name: secondUser.displayName }).click();
         await row2.getByTestId(`pm-link-confirm-${secondPerson.id}`).click();
         await expect(row2).toContainText(secondUser.displayName);
       } finally {
@@ -325,14 +331,19 @@ test.describe('STORY-20: admin links/unlinks a person to a user account (auth-ga
       const otherRow = page.locator('tr', { hasText: otherPerson.name });
       await otherRow.getByTestId(`pm-link-${otherPerson.id}`).click();
 
-      const select = otherRow.getByTestId(`pm-link-select-${otherPerson.id}`);
-      await expect(select).toBeVisible();
+      const trigger = otherRow.getByTestId(`pm-link-select-${otherPerson.id}`);
+      await expect(trigger).toBeVisible();
 
-      // The already-linked user must not appear as an option by value or by
-      // display text (proactive exclusion via `unlinkedUsers` in PeopleTable.tsx).
-      await expect(select.locator(`option[value="${user.id}"]`)).toHaveCount(0);
-      const optionTexts = await select.locator('option').allTextContents();
-      expect(optionTexts).not.toContain(user.displayName);
+      // BUGFIX-05: the picker is now a Radix Select — there is no
+      // `<option>` DOM to query directly. Open the trigger and query
+      // rendered `role="option"` elements via `page` (Portal-rendered,
+      // outside `otherRow`'s DOM subtree), asserting the already-linked
+      // user never appears as a selectable choice (proactive exclusion via
+      // `unlinkedUsers` in PeopleTable.tsx) — same intent as before, only
+      // the DOM query mechanism changed.
+      await trigger.click();
+      await expect(page.getByRole('listbox')).toBeVisible();
+      await expect(page.getByRole('option', { name: user.displayName })).toHaveCount(0);
     } finally {
       await deletePerson(page, linkedPerson.id);
       await deletePerson(page, otherPerson.id);
