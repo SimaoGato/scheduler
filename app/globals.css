@@ -4,6 +4,17 @@
 
 @layer base {
   :root {
+    /* BUGFIX-04: explicit per-class color-scheme (not the `light dark`
+       shorthand) so native widget chrome (e.g. the "Ligar conta" <select>
+       popup, radio ring/dot painting) tracks the app's class-driven .dark
+       toggle instead of re-coupling to the OS's prefers-color-scheme, which
+       would regress CHORE-11 AC3 (explicit in-app theme choice overriding
+       OS preference). Also closes a real gap next-themes' own
+       enableColorScheme inline-style mechanism does not cover: the
+       CHORE-13 SSR-rendered .dark class (and any soft-navigation remount)
+       has no inline color-scheme until next-themes' client script/effect
+       runs; this CSS declaration is authoritative immediately on SSR paint. */
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -36,6 +47,8 @@
     --radius: 0.5rem;
   }
   .dark {
+    /* BUGFIX-04: see :root's color-scheme comment above. */
+    color-scheme: dark;
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
