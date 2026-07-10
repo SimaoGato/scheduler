@@ -3,6 +3,13 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { PersonRow } from '@/types/people'
 import type { UserRow } from '@/types/user-management'
 
@@ -407,23 +414,22 @@ export default function PeopleTable({ initialPeople, allUsers, initiallyLinkedUs
                         </div>
                       ) : isLinking ? (
                         <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
-                          <select
-                            data-testid={`pm-link-select-${person.id}`}
-                            aria-label={t('linkPickerLabel')}
-                            value={selectedUserId}
-                            onChange={(e) => setSelectedUserId(e.target.value)}
-                            disabled={isLoading}
-                            className="min-h-[44px] rounded-md border px-2 text-sm"
-                          >
-                            <option value="" disabled>
-                              {t('linkPickerPlaceholder')}
-                            </option>
-                            {unlinkedUsers.map((user) => (
-                              <option key={user.id} value={user.id}>
-                                {user.display_name ?? user.email}
-                              </option>
-                            ))}
-                          </select>
+                          <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={isLoading}>
+                            <SelectTrigger
+                              data-testid={`pm-link-select-${person.id}`}
+                              aria-label={t('linkPickerLabel')}
+                              className="min-h-[44px] w-auto text-sm"
+                            >
+                              <SelectValue placeholder={t('linkPickerPlaceholder')} />
+                            </SelectTrigger>
+                            <SelectContent position="popper">
+                              {unlinkedUsers.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.display_name ?? user.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <button
                             type="button"
                             data-testid={`pm-link-confirm-${person.id}`}
