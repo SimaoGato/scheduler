@@ -1,5 +1,6 @@
 # BUGFIX-04: Link-account `<select>` picker is unreadable in dark mode until hovered
-Status: implemented (QA pending human verification — see QA / Manual verification section)
+Status: done ✅
+PR: 39
 Related story: STORY-20 (introduced the "Ligar conta" picker in `components/PeopleTable.tsx`)
 Epic: EPIC-02
 
