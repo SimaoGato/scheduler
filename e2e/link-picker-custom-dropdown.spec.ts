@@ -254,7 +254,6 @@ test.describe('BUGFIX-05: link picker custom dropdown (auth-gated)', () => {
       const backgroundColor = await listbox.evaluate((el) => getComputedStyle(el).backgroundColor);
 
       const options = page.getByRole('option');
-      await expect(options).toHaveCount(await options.count()); // sanity: resolved
       const optionCount = await options.count();
       expect(optionCount).toBeGreaterThan(0);
 
@@ -344,18 +343,58 @@ test.describe('BUGFIX-05: link picker custom dropdown (auth-gated)', () => {
         highlighted = page.locator('[role="option"][data-highlighted]');
       }
       await expect(highlighted).toHaveCount(1);
+
+      // Visually distinguishable (not just DOM-attribute presence): confirm
+      // the highlighted item's actual rendered background/text colors
+      // differ measurably from a non-highlighted item's. Asserting only
+      // `data-highlighted`'s presence would not catch a regression that
+      // silently dropped `focus:bg-accent`/`focus:text-accent-foreground`
+      // from `SelectItem` (components/ui/select.tsx) while the attribute
+      // itself stayed present.
+      const nonHighlightedOption = page.locator('[role="option"]:not([data-highlighted])').first();
+      await expect(nonHighlightedOption).toBeVisible();
+      const [highlightedBackground, nonHighlightedBackground] = await Promise.all([
+        highlighted.evaluate((el) => getComputedStyle(el).backgroundColor),
+        nonHighlightedOption.evaluate((el) => getComputedStyle(el).backgroundColor),
+      ]);
+      expect(highlightedBackground).not.toBe(nonHighlightedBackground);
+      // Reuse the WCAG contrast helper as a "measurably different" check
+      // between the two backgrounds (not a text-on-background AA check —
+      // just confirming the color values are genuinely distinct, not a
+      // rounding/anti-aliasing artifact).
+      expect(contrastRatio(highlightedBackground, nonHighlightedBackground)).toBeGreaterThan(1.1);
+
       const highlightedText = await highlighted.textContent();
 
       await page.keyboard.press('Enter');
       await expect(trigger).toHaveAttribute('aria-expanded', 'false');
       await expect(trigger).toContainText(highlightedText!.trim());
 
-      // Reopen and Escape: popup closes, previous selection unchanged.
+      // Reopen, move the highlight to a genuinely *different* option than
+      // the confirmed selection, THEN press Escape. Radix auto-focuses the
+      // already-selected item on open, so pressing Escape immediately
+      // (without first moving the highlight) can't distinguish "selection
+      // unchanged after Escape" (correct) from "Escape re-committed the
+      // already-highlighted item" (a hypothetical regression) — both would
+      // leave the trigger showing the same text. Moving the highlight first
+      // makes this assertion capable of catching a real regression.
       await trigger.focus();
       await page.keyboard.press('Enter');
       await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      await page.keyboard.press('ArrowDown');
+      const highlightedAfterReopen = page.locator('[role="option"][data-highlighted]');
+      await expect(highlightedAfterReopen).toHaveCount(1);
+      const highlightedAfterReopenText = (await highlightedAfterReopen.textContent())!.trim();
+      // Sanity: the ArrowDown must have actually moved the highlight to a
+      // different option than the confirmed selection — with only two
+      // fixture users in the list, one ArrowDown press from the
+      // auto-focused (already-selected) item always lands on the other one.
+      expect(highlightedAfterReopenText).not.toBe(highlightedText!.trim());
+
       await page.keyboard.press('Escape');
       await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The selection must still be the ORIGINAL confirmed value, not the
+      // newly-highlighted-but-never-confirmed option.
       await expect(trigger).toContainText(highlightedText!.trim());
     } finally {
       await deletePerson(page, person.id);
