@@ -28,14 +28,8 @@
  *       AC2 pattern for the `.dark` class itself).
  *
  *   E2E_WITH_AUTH-gated (require a real Supabase admin session):
- *     - AC1 (element-level): with theme forced to dark via localStorage, the
- *       "Ligar conta" picker's `<select>` (`pm-link-select-{id}`) resolves
- *       `getComputedStyle(select).colorScheme === 'dark'` — the closest
- *       automatable proxy to "this element's native popup renders dark";
- *       Playwright/Chromium does not expose the OS-native `<option>` popup's
- *       rendered pixels to the DOM/CSSOM.
  *     - AC4 (regression check): opening the picker still yields a >=44px
- *       tall `<select>` with the `pm-link-select-{id}` testid and an
+ *       tall control with the `pm-link-select-{id}` testid and an
  *       `aria-label` matching messages/pt-PT.json's `linkPickerLabel`
  *       ("Escolher conta a ligar") — no regression from this CSS-only fix.
  *
@@ -51,6 +45,30 @@
  *       native radio inputs in both themes (color-scheme is inherited and
  *       root-scoped, so this fix's blast radius includes them even though no
  *       code in that component changed).
+ *
+ * SUPERSEDED BY BUGFIX-05 (2026-07-10): the reporting user confirmed the
+ * "Ligar conta" popup was *still* unreadable on Windows Chrome/Edge dark
+ * mode after this fix shipped — a genuine Chromium cross-platform popup-
+ * rendering limitation (native `<select>` popup background painting does
+ * not consistently follow `color-scheme` on Windows), not something a
+ * CSS-only fix can close. BUGFIX-05 replaced the native `<select>` with a
+ * Radix `Select` (shadcn/ui) that renders its own themed DOM popup instead
+ * of relying on the OS-native popup. As a direct result, the AC1
+ * "element-level" test formerly here — asserting
+ * `getComputedStyle(select).colorScheme === 'dark'` on the picker element —
+ * has been REMOVED: the picker is now a `<button>`-like `SelectTrigger`,
+ * not a `<select>`, so that assertion no longer describes anything
+ * meaningful about the popup's actual rendered contrast, and would not fail
+ * even if the new popup were unreadable. The popup's actual rendered
+ * contrast is now tested directly (via `getComputedStyle()` on real DOM
+ * nodes, since Radix's popup is a normal same-document node, not an opaque
+ * native one) in e2e/link-picker-custom-dropdown.spec.ts's AC1/AC2 tests.
+ * The static/mechanism tests below (testing the `color-scheme` CSS
+ * declaration itself, still shipped per BUGFIX-05's "Out of scope" — the
+ * declaration remains correct/useful for other native controls, e.g. any
+ * future `<input type="date">`) and the AC4 tap-target/testid/aria-label
+ * regression check (still meaningful against the new `SelectTrigger`, which
+ * preserves the same `data-testid`/`aria-label` contract) are unchanged.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -163,35 +181,8 @@ async function deletePerson(page: Page, id: string): Promise<void> {
   await page.request.delete(`/api/admin/people/${id}`);
 }
 
-test.describe('BUGFIX-04: link picker <select> color-scheme (auth-gated)', () => {
+test.describe('BUGFIX-04: link picker color-scheme (auth-gated; AC1 element-level check removed — see BUGFIX-05 superseded-by note above)', () => {
   test.skip(!process.env.E2E_WITH_AUTH, 'Admin pages require authentication; see manual steps in story file.');
-
-  test('AC1 (element): pm-link-select resolves colorScheme to dark when the app theme is dark', async ({
-    page,
-  }, testInfo) => {
-    const suffix = uniqueSuffix(testInfo);
-    const personName = `BUGFIX-04 QA Person (${suffix})`;
-    const person = await createPerson(page, personName);
-
-    try {
-      await page.addInitScript(() => {
-        window.localStorage.setItem('theme', 'dark');
-      });
-      await page.goto('/pt-PT/admin/people');
-      await expect(page.locator('html')).toHaveClass(/dark/);
-
-      const row = page.locator('tr', { hasText: personName });
-      await row.getByTestId(`pm-link-${person.id}`).click();
-
-      const select = row.getByTestId(`pm-link-select-${person.id}`);
-      await expect(select).toBeVisible();
-
-      const colorScheme = await select.evaluate((el) => getComputedStyle(el).colorScheme);
-      expect(colorScheme).toBe('dark');
-    } finally {
-      await deletePerson(page, person.id);
-    }
-  });
 
   test('AC4: picker regression — 44px tap target, pm-link-select testid, and aria-label wiring unchanged', async ({
     page,
@@ -205,14 +196,14 @@ test.describe('BUGFIX-04: link picker <select> color-scheme (auth-gated)', () =>
       const row = page.locator('tr', { hasText: personName });
       await row.getByTestId(`pm-link-${person.id}`).click();
 
-      const select = row.getByTestId(`pm-link-select-${person.id}`);
-      await expect(select).toBeVisible();
+      const trigger = row.getByTestId(`pm-link-select-${person.id}`);
+      await expect(trigger).toBeVisible();
 
-      const box = await select.boundingBox();
+      const box = await trigger.boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
 
       // Extracted from messages/pt-PT.json's PeopleManagement.linkPickerLabel.
-      await expect(select).toHaveAttribute('aria-label', 'Escolher conta a ligar');
+      await expect(trigger).toHaveAttribute('aria-label', 'Escolher conta a ligar');
     } finally {
       await deletePerson(page, person.id);
     }
