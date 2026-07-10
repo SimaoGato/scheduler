@@ -1,5 +1,6 @@
 # BUGFIX-05: Replace native `<select>` link-account picker with a custom-styled dropdown (Windows Chrome/Edge dark-mode popup still unreadable after BUGFIX-04)
 Status: done ✅ (implementation + automated tests + design-time/source-level verification complete; mandatory manual checklist — Windows Chrome/Edge, mobile touch, screen reader, and all `E2E_WITH_AUTH`-gated tests — not executable from this sandbox; see QA section below for the honest split and the "Action needed" list)
+PR: 40
 Related story: STORY-20 (introduced the "Ligar conta" picker in `components/PeopleTable.tsx`),
 BUGFIX-04 (attempted a `color-scheme` CSS fix for the same symptom — confirmed
 insufficient on the primary target platform; superseded by this story)
