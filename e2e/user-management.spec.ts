@@ -97,6 +97,13 @@ type AdminUserRow = { id: string; email: string; display_name: string | null };
  * Does not hand-decode the Supabase session cookie/JWT — only uses fields
  * already returned by GET /api/admin/users, per this repo's convention of
  * not hand-rolling @supabase/ssr's cookie encoding in tests.
+ *
+ * `display_name` has no DB uniqueness constraint, so a naive `.find()` could
+ * silently return the wrong admin's row if two accounts share a display
+ * name — and since AC2's test PATCHes that row to `role: 'member'`, a
+ * collision could actually demote a real, unrelated admin account. Filter
+ * to all candidates and fail loudly on more than one match instead of
+ * silently picking the first.
  */
 async function findSelf(page: Page): Promise<AdminUserRow> {
   const identityText = (await page.locator('[data-testid="user-identity"]').textContent())?.trim();
@@ -106,12 +113,21 @@ async function findSelf(page: Page): Promise<AdminUserRow> {
   expect(listResponse.status()).toBe(200);
   const users = (await listResponse.json()) as AdminUserRow[];
 
-  let self = users.find((u) => u.display_name === identityText);
+  let candidates = users.filter((u) => u.display_name === identityText);
 
-  if (!self && process.env.E2E_ADMIN_EMAIL) {
-    self = users.find((u) => u.email === process.env.E2E_ADMIN_EMAIL);
+  if (candidates.length === 0 && process.env.E2E_ADMIN_EMAIL) {
+    candidates = users.filter((u) => u.email === process.env.E2E_ADMIN_EMAIL);
   }
 
+  if (candidates.length > 1) {
+    throw new Error(
+      `findSelf: found ${candidates.length} candidate rows matching own identity ` +
+        '(display_name or E2E_ADMIN_EMAIL collision) — refusing to guess which one is ' +
+        'the logged-in user, since PATCHing the wrong row could demote an unrelated admin.'
+    );
+  }
+
+  const self = candidates[0];
   expect(self, 'Could not resolve own user row by display_name or E2E_ADMIN_EMAIL fallback').toBeTruthy();
   return self!;
 }
