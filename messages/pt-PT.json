@@ -19,6 +19,7 @@
     "promoteButton": "Promover a Administrador",
     "demoteButton": "Rebaixar a Membro",
     "errorLastAdmin": "Não é possível remover o único Administrador.",
+    "errorSelfDemotion": "Não pode remover os seus próprios privilégios de administrador.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "actionLoading": "A processar..."
   },

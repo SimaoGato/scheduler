@@ -19,6 +19,7 @@
     "promoteButton": "Promote to Administrator",
     "demoteButton": "Demote to Member",
     "errorLastAdmin": "Cannot remove the only Administrator.",
+    "errorSelfDemotion": "You cannot remove your own administrator privileges.",
     "errorGeneric": "Something went wrong. Please try again.",
     "actionLoading": "Processing..."
   },
