@@ -6,9 +6,10 @@ import type { UserRow } from '@/types/user-management'
 
 interface Props {
   initialUsers: UserRow[]
+  currentUserId: string
 }
 
-export default function UserTable({ initialUsers }: Props) {
+export default function UserTable({ initialUsers, currentUserId }: Props) {
   const t = useTranslations('UserManagement')
   const [rows, setRows] = useState<UserRow[]>(initialUsers)
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -29,10 +30,19 @@ export default function UserTable({ initialUsers }: Props) {
         setRows((prev) =>
           prev.map((row) => (row.id === userId ? { ...row, role: newRole } : row))
         )
-      } else if (response.status === 409) {
-        setErrorMessage(t('errorLastAdmin'))
       } else {
-        setErrorMessage(t('errorGeneric'))
+        let code: string | undefined
+        try {
+          const errBody = await response.json()
+          code = typeof errBody?.error === 'string' ? errBody.error : undefined
+        } catch {
+          code = undefined
+        }
+        const errorMap: Record<string, string> = {
+          last_admin: t('errorLastAdmin'),
+          self_demotion: t('errorSelfDemotion'),
+        }
+        setErrorMessage(code && errorMap[code] ? errorMap[code] : t('errorGeneric'))
       }
     } catch {
       setErrorMessage(t('errorGeneric'))
@@ -73,7 +83,7 @@ export default function UserTable({ initialUsers }: Props) {
                     {user.role === 'admin' ? t('roleAdmin') : t('roleMember')}
                   </td>
                   <td className="w-[1%] whitespace-nowrap px-4 py-3 text-right">
-                    {user.role === 'member' ? (
+                    {user.id === currentUserId ? null : user.role === 'member' ? (
                       <button
                         data-testid={`um-promote-${user.id}`}
                         onClick={() => handleRoleChange(user.id, 'admin')}
