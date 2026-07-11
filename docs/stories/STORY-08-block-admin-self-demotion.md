@@ -1,6 +1,7 @@
 # STORY-08: Block admin self-demotion on user-management screen
 Epic: EPIC-01
 Status: done ✅
+PR: 42
 
 ## User story
 As an Admin, I want the "Rebaixar" button on my own row to be absent (or
