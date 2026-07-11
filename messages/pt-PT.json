@@ -5,6 +5,7 @@
   },
   "Nav": {
     "ariaLabel": "Navegação principal",
+    "availability": "Disponibilidade",
     "userManagement": "Utilizadores",
     "people": "Equipa",
     "roles": "Funções"
@@ -132,5 +133,16 @@
     "emptyRoles": "Não existem funções configuradas. Crie uma função primeiro.",
     "errorInvalidLevel": "Nível inválido.",
     "errorGeneric": "Ocorreu um erro. Tente novamente."
+  },
+  "Availability": {
+    "title": "A tua disponibilidade",
+    "instructions": "Toca num domingo para o marcar como indisponível. Toca novamente para o marcar como disponível.",
+    "stateAvailable": "Disponível",
+    "stateBlocked": "Indisponível",
+    "errorGeneric": "Ocorreu um erro. Tenta novamente.",
+    "loadError": "Não foi possível carregar a tua disponibilidade. Tenta novamente mais tarde.",
+    "noLinkedPersonTitle": "A tua conta ainda não está associada",
+    "noLinkedPersonDescription": "Para gerires a tua disponibilidade, primeiro associa a tua conta ao teu nome na equipa.",
+    "noLinkedPersonCta": "Associar conta"
   }
 }
