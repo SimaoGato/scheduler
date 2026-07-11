@@ -14,7 +14,24 @@
 // to this file.
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(url)) {
+
+// Parse the URL and check `.hostname` against an exact allow-list, rather
+// than a string-prefix regex. A regex like
+// /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/ has a URL-userinfo bypass:
+// `http://127.0.0.1:1234@evil.com/` matches it (the `:` right after
+// `127.0.0.1` satisfies the terminator group) even though `fetch`/URL
+// machinery actually connects to `evil.com`, not `127.0.0.1`. Parsing with
+// `new URL()` and comparing `.hostname` is immune to this because the
+// userinfo subcomponent (`user:pass@`) is never part of `.hostname`.
+let hostname
+try {
+  hostname = new URL(url).hostname
+} catch {
+  console.error('[seed-test-users] invalid Supabase URL:', url)
+  process.exit(1)
+}
+
+if (hostname !== '127.0.0.1' && hostname !== 'localhost') {
   console.error(
     '[seed-test-users] refusing to run against non-local Supabase URL:',
     url,
@@ -49,8 +66,14 @@ async function createAuthUser(id, email) {
 
   if (error) {
     // Idempotent: re-running against a persisted local stack during
-    // development is fine as long as the user already exists.
-    if (/already been registered/i.test(error.message)) {
+    // development is fine as long as the user already exists. Prefer the
+    // stable machine-readable `code` (GoTrue's error-codes.ts: 'email_exists')
+    // over matching a substring of the free-text message, which could
+    // change without notice; keep the message match as a fallback for
+    // older/self-hosted GoTrue versions that don't set `code`.
+    const alreadyExists =
+      error.code === 'email_exists' || /already been registered/i.test(error.message)
+    if (alreadyExists) {
       console.log(`[seed-test-users] ${email} already exists, skipping create`)
       return
     }

@@ -58,6 +58,15 @@ async function signInAndGetCookies(email: string, password: string): Promise<Cap
     throw new Error(`signInWithPassword failed for ${email}: ${error.message}`)
   }
 
+  // Fail fast if @supabase/ssr stops calling `setAll` in some future
+  // version — without this guard, an empty cookie header would silently
+  // produce a confusing 401 downstream instead of a clear error here.
+  if (cookies.length === 0) {
+    throw new Error(
+      `signInWithPassword for ${email} succeeded but no cookies were captured via setAll()`
+    )
+  }
+
   return cookies
 }
 
@@ -70,23 +79,27 @@ interface IntegrationFixtures {
   memberRequest: APIRequestContext
 }
 
+async function createAuthenticatedRequestContext(
+  playwright: typeof import('playwright-core'),
+  baseURL: string | undefined,
+  email: string
+): Promise<APIRequestContext> {
+  const cookies = await signInAndGetCookies(email, TEST_PASSWORD)
+  return playwright.request.newContext({
+    baseURL,
+    extraHTTPHeaders: { Cookie: toCookieHeader(cookies) },
+  })
+}
+
 export const test = base.extend<IntegrationFixtures>({
   adminRequest: async ({ playwright, baseURL }, provideContext) => {
-    const cookies = await signInAndGetCookies(ADMIN_EMAIL, TEST_PASSWORD)
-    const context = await playwright.request.newContext({
-      baseURL,
-      extraHTTPHeaders: { Cookie: toCookieHeader(cookies) },
-    })
+    const context = await createAuthenticatedRequestContext(playwright, baseURL, ADMIN_EMAIL)
     await provideContext(context)
     await context.dispose()
   },
 
   memberRequest: async ({ playwright, baseURL }, provideContext) => {
-    const cookies = await signInAndGetCookies(MEMBER_EMAIL, TEST_PASSWORD)
-    const context = await playwright.request.newContext({
-      baseURL,
-      extraHTTPHeaders: { Cookie: toCookieHeader(cookies) },
-    })
+    const context = await createAuthenticatedRequestContext(playwright, baseURL, MEMBER_EMAIL)
     await provideContext(context)
     await context.dispose()
   },

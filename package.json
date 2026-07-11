@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:unit": "node --test supabase/*.test.mjs",
     "test:e2e": "playwright test",
     "test:integration": "playwright test --config=playwright.integration.config.ts"
   },
