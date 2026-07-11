@@ -35,10 +35,14 @@ import { serviceClient } from './service-client'
 import { MEMBER_ID } from '../supabase/test-users.mjs'
 
 // ---------------------------------------------------------------------------
-// Date helpers — mirror lib/availability/upcoming-sundays.ts's UTC idiom so
-// the test can independently compute the expected date list without
-// importing production code (keeps the test honest about what the UI should
-// show, not just a mirror of the implementation).
+// Date helpers — reimplement lib/availability/upcoming-sundays.ts's UTC
+// day-offset formula rather than importing it, so this helper alone does NOT
+// provide independent verification (a bug shared by both implementations
+// would go undetected here). The genuine independent check is the AC1 test's
+// separate `Intl.DateTimeFormat('pt-PT', ...)` text assertion, which derives
+// the expected pt-PT date strings via a different code path than the
+// production `formatSunday`/`next-intl` formatter and would catch a
+// date-math bug that this mirrored helper would not.
 // ---------------------------------------------------------------------------
 
 function toDateString(d: Date): string {
@@ -263,6 +267,19 @@ test.describe('STORY-26: availability toggle list (Member, linked person, no blo
       const box = await button.boundingBox()
       expect(box).not.toBeNull()
       expect(box!.height).toBeGreaterThanOrEqual(44)
+
+      // QA regression guard: the date span and the state-label span must
+      // have visible breathing room between them (gap-2 utility on the flex
+      // container) regardless of pt-PT date-string length, otherwise
+      // borderline-length dates visually run together at 375px (e.g.
+      // "...2026Disponível").
+      const gap = await button.evaluate((el) => {
+        const spans = el.querySelectorAll('span')
+        const first = spans[0].getBoundingClientRect()
+        const second = spans[1].getBoundingClientRect()
+        return second.left - first.right
+      })
+      expect(gap).toBeGreaterThanOrEqual(8)
     }
   })
 })

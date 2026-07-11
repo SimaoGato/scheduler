@@ -141,7 +141,7 @@ export default function AvailabilityToggleList({ sundays, initialBlockedDates }:
                 disabled={isPending}
                 onClick={() => handleToggle(date)}
                 aria-label={`${formattedDate} — ${stateLabel}`}
-                className={`flex min-h-[44px] w-full items-center justify-between rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-50 ${
+                className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-md border px-4 py-2 text-sm transition-colors disabled:opacity-50 ${
                   isBlocked
                     ? 'border-destructive bg-destructive/10 text-destructive'
                     : 'hover:bg-accent'
