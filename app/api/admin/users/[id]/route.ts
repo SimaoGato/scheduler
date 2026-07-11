@@ -8,6 +8,12 @@ import { createServiceClient } from '@/lib/supabase/service'
  * Authentication: requireAdmin (401 if not authenticated, 403 if not admin).
  * Body: { role: 'admin' | 'member' }
  *
+ * Self-demotion guard (STORY-08): an admin can never demote themselves,
+ * regardless of how many admins currently exist. Blocked with 400
+ * { error: 'self_demotion' }. This check runs before the last-admin
+ * safeguard so it takes precedence in the single-admin edge case too.
+ * Self-promotion (no-op, role: 'admin') on one's own row is not blocked.
+ *
  * Last-admin safeguard: if demoting to 'member' and there is only one admin
  * remaining, the action is blocked with 409 { error: 'last_admin' }.
  */
@@ -30,6 +36,17 @@ export async function PATCH(
 
     const role: 'admin' | 'member' =
       rawRole === 'admin' ? ('admin' as const) : ('member' as const)
+
+    // Self-demotion guard (STORY-08, AC2/AC3): an admin can never demote
+    // themselves, regardless of how many admins currently exist. This check
+    // intentionally runs BEFORE the last-admin count query below so it takes
+    // precedence in the single-admin edge case too — self-demoting the only
+    // admin must return 400 { error: 'self_demotion' }, not 409
+    // { error: 'last_admin' }. Self-promotion (no-op, role: 'admin') is
+    // deliberately NOT blocked here (AC3) — the condition requires role === 'member'.
+    if (userId === result.user.id && role === 'member') {
+      return NextResponse.json({ error: 'self_demotion' }, { status: 400 })
+    }
 
     const serviceClient = createServiceClient()
 
