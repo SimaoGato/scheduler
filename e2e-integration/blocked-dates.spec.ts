@@ -23,8 +23,12 @@
  *   AC2 — POST creates a block; re-POST same date is idempotent (200, one row).
  *   AC3 — DELETE removes a block; repeat DELETE is idempotent (200, no-op).
  *   AC4 — GET lists exactly the caller's own blocked dates.
- *   AC5 — malformed/non-Sunday dates → 400 invalid_date / not_sunday.
- *   AC6 — no linked person → 409 no_linked_person on all three routes.
+ *   AC5 — malformed/non-Sunday dates → 400 invalid_date / not_sunday; a
+ *         genuinely non-JSON body → 400 invalid_json.
+ *   AC6 — no linked person → 409 no_linked_person on all three routes,
+ *         including the case where a linked person row exists but is
+ *         soft-deleted (is_active=false), exercising the is_active filter in
+ *         lib/people/resolve-self.ts.
  *   AC7 — unauthenticated → 401 on all three routes, nothing written.
  *   AC8 — getBlockedDates() query helper is queryable by personIds and by
  *         date range.
@@ -230,6 +234,28 @@ test.describe('STORY-25: AC5 date validation', () => {
 
     expect(await readBlockedDates(personId)).toEqual([])
   })
+
+  test('POST with a genuinely malformed (non-JSON) body returns 400 invalid_json', async ({
+    memberRequest,
+  }) => {
+    // Distinct from the well-formed-JSON-but-invalid-value cases above: this
+    // sends a raw string that fails JSON.parse itself, exercising the
+    // separate try/catch around request.json() in the route handler.
+    //
+    // Deliberately no explicit Content-Type header: Playwright's
+    // APIRequestContext only JSON.stringify-wraps a string `data` payload
+    // (turning "not json" into the JSON string literal `"not json"`, which
+    // parses fine) when the request has a JSON content-type header set. With
+    // no header override, the raw, non-JSON-parsable string is sent as-is,
+    // which is what this test needs to exercise the invalid_json branch.
+    const response = await memberRequest.post('/api/availability/blocks', {
+      data: 'not json',
+    })
+    expect(response.status()).toBe(400)
+    expect((await response.json()).error).toBe('invalid_json')
+
+    expect(await readBlockedDates(personId)).toEqual([])
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -293,6 +319,39 @@ test.describe('STORY-25: AC6 no linked person', () => {
       .eq('is_active', true)
       .maybeSingle()
     expect(data).toBeNull()
+  })
+
+  test('a soft-deleted (is_active=false) linked person is treated as no_linked_person, distinct from having no people row at all', async ({
+    memberRequest,
+  }) => {
+    // Regression coverage for the `is_active` filter in
+    // lib/people/resolve-self.ts: a stale linked_user_id on an inactive
+    // person must not resolve to a usable personId.
+    const person = await createLinkedPerson('STORY-25 QA Inactive Linked Person', MEMBER_ID)
+    const client = serviceClient()
+    const { error: deactivateError } = await client
+      .from('people')
+      .update({ is_active: false })
+      .eq('id', person.id)
+    if (deactivateError) throw new Error(`failed to deactivate fixture person: ${JSON.stringify(deactivateError)}`)
+
+    try {
+      const date = nextSunday()
+
+      const getResponse = await memberRequest.get('/api/availability/blocks')
+      expect(getResponse.status()).toBe(409)
+      expect((await getResponse.json()).error).toBe('no_linked_person')
+
+      const postResponse = await memberRequest.post('/api/availability/blocks', { data: { date } })
+      expect(postResponse.status()).toBe(409)
+      expect((await postResponse.json()).error).toBe('no_linked_person')
+
+      const deleteResponse = await memberRequest.delete(`/api/availability/blocks/${date}`)
+      expect(deleteResponse.status()).toBe(409)
+      expect((await deleteResponse.json()).error).toBe('no_linked_person')
+    } finally {
+      await deletePerson(person.id)
+    }
   })
 })
 

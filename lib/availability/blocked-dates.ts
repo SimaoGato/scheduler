@@ -1,14 +1,16 @@
-// No `import 'server-only'` here: unlike lib/skills/qualified-roles.ts (this
-// module's closest precedent), getBlockedDates is directly imported by
-// e2e-integration/blocked-dates.spec.ts (AC8) to exercise personIds/date-range
-// filtering against seeded fixture rows — a direct-import test the other
-// query helper never needed since it's only ever exercised indirectly
-// through a Route Handler. `server-only` throws at import time under
-// Playwright's Node-based test runner (no `react-server` export condition
-// is set there), so adding it would break that test. This module takes only
-// a generic SupabaseClient with no other transitively-server-bound import,
-// so the risk of an accidental client-bundle import is low; Route Handlers
-// remain the only production callers.
+// No `import 'server-only'` here — this is a standalone exception, not a
+// redundancy argument like lib/auth/session.ts (which omits the marker
+// because `next/headers` already gives it a transitive bundler-level server
+// boundary). This module has no such transitive boundary: it takes only a
+// generic SupabaseClient parameter and embeds no secrets, and it must be
+// directly importable by e2e-integration/blocked-dates.spec.ts (AC8's test
+// plan) to exercise personIds/date-range filtering against seeded fixture
+// rows under Playwright's plain Node-based test runner (no `react-server`
+// export condition is set there). `server-only`'s package.json only swaps to
+// the safe `empty.js` export under that condition, so adding the marker here
+// would throw at import time and break that test. Route Handlers remain the
+// only production callers, and the absence of secrets/transitive
+// server-bound imports keeps the accidental-client-bundle risk low.
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
