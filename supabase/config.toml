@@ -3,6 +3,10 @@
 # project_id is used for local Supabase CLI operations.
 # In CI, the --project-ref flag overrides this value.
 # For local use, set this to your dev project ref (see CHORE-03).
+#
+# CI integration tests (CHORE-05) run `supabase start` locally against this
+# config; this is unrelated to day-to-day dev, which uses a shared cloud
+# project per CHORE-03 — see supabase/seed-test-users.mjs.
 project_id = "your-dev-project-ref"
 
 [db]
