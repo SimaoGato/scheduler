@@ -1,6 +1,7 @@
 # STORY-25: Persist blocked dates — data model and self-service API
 Epic: EPIC-03
-Status: draft
+Status: done ✅
+PR: 44
 
 ## User story
 As a Member, I want the Sundays I block to be stored reliably and scoped to me,
