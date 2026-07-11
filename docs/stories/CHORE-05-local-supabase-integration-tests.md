@@ -1,6 +1,6 @@
 # CHORE-05: Local Supabase integration tests for authenticated API paths
 Epic: maintenance
-Status: draft
+Status: implemented (PR open, pending CI/review)
 
 ## Task
 Add a CI integration-test job that spins up a local Supabase instance
@@ -489,3 +489,103 @@ and GitHub Actions artifact handling). Per CLAUDE.md's classification rubric
 this is well above `standard` — it's exactly the kind of "three or more
 interacting systems" + auth story the rubric calls out as `complex`, even
 though no production application code changes.
+
+---
+
+## Implementation notes (2026-07-11)
+
+### Deviation from the plan: `supabase status -o env` quoting bug
+
+Finding 6 flagged that the exact variable **names** printed by
+`supabase status -o env` needed empirical confirmation before the workflow
+YAML was final. This sandbox happened to have Docker available (with an
+unrelated local Supabase stack already occupying the default ports —
+exactly as Finding 6 predicted), so a real `supabase start` was run here
+against alternate ports (`55321`/`55322`/etc., configured via a
+local-only, never-committed edit to `supabase/config.toml`, fully reverted
+afterwards) to verify empirically rather than relying on CI as the first
+real run.
+
+The variable **names** matched the plan exactly (`API_URL`, `ANON_KEY`,
+`SERVICE_ROLE_KEY`). However, empirical testing surfaced an additional,
+previously-unflagged bug: `supabase status -o env` prints each value
+**wrapped in literal double quotes** (e.g. `ANON_KEY="eyJhbGci..."`).
+`$GITHUB_ENV` does no unquoting — a line appended via
+`supabase status -o env >> "$GITHUB_ENV"` would have set
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` to a value that literally starts and ends
+with a `"` character, corrupting the JWT and breaking every downstream
+Supabase client call. This was caught before it reached CI by running the
+seed script and the app build against the real captured value and noticing
+the extra quote characters.
+
+Fix: the CI job uses `supabase status -o json` + `jq -r` (jq is
+preinstalled on GitHub-hosted `ubuntu-22.04` runners) instead of `-o env`,
+which returns clean unquoted string values. This replaces the plan's
+two-step "Export local Supabase env vars" / "Map local Supabase vars to
+app env names" steps with a single step. The fail-fast
+`${VAR:?msg}` verification step is unchanged.
+
+### AC4 — regression-guard demonstration (manual verification, one-time)
+
+Per the story's own AC4 wording, this is a one-time manual verification,
+not permanent tooling. Performed locally against the real local Supabase
+instance described above (same session as the quoting-bug finding):
+
+1. **Before (GRANT removed):** commented out
+   `GRANT SELECT ON public.users TO authenticated;` in
+   `supabase/migrations/20260628000003_grant_users_select_to_authenticated.sql`,
+   ran `supabase db reset` (full re-apply of all migrations from a clean
+   DB), re-ran `node supabase/seed-test-users.mjs`, then ran
+   `npm run test:integration`.
+
+   Result: **both tests failed**, as expected —
+   `AC2: admin GET /api/admin/ping returns 200` received **401** instead
+   of 200 (member also received 401 instead of 403, since the missing
+   GRANT breaks the role lookup for every authenticated user, not just
+   admins — this is correct behaviour of `requireAuth`/`requireAdmin`, not
+   a test bug). Root cause confirmed directly by querying `public.users`
+   with the authenticated client and inspecting the Supabase error object:
+   ```
+   error: {
+     code: '42501',
+     message: 'permission denied for table users',
+     hint: 'Grant the required privileges to the current role with: GRANT SELECT ON public.users TO authenticated;'
+   }
+   ```
+   This is the exact STORY-04 production bug shape the story exists to
+   catch, reproduced and caught locally by the new suite.
+
+2. **After (GRANT restored):** restored the GRANT line (confirmed
+   zero diff against the committed migration file), ran
+   `supabase db reset` again, re-seeded, and re-ran
+   `npm run test:integration`.
+
+   Result: **both tests passed** —
+   `AC2: admin GET /api/admin/ping returns 200` → 200
+   `{ ok: true, role: 'admin' }`; `AC3: member GET /api/admin/ping
+   returns 403` → 403 `{ error: 'Forbidden' }`.
+
+AC4 is satisfied: the regression-guard demonstrably fails red for the
+right reason when the GRANT is missing, and passes green when it is
+present. No permanent script or CI toggle was added for this, per the
+story's own instruction.
+
+### What was verified locally vs. deferred to CI
+
+Verified locally, end-to-end, against a real local Supabase instance
+(Docker was available in this sandbox environment): `supabase start`,
+`supabase db push --local` (confirmed no-op per Finding 4), the seed
+script, `npm run build` pointed at local Supabase, and
+`npm run test:integration` (both AC2 and AC3 passing), plus the AC4
+red/green demonstration above. The local stack was fully torn down
+(`supabase stop`) afterwards and `supabase/config.toml` /
+`supabase/migrations/20260628000003_...sql` were restored to their
+committed state (verified via `git diff` showing no changes) so none of
+this local experimentation leaked into the committed diff.
+
+Not verified locally (deferred to the real GitHub Actions run): the exact
+GitHub-hosted `ubuntu-22.04` runner environment (Docker image pull speed,
+`jq` availability — expected preinstalled but not independently confirmed
+outside this sandbox), the `actions/upload-artifact@v4` steps, and the
+job running correctly in parallel with `migrate` under the real
+`needs: lint-build-test` DAG.
