@@ -17,7 +17,6 @@ export default defineConfig({
   outputDir: 'test-results-integration',
   use: {
     baseURL: 'http://localhost:3000',
-    screenshot: 'on',
   },
   webServer: {
     // The integration-test CI job builds the app itself (its own `npm run

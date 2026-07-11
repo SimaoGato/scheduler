@@ -589,3 +589,64 @@ GitHub-hosted `ubuntu-22.04` runner environment (Docker image pull speed,
 outside this sandbox), the `actions/upload-artifact@v4` steps, and the
 job running correctly in parallel with `migrate` under the real
 `needs: lint-build-test` DAG.
+
+## Rework cycle 1 (PR #41 review findings)
+
+### WARNING — `seed-test-users.mjs` host guard URL-userinfo bypass
+
+The fail-closed host guard used a string-prefix regex
+(`/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/`) that a reviewer found
+bypassable: `http://127.0.0.1:1234@evil.com/` matches the regex (the `:`
+right after `127.0.0.1` satisfies the terminator group, since that
+substring is actually the URL's **userinfo** segment, not its host) even
+though `fetch`/URL machinery connects to `evil.com`. Since this guard is
+the sole runtime control preventing the script's fixed-UUID,
+publicly-known-password admin account from being created against a
+real/shared/prod Supabase project, this was a real gap.
+
+Fixed by parsing the URL with `new URL(url)` and checking `.hostname`
+against an exact allow-list (`127.0.0.1` / `localhost`) instead of a
+regex — `.hostname` never includes the userinfo subcomponent, so the
+bypass class is structurally eliminated, not just patched for this one
+case. The check still runs first, before any Supabase client is
+constructed.
+
+Verified with:
+- A standalone Node script exercising the userinfo-bypass URL, several
+  other non-local URLs, an invalid URL string, and the two legitimate
+  cases (`127.0.0.1`, `localhost`) — all passed with the new logic.
+- A persisted regression test,
+  `supabase/seed-test-users.host-guard.test.mjs` (Node's built-in
+  `node --test` runner, zero new dependencies), which spawns the real
+  script as a child process for each case and asserts on exit code +
+  stderr. Wired into `npm run test:unit` and into the `lint-build-test`
+  CI job (`.github/workflows/ci.yml`) so it runs on every PR.
+- The full local Docker Supabase stack (`supabase start`, `db push
+  --local`, the fixed seed script, `npm run build`, and
+  `npm run test:integration`) end-to-end in this session — both AC2 and
+  AC3 integration tests still pass against a real local instance with the
+  new guard in place.
+
+### SUGGESTIONs addressed
+
+1. `e2e-integration/fixtures.ts` `signInAndGetCookies` now throws if the
+   captured cookies array is empty, so a future `@supabase/ssr` change
+   that stops calling `setAll` fails clearly instead of a confusing 401
+   downstream.
+2. Extracted the near-identical `adminRequest`/`memberRequest` fixture
+   bodies into a shared `createAuthenticatedRequestContext` helper.
+3. The idempotency check in `createAuthUser` now prefers GoTrue's stable
+   `error.code === 'email_exists'` over the free-text message match,
+   keeping the message-substring check only as a fallback for
+   older/self-hosted GoTrue versions that don't set `code`.
+4. Removed the no-op `screenshot: 'on'` from
+   `playwright.integration.config.ts` (API-only suite never renders a
+   page).
+
+### Status
+All CRITICAL/WARNING findings fixed; all SUGGESTIONs addressed (none were
+skipped). `npm run lint`, `npx tsc --noEmit`, `npm run build`,
+`npm run test:unit`, `npm run test:e2e` (29 passed / 46 auth-gated
+skipped / 0 failed), and `npm run test:integration` (2/2 passed against a
+real local Supabase instance) all green in this session. Ready for
+re-review.
