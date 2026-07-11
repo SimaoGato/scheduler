@@ -49,3 +49,5 @@ next-env.d.ts
 
 # supabase CLI temp files (created by `supabase link`)
 supabase/.temp/
+# supabase CLI local branch state (created by `supabase db reset`/branching)
+supabase/.branches/

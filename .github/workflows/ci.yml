@@ -58,6 +58,99 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+  integration-test:
+    name: Local Supabase integration tests
+    runs-on: ubuntu-22.04
+    needs: lint-build-test
+    # Runs on both push-to-main and PR-to-main (unlike `migrate`, which is
+    # push-to-main-only) — this is a real DB integration suite, not a
+    # deploy step, so it should gate PRs too. Runs in parallel with
+    # `migrate`, not blocking it.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Pin to immutable release tag — same pinning as the `migrate` job.
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1.7.1
+        with:
+          # Pinned to avoid unexpected CLI breaking changes; update intentionally.
+          version: 2.22.6
+
+      - name: Start local Supabase
+        run: supabase start
+        # No GitHub secrets required — local start/push needs none.
+
+      - name: Apply migrations (supabase db push --local)
+        run: supabase db push --local
+        # Expected to be a no-op: `supabase start` already applies
+        # supabase/migrations/*.sql on a fresh stack. Kept explicit so
+        # AC1's "applies migrations via supabase db push" is literally
+        # exercised and mirrors the `migrate` job's command shape.
+
+      - name: Export local Supabase env vars to app env names
+        # `supabase status -o env` prints each value wrapped in literal
+        # double quotes (e.g. ANON_KEY="eyJ..."), which would corrupt
+        # NEXT_PUBLIC_SUPABASE_URL/ANON_KEY/SUPABASE_SERVICE_ROLE_KEY if
+        # piped directly into $GITHUB_ENV (GITHUB_ENV does no unquoting —
+        # the surrounding quotes would become part of the value).
+        # Confirmed by running `supabase status -o env` locally. Use
+        # `-o json` + jq (preinstalled on ubuntu-22.04 runners) instead to
+        # extract clean values.
+        run: |
+          STATUS_JSON=$(supabase status -o json)
+          echo "NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS_JSON" | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
+
+      # Fail fast with a clear message if `supabase status -o json`'s field
+      # names ever drift, instead of cascading into an opaque later failure
+      # (e.g. the seed script's own host guard rejecting an empty URL, or
+      # `npm run build` failing on a missing env var, several steps
+      # downstream of the real cause).
+      - name: Verify local Supabase env vars were resolved
+        run: |
+          : "${NEXT_PUBLIC_SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL was not set — check the exact field names printed by 'supabase status -o json' and update the mapping step above}"
+          : "${NEXT_PUBLIC_SUPABASE_ANON_KEY:?NEXT_PUBLIC_SUPABASE_ANON_KEY was not set — check 'supabase status -o json' field names}"
+          : "${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY was not set — check 'supabase status -o json' field names}"
+
+      - name: Seed test users (admin + member)
+        run: node supabase/seed-test-users.mjs
+
+      - name: Build app against local Supabase
+        run: npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Upload integration Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-playwright-report
+          path: playwright-report-integration/
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: test-results-integration/
+          retention-days: 30
+          if-no-files-found: error
+
   migrate:
     name: Migrate database
     runs-on: ubuntu-22.04
