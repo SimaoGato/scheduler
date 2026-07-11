@@ -373,10 +373,19 @@ prefer to verify by hand instead, follow these steps:
    ```
 4. Confirm the logged body is `{ error: 'self_demotion' }` and the Network
    tab shows HTTP status 400 for the request.
-5. Confirm this holds even when you are currently the only Admin in the DB
-   (i.e. the response is still 400 `self_demotion`, never 409 `last_admin`).
-6. Reload the page and confirm your role is still Administrador (the
+5. Reload the page and confirm your role is still Administrador (the
    request was rejected, no state change).
+
+**AC2 single-admin edge case — now automated, no manual step needed**
+
+The single-remaining-admin variant of AC2 ("regardless of how many admins
+exist" — including exactly one) is covered automatically by
+`e2e-integration/self-demotion.spec.ts` (runs in the `integration-test` CI
+job against a real, freshly-seeded local Supabase instance, which naturally
+has exactly one seeded admin — see that file's header comment). This
+replaces the previous manual-only step for this edge case, added during
+PR #42 review rework since a real single-admin state isn't practical to
+produce/restore safely against a shared dev Supabase project.
 
 **AC3 — self-promote (no-op) succeeds**
 1. While signed in as an Admin, repeat the same DevTools fetch as AC2 but
