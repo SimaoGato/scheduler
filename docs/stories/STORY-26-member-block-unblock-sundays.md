@@ -1,6 +1,7 @@
 # STORY-26: Member views upcoming Sundays and blocks/unblocks with one tap
 Epic: EPIC-03
-Status: draft
+Status: done ✅
+PR: #45
 
 ## User story
 As a Member, I want to see the upcoming Sundays and block or unblock any of
