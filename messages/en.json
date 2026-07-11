@@ -5,6 +5,7 @@
   },
   "Nav": {
     "ariaLabel": "Main navigation",
+    "availability": "Availability",
     "userManagement": "Users",
     "people": "Team",
     "roles": "Roles"
@@ -132,5 +133,16 @@
     "emptyRoles": "No roles configured yet. Create a role first.",
     "errorInvalidLevel": "Invalid level.",
     "errorGeneric": "Something went wrong. Please try again."
+  },
+  "Availability": {
+    "title": "Your availability",
+    "instructions": "Tap a Sunday to mark it unavailable. Tap it again to mark it available.",
+    "stateAvailable": "Available",
+    "stateBlocked": "Unavailable",
+    "errorGeneric": "Something went wrong. Please try again.",
+    "loadError": "Could not load your availability. Please try again later.",
+    "noLinkedPersonTitle": "Your account isn't linked yet",
+    "noLinkedPersonDescription": "To manage your availability, first link your account to your name on the team.",
+    "noLinkedPersonCta": "Link account"
   }
 }
