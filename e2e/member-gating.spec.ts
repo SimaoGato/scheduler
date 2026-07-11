@@ -9,9 +9,11 @@
  *     Because proxy.ts always redirects unauthenticated users to /pt-PT/login,
  *     we cannot reach the authenticated home page in CI. We verify that no
  *     <nav> element is rendered at all for unauthenticated visitors
- *     (redirected to the chrome-less login page per STORY-10) — which
- *     mirrors the role=null / member state the nav adopts (no <nav> at all,
- *     see STORY-16) when no admin role is present.
+ *     (redirected to the chrome-less login page per STORY-10). Note: this no
+ *     longer mirrors the *authenticated* Member nav state — as of STORY-26
+ *     the Member nav renders one link ("Disponibilidade"), not an empty
+ *     landmark; only a null/unrecognized role still returns no <nav> at all
+ *     (see e2e/app-nav.spec.ts for the Member-nav-has-one-link coverage).
  *
  * Manual verification steps (requires real Supabase credentials in .env.local,
  * Google OAuth configured, and at least one admin + one member account):
@@ -23,8 +25,9 @@
  *        no-access description, and does NOT show the "Ver escala" button.
  *
  *   AC2 — Member nav hides admin links:
- *     1. While logged in as a Member, confirm no <nav> element is rendered
- *        at all (see STORY-16) — the "Utilizadores" link is absent.
+ *     1. While logged in as a Member, confirm the nav renders exactly one
+ *        link, "Disponibilidade" (STORY-26) — the "Utilizadores" link is
+ *        absent.
  *
  *   AC3 — Admin nav shows admin links:
  *     1. Log in with a Google account whose row has role = 'admin'.
