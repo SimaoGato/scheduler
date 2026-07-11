@@ -650,3 +650,87 @@ skipped). `npm run lint`, `npx tsc --noEmit`, `npm run build`,
 skipped / 0 failed), and `npm run test:integration` (2/2 passed against a
 real local Supabase instance) all green in this session. Ready for
 re-review.
+
+## Rework cycle 2 (PR #41 review findings — real CI red, not a test failure)
+
+### CRITICAL — `integration-test` job fails on every fully-green run (artifact-upload misconfiguration)
+
+QA confirmed via `gh run view` / `gh pr checks 41` that the real GitHub
+Actions run for this PR's HEAD (`e242839`) was red, but not because AC2 or
+AC3 actually failed — both integration tests passed. The job failed at the
+"Upload integration test results" step
+(https://github.com/SimaoGato/scheduler/actions/runs/29148862133/job/86535066828).
+
+Root cause, traced back to rework cycle 1's SUGGESTION #4 above (removing
+the no-op `screenshot: 'on'` from `playwright.integration.config.ts`, which
+was itself correct — this suite is `APIRequestContext`-only and never
+renders a page, so screenshot capture was dead configuration): with
+`screenshot: 'on'` gone, a fully-passing run of this API-only suite
+produces **no** trace/screenshot/video artifacts in
+`test-results-integration/` — there is nothing to capture on success, and
+nothing failed to trigger failure-artifact capture either. Playwright still
+writes a hidden `.last-run.json` metadata file into that directory, but
+`actions/upload-artifact@v4` excludes hidden files by default
+(`include-hidden-files: false`), so the upload step sees zero visible
+files. Combined with `if-no-files-found: error` on that step, this failed
+the `integration-test` job on every single fully-green run — indistinguishable
+from a real regression in the GitHub Checks UI, which is exactly what QA
+saw.
+
+This is not a regression from removing `screenshot: 'on'` (re-adding it
+would be wrong — it was correctly identified as a no-op for this suite in
+the prior review round, and this project's own CLAUDE.md documents that
+`boundingBox()`/screenshot capture is meaningless for a page that's never
+rendered). The bug is in the artifact-upload step's hard-error gate on a
+directory that is legitimately conditional/empty-of-visible-content on
+success.
+
+Fixed by changing `if-no-files-found` from `error` to `warn` for the
+"Upload integration test results" step only (`test-results-integration/`
+in `.github/workflows/ci.yml`), matching this repo's own CLAUDE.md
+convention: "reserve `warn` for optional/conditional outputs." The
+sibling "Upload integration Playwright report" step
+(`playwright-report-integration/`) is left at `if-no-files-found: error`
+unchanged — the html reporter always writes `index.html` regardless of
+pass/fail, so that artifact is correctly deterministic and should stay a
+hard gate.
+
+Verified with:
+- `npm run lint`, `npx tsc --noEmit`, `npm run build` — all clean.
+- `npm run test:unit` — 6/6 passed (host-guard regression suite from
+  rework cycle 1).
+- `npm run test:e2e` — 65 passed / 91 auth-gated skipped / 0 failed
+  (WSL2 Chromium libs workaround: downloaded `libnspr4`/`libnss3`/
+  `libasound2t64` `.deb`s, extracted locally, set `LD_LIBRARY_PATH`, per
+  the documented non-root workaround).
+- Full local Docker Supabase integration flow, end-to-end, in this
+  session: `supabase start`, `supabase db push --local` (no-op, already
+  up to date), `supabase status -o json` parsed with `node -e` (no `jq`
+  in this sandbox — worked around, does not affect the CI runner which
+  has `jq` preinstalled per the `migrate`/`integration-test` jobs'
+  existing assumption), `node supabase/seed-test-users.mjs` (required
+  switching to Node 24 via `nvm` — the sandbox's default `node` is
+  v20.11.1, which lacks native WebSocket support that
+  `@supabase/realtime-js` requires; this matches the project's documented
+  `engines.node >= 24.0.0` and CI's `node-version: 24`, so it is a
+  sandbox-default quirk, not a project issue), `npm run build` against
+  the local Supabase env vars, and `npm run test:integration` —
+  **2/2 passed** (AC2 admin 200, AC3 member 403). Inspected
+  `test-results-integration/` after this green run and confirmed it
+  contains only the hidden `.last-run.json` (reproducing the exact
+  artifact-upload gap QA described) while
+  `playwright-report-integration/` contains a real `index.html`,
+  confirming the fix targets the right step.
+- Pushed the fix (`.github/workflows/ci.yml` only — no application code
+  changed) to `story/chore-05-local-supabase-integration-tests` and
+  polled the real GitHub Actions run for the new commit via
+  `gh pr checks 41` until completion: **`Local Supabase integration
+  tests` job passed**, confirming the fix resolves the real CI failure,
+  not just local reasoning. See PR #41 for the run link.
+
+### Status
+CRITICAL finding fixed. `npm run lint`, `npx tsc --noEmit`, `npm run
+build`, `npm run test:unit`, `npm run test:e2e`, and a full local
+`npm run test:integration` run against real local Supabase all green in
+this session, and the real GitHub Actions `integration-test` job is
+confirmed green on the pushed commit. Ready for re-review.

@@ -152,7 +152,22 @@ jobs:
           name: integration-test-results
           path: test-results-integration/
           retention-days: 30
-          if-no-files-found: error
+          # `warn`, not `error`: this API-only suite (APIRequestContext, no
+          # page rendering) has no screenshot/trace/video capture on a
+          # fully-passing run (screenshot: 'on' was removed as a no-op —
+          # see playwright.integration.config.ts). Playwright still writes
+          # a hidden `.last-run.json` metadata file, but
+          # actions/upload-artifact@v4 excludes hidden files by default
+          # (include-hidden-files: false), so a green run uploads zero
+          # visible files. Combined with `if-no-files-found: error` this
+          # failed the job on every fully-passing run, indistinguishable
+          # from a real regression in the Checks UI. This directory is
+          # legitimately conditional/empty-of-content on success, so
+          # `warn` is correct per this repo's own convention (reserve
+          # `warn` for optional/conditional outputs). The html report step
+          # below always writes index.html regardless of pass/fail, so it
+          # correctly stays a hard `error` gate.
+          if-no-files-found: warn
 
   migrate:
     name: Migrate database
