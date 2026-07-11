@@ -1,6 +1,7 @@
 # CHORE-05: Local Supabase integration tests for authenticated API paths
 Epic: maintenance
-Status: implemented (PR open, pending CI/review)
+Status: done ✅
+PR: 41
 
 ## Task
 Add a CI integration-test job that spins up a local Supabase instance
