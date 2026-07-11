@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:integration": "playwright test --config=playwright.integration.config.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.3.0",
