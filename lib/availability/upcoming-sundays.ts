@@ -15,8 +15,18 @@
  * construction), same idiom as lib/validation/availability.ts — never a bare
  * `new Date(dateStr)`, which parses in the local/host timezone and could
  * shift the effective weekday.
+ *
+ * `count` must be a positive integer — a non-positive `count` (0 or
+ * negative) returns an empty array rather than looping zero or a negative
+ * number of times in unexpected ways. This is a defensive guard for a
+ * standalone exported helper directly importable by the integration test
+ * suite; the only current caller passes the constant `12`.
  */
 export function getUpcomingSundays(count: number, referenceDate: Date = new Date()): string[] {
+  if (count <= 0) {
+    return []
+  }
+
   const year = referenceDate.getUTCFullYear()
   const month = referenceDate.getUTCMonth()
   const day = referenceDate.getUTCDate()
