@@ -19,7 +19,7 @@
 // APIRequestContext doesn't do domain-scoped cookie matching the way a
 // BrowserContext does.
 
-import { test as base, expect, type APIRequestContext } from '@playwright/test'
+import { test as base, expect, type APIRequestContext, type Page } from '@playwright/test'
 import { createServerClient } from '@supabase/ssr'
 import { ADMIN_EMAIL, MEMBER_EMAIL, TEST_PASSWORD } from '../supabase/test-users.mjs'
 
@@ -77,6 +77,8 @@ function toCookieHeader(cookies: CapturedCookie[]): string {
 interface IntegrationFixtures {
   adminRequest: APIRequestContext
   memberRequest: APIRequestContext
+  memberPage: Page
+  adminPage: Page
 }
 
 async function createAuthenticatedRequestContext(
@@ -91,6 +93,43 @@ async function createAuthenticatedRequestContext(
   })
 }
 
+// STORY-26 Design decision 6: real-browser auth fixture, built on top of the
+// same signInAndGetCookies() helper used by the APIRequestContext fixtures
+// above (no duplication of the cookie-capture logic). Uses
+// `browser.newContext()` + `context.addCookies()` (not
+// `playwright.request.newContext()`) because a real rendered page — not
+// just raw HTTP requests — is needed to exercise the Client Component
+// toggle flow and nav interactions.
+//
+// Cookie attributes: `secure`/`sameSite` are deliberately omitted from the
+// addCookies() call below. This is dev/CI-only test infra running against
+// `http://localhost:3000`, and the same `localhost` potentially-trustworthy-
+// origin exception already documented in CLAUDE.md for CHORE-13 applies
+// here. If signInAndGetCookies() ever returns a session split across
+// multiple chunked cookies (e.g. `sb-<ref>-auth-token.0`, `.1`, ...), every
+// chunk gets the *same* `domain`/`path` pair applied uniformly below — a
+// partial or inconsistent domain/path across chunks would silently corrupt
+// the reassembled session rather than fail loudly.
+async function createAuthenticatedPage(
+  browser: import('@playwright/test').Browser,
+  baseURL: string | undefined,
+  email: string
+): Promise<Page> {
+  const cookies = await signInAndGetCookies(email, TEST_PASSWORD)
+  const url = new URL(baseURL ?? 'http://localhost:3000')
+
+  const context = await browser.newContext()
+  await context.addCookies(
+    cookies.map(({ name, value }) => ({
+      name,
+      value,
+      domain: url.hostname,
+      path: '/',
+    }))
+  )
+  return context.newPage()
+}
+
 export const test = base.extend<IntegrationFixtures>({
   adminRequest: async ({ playwright, baseURL }, provideContext) => {
     const context = await createAuthenticatedRequestContext(playwright, baseURL, ADMIN_EMAIL)
@@ -102,6 +141,18 @@ export const test = base.extend<IntegrationFixtures>({
     const context = await createAuthenticatedRequestContext(playwright, baseURL, MEMBER_EMAIL)
     await provideContext(context)
     await context.dispose()
+  },
+
+  memberPage: async ({ browser, baseURL }, provideContext) => {
+    const page = await createAuthenticatedPage(browser, baseURL, MEMBER_EMAIL)
+    await provideContext(page)
+    await page.context().close()
+  },
+
+  adminPage: async ({ browser, baseURL }, provideContext) => {
+    const page = await createAuthenticatedPage(browser, baseURL, ADMIN_EMAIL)
+    await provideContext(page)
+    await page.context().close()
   },
 })
 
