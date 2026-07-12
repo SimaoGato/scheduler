@@ -14,12 +14,14 @@
  *
  * BUGFIX-02 AC coverage:
  *   AC1 — (Desktop single-row action rendering, auth-gated) At 1280px
- *         viewport, the view-mode action elements
- *         (Competências/Disponibilidade/Editar/Remover) render on a single
- *         horizontal line (same y bounding-box position), not stacked
- *         vertically. (STORY-27 added the "Disponibilidade" action; this
- *         test was updated to include it in the same regression check it
- *         already covers for its siblings — see BUGFIX-02.)
+ *         viewport, all five view-mode action elements
+ *         (Competências/Disponibilidade/Editar/Remover/Ligar-Desligar
+ *         conta) render on a single horizontal line (same y bounding-box
+ *         position), not stacked vertically. (STORY-27 added the
+ *         "Disponibilidade" action; this test was updated to include it,
+ *         plus the pre-existing Ligar/Desligar conta button which the
+ *         original BUGFIX-02 assertion never queried — see STORY-27 review
+ *         finding.)
  *
  * These tests require `/pt-PT/admin/people` to be reachable as an
  * authenticated admin, which this environment/CI cannot provide (no real
@@ -49,9 +51,9 @@
  *  AC1 (BUGFIX-02) — Desktop single-line rendering:
  *    1. Log in as an admin with at least one person in the team list.
  *    2. Open /pt-PT/admin/people at 1280px wide (desktop width).
- *    3. Confirm the action buttons (Competências/Disponibilidade/Editar/
- *       Remover) render on a single horizontal line, not stacked
- *       vertically.
+ *    3. Confirm all five action buttons (Competências/Disponibilidade/
+ *       Editar/Remover/Ligar-Desligar conta) render on a single horizontal
+ *       line, not stacked vertically.
  *
  *  AC3 — Narrow viewport (375px):
  *    1. Set the browser to 375px wide (DevTools device mode).
@@ -219,34 +221,46 @@ test.describe('STORY-14: people table actions-column alignment', () => {
     const availabilityButton = row.locator('[data-testid^="pm-availability-"]');
     const editButton = row.locator('[data-testid^="pm-edit-"]');
     const removeButton = row.locator('[data-testid^="pm-remove-"]');
+    // ensureOnePerson creates a fresh person with no linked account, so this
+    // renders as "Ligar conta" (pm-link-), not "Desligar conta"
+    // (pm-unlink-). Either variant is a valid 5th action to assert on —
+    // only whichever one is actually present for this fixture's state.
+    const linkToggleButton = row.locator('[data-testid^="pm-link-"], [data-testid^="pm-unlink-"]');
 
     await expect(skillsButton).toBeVisible();
     await expect(availabilityButton).toBeVisible();
     await expect(editButton).toBeVisible();
     await expect(removeButton).toBeVisible();
+    await expect(linkToggleButton).toBeVisible();
 
     const skillsBox = await skillsButton.boundingBox();
     const availabilityBox = await availabilityButton.boundingBox();
     const editBox = await editButton.boundingBox();
     const removeBox = await removeButton.boundingBox();
+    const linkToggleBox = await linkToggleButton.boundingBox();
 
     expect(skillsBox).not.toBeNull();
     expect(availabilityBox).not.toBeNull();
     expect(editBox).not.toBeNull();
     expect(removeBox).not.toBeNull();
+    expect(linkToggleBox).not.toBeNull();
 
-    // All view-mode actions should share the same y position (within
+    // All five view-mode actions should share the same y position (within
     // tolerance), meaning they render on the same horizontal line, not
     // stacked vertically. STORY-27 added "Disponibilidade" as a fourth
-    // action; included here alongside its siblings.
+    // action; the pre-existing Ligar/Desligar conta button (5th action) is
+    // now included too, closing a gap where the original BUGFIX-02
+    // assertion never queried it.
     const y1 = skillsBox!.y;
     const y2 = availabilityBox!.y;
     const y3 = editBox!.y;
     const y4 = removeBox!.y;
+    const y5 = linkToggleBox!.y;
 
     expect(Math.abs(y1 - y2)).toBeLessThanOrEqual(2);
     expect(Math.abs(y2 - y3)).toBeLessThanOrEqual(2);
     expect(Math.abs(y3 - y4)).toBeLessThanOrEqual(2);
+    expect(Math.abs(y4 - y5)).toBeLessThanOrEqual(2);
   });
 });
 
