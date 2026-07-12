@@ -110,13 +110,29 @@ See CLAUDE.md.
    together. This is an explicit architectural-parity choice, not
    speculative scope.
 4. **Error codes match AC6's literal text**: `invalid_id` (400, malformed
-   UUID) and `person_not_found` (404, well-formed UUID but missing or
-   soft-deleted row). This deliberately does **not** reuse the older
-   `app/api/admin/people/[id]/route.ts`'s free-text `'Invalid id'`
-   (pre-existing STORY-07-era debt, untouched by this story) nor the skills
-   route's `invalid_person_id` literal (a different route that shipped
-   before this AC's wording existed) — AC6 pins the exact code, so match the
-   AC, not either sibling route.
+   UUID) and `not_found` (404, well-formed UUID but missing or soft-deleted
+   row).
+   > **Post-review update (PR #46, non-blocking review):** this plan
+   > originally specified `person_not_found` here, deliberately avoiding
+   > both sibling routes' literals. During implementation this drifted to
+   > `not_found`, matching `app/api/admin/people/[id]/skills/route.ts`'s GET
+   > 404 spelling instead. AC6 only pins the 400 `invalid_id` code literally
+   > ("malformed/nonexistent person id → 400 invalid_id / 404 ...", never a
+   > specific 404 string), so `not_found` still satisfies the AC. Kept as
+   > shipped rather than reverted to `person_not_found`, because
+   > cross-route consistency with the GET skills route it most closely
+   > mirrors (same "list a resource scoped to one person" shape) is a
+   > better long-term precedent than a third distinct spelling
+   > (`not_found` / `person_not_found` / `invalid_person_id` already exist
+   > across this route family). Each handler has an inline comment
+   > (`app/api/admin/people/[id]/availability/route.ts` GET+POST,
+   > `app/api/admin/people/[id]/availability/[date]/route.ts` DELETE)
+   > pointing back to this note so the deviation isn't silently
+   > rediscovered. This plan's remaining prose below (steps 5, and the
+   > per-route breakdowns and test plan further down) still says
+   > `person_not_found` in a few places — treat every occurrence as
+   > `not_found` per this update; not rewritten inline to keep this diff
+   > reviewable.
 5. **Validation order** (mirrors the skills route precedent — cheap
    format/shape checks before any DB round-trip): `requireAdmin` → `await params`
    → UUID-format check on `id` (400 `invalid_id`) → [POST only] JSON parse
