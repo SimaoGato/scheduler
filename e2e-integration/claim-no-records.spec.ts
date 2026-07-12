@@ -14,9 +14,25 @@
  * branching, so any logged-in user with no linked person exercises the same
  * code path. Not a gap; the same rationale STORY-26 used for its AC7 test.
  *
+ * FIXTURE COLLISION WARNING: the AC3 test below temporarily links ADMIN_ID
+ * to a fixture person (createPerson(name, ADMIN_ID)) to exercise the
+ * "already linked" branch, then unlinks it (deletePerson in a `finally`
+ * block). This temporarily violates the "ADMIN_ID has no linked people row
+ * by default" invariant that e2e-integration/availability.spec.ts's AC7
+ * test and e2e-integration/blocked-dates.spec.ts's AC6 test rely on as a
+ * fixed precondition (mirrors the MEMBER_ID "FIXTURE COLLISION WARNING"
+ * comment in availability.spec.ts, lines 4-14, per the project convention
+ * in CLAUDE.md). CI is safe because playwright.integration.config.ts sets
+ * `workers: 1`, but a local parallel run spanning multiple files in
+ * `e2e-integration/` could race this test's temporary link against those
+ * other specs' "no linked person" assumption. Do not add a new test that
+ * relies on ADMIN_ID being unlinked without accounting for this window.
+ *
  * AC coverage:
- *   AC1 — the happy-path list/select/confirm/skip flow still renders when
- *         unclaimed+active people exist (regression check).
+ *   AC1 — the list of unclaimed+active people still renders when they
+ *         exist (regression check; the fuller select/confirm/skip flow is
+ *         already covered by the pre-existing e2e/claim.spec.ts, untouched
+ *         by this story).
  *   AC2 — no unclaimed+active people exist -> the "nothing to claim yet"
  *         message renders in place (no redirect).
  *   AC3 — an already-linked user visiting /claim directly is still
