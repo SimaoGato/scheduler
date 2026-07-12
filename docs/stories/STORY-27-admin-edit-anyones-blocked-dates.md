@@ -1,6 +1,7 @@
 # STORY-27: Admin views and edits anyone's blocked dates
 Epic: EPIC-03
-Status: draft
+Status: done ✅
+PR: #46
 
 ## User story
 As an Admin, I want to see and edit any person's blocked Sundays on their
