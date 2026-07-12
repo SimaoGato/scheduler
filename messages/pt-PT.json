@@ -49,6 +49,7 @@
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "actionLoading": "A processar...",
     "skillsButton": "Competências",
+    "availabilityButton": "Disponibilidade",
     "confirmRemoveInUse": "Esta pessoa tem {count, plural, one {# competência associada} other {# competências associadas}}. Remover mesmo assim?",
     "confirmRemoveButton": "Remover mesmo assim",
     "columnAccount": "Conta",
@@ -143,6 +144,8 @@
     "loadError": "Não foi possível carregar a tua disponibilidade. Tenta novamente mais tarde.",
     "noLinkedPersonTitle": "A tua conta ainda não está associada",
     "noLinkedPersonDescription": "Para gerires a tua disponibilidade, primeiro associa a tua conta ao teu nome na equipa.",
-    "noLinkedPersonCta": "Associar conta"
+    "noLinkedPersonCta": "Associar conta",
+    "adminTitle": "Disponibilidade de {name}",
+    "backToTeam": "Voltar à equipa"
   }
 }

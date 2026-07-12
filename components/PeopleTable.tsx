@@ -452,8 +452,9 @@ export default function PeopleTable({ initialPeople, allUsers, initiallyLinkedUs
                       ) : (
                         // flex-wrap with sm:flex-nowrap: wrap only below sm (640px,
                         // Tailwind's default breakpoint), staying above the 375px
-                        // mobile target. At sm and above (tablet/desktop), the three
-                        // actions (Competências/Editar/Remover) render on one line.
+                        // mobile target. At sm and above (tablet/desktop), all view-mode
+                        // actions (Competências/Disponibilidade/Editar/Remover/
+                        // Ligar-Desligar conta) render on one line.
                         // This prevents the buggy "always wraps" behavior where a
                         // flex-wrap container in a w-[1%] shrink-to-fit auto-layout
                         // column was reported as narrower than max-content, causing
@@ -470,6 +471,18 @@ export default function PeopleTable({ initialPeople, allUsers, initiallyLinkedUs
                             className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${blockedByOtherConfirm ? 'pointer-events-none opacity-50' : ''}`}
                           >
                             {t('skillsButton')}
+                          </Link>
+                          <Link
+                            href={`/admin/people/${person.id}/availability`}
+                            data-testid={`pm-availability-${person.id}`}
+                            aria-disabled={blockedByOtherConfirm}
+                            tabIndex={blockedByOtherConfirm ? -1 : undefined}
+                            onClick={(e) => {
+                              if (blockedByOtherConfirm) e.preventDefault()
+                            }}
+                            className={`flex min-h-[44px] items-center rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${blockedByOtherConfirm ? 'pointer-events-none opacity-50' : ''}`}
+                          >
+                            {t('availabilityButton')}
                           </Link>
                           <button
                             data-testid={`pm-edit-${person.id}`}
