@@ -49,6 +49,7 @@
     "errorGeneric": "Something went wrong. Please try again.",
     "actionLoading": "Processing...",
     "skillsButton": "Skills",
+    "availabilityButton": "Availability",
     "confirmRemoveInUse": "This person has {count, plural, one {# associated skill} other {# associated skills}}. Remove anyway?",
     "confirmRemoveButton": "Remove anyway",
     "columnAccount": "Account",
@@ -143,6 +144,8 @@
     "loadError": "Could not load your availability. Please try again later.",
     "noLinkedPersonTitle": "Your account isn't linked yet",
     "noLinkedPersonDescription": "To manage your availability, first link your account to your name on the team.",
-    "noLinkedPersonCta": "Link account"
+    "noLinkedPersonCta": "Link account",
+    "adminTitle": "{name}'s availability",
+    "backToTeam": "Back to team"
   }
 }

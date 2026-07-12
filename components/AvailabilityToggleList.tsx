@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useTranslations, useFormatter } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 
 interface Props {
   sundays: string[]
   initialBlockedDates: string[]
+  personId?: string
+  personName?: string
 }
 
 /**
@@ -31,8 +34,21 @@ interface Props {
  * `errorGeneric` message — these codes are structurally near-unreachable in
  * normal operation (dates are server-generated valid Sundays), so there is
  * no per-code mapping table here.
+ *
+ * STORY-27 admin-mode extension: `personId`/`personName` are optional props
+ * that default to `undefined`, so the already-shipped Member path (which
+ * never passes them) has zero behavioral change. `isAdminMode` gates only
+ * (a) which endpoint URLs handleToggle calls, (b) the title text, and (c)
+ * whether a "back to team" link renders — the state machine below
+ * (blockedDates/pendingDates/errorMessage, optimistic flip/revert, the
+ * finally cleanup) is untouched.
  */
-export default function AvailabilityToggleList({ sundays, initialBlockedDates }: Props) {
+export default function AvailabilityToggleList({
+  sundays,
+  initialBlockedDates,
+  personId,
+  personName,
+}: Props) {
   const t = useTranslations('Availability')
   const format = useFormatter()
   const [blockedDates, setBlockedDates] = useState<Set<string>>(
@@ -40,6 +56,15 @@ export default function AvailabilityToggleList({ sundays, initialBlockedDates }:
   )
   const [pendingDates, setPendingDates] = useState<Set<string>>(() => new Set())
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const isAdminMode = personId !== undefined
+  const blockUrl = isAdminMode
+    ? `/api/admin/people/${personId}/availability`
+    : '/api/availability/blocks'
+  const unblockUrl = (date: string) =>
+    isAdminMode
+      ? `/api/admin/people/${personId}/availability/${date}`
+      : `/api/availability/blocks/${date}`
 
   async function handleToggle(date: string) {
     // Critical fix (STORY-26 revision cycle 1): clear any stale error banner
@@ -62,8 +87,8 @@ export default function AvailabilityToggleList({ sundays, initialBlockedDates }:
 
     try {
       const response = wasBlocked
-        ? await fetch(`/api/availability/blocks/${date}`, { method: 'DELETE' })
-        : await fetch('/api/availability/blocks', {
+        ? await fetch(unblockUrl(date), { method: 'DELETE' })
+        : await fetch(blockUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ date }),
@@ -114,7 +139,9 @@ export default function AvailabilityToggleList({ sundays, initialBlockedDates }:
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-semibold">{t('title')}</h1>
+      <h1 className="mb-2 text-2xl font-semibold">
+        {isAdminMode ? t('adminTitle', { name: personName ?? '' }) : t('title')}
+      </h1>
       <p className="mb-6 text-sm text-muted-foreground">{t('instructions')}</p>
 
       {errorMessage && (
@@ -154,6 +181,18 @@ export default function AvailabilityToggleList({ sundays, initialBlockedDates }:
           )
         })}
       </ul>
+
+      {isAdminMode && (
+        <div className="mt-8">
+          <Link
+            href="/admin/people"
+            data-testid="availability-back-link"
+            className="min-h-[44px] rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground inline-flex items-center"
+          >
+            {t('backToTeam')}
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
