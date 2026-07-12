@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { Link } from '@/i18n/navigation';
 import { getSessionUser } from '@/lib/auth/session';
 import { createServiceClient } from '@/lib/supabase/service';
 import ClaimPersonForm from '@/components/ClaimPersonForm';
@@ -17,8 +18,12 @@ import ClaimPersonForm from '@/components/ClaimPersonForm';
  *      without a session.
  *   3. AC5: if the caller already has a linked person record, redirect home
  *      — the claim page is never shown to a user who is already linked.
- *   4. AC4/AC7: if there are no unlinked+active person records, redirect
- *      home — nothing to claim.
+ *   4. STORY-29 AC2/AC3/AC5: if there are no unlinked+active person records,
+ *      render an explanatory "nothing to claim yet" state (with a link back
+ *      home) instead of silently redirecting. This only applies to
+ *      direct/later navigation to this page — STORY-11 AC4's first-login
+ *      auth-callback redirect decision (skip /claim entirely when nothing
+ *      exists to claim) is unchanged; see app/auth/callback/route.ts.
  */
 export default async function ClaimPage() {
   const user = await getSessionUser();
@@ -67,11 +72,35 @@ export default async function ClaimPage() {
     name: row.name as string,
   }));
 
-  if (people.length === 0) {
-    redirect(`/${routing.defaultLocale}/`);
-  }
-
   const t = await getTranslations('Claim');
+
+  // STORY-29 AC2/AC5: no unlinked+active person records exist — render an
+  // explanatory state (not a silent redirect) instructing the Member to ask
+  // an Admin to add them to the team or link an existing record. Includes an
+  // explicit back-to-home link because this page's layout
+  // (app/[locale]/claim/layout.tsx) is deliberately outside the (app)/
+  // route group and renders no header/nav to fall back on.
+  if (people.length === 0) {
+    return (
+      <main className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
+        <div
+          data-testid="claim-no-records"
+          aria-live="polite"
+          className="text-center"
+        >
+          <h1 className="mb-2 text-2xl font-bold tracking-tight">{t('noRecordsTitle')}</h1>
+          <p className="mb-6 text-sm text-muted-foreground">{t('noRecordsDescription')}</p>
+          <Link
+            href="/"
+            data-testid="claim-no-records-home-link"
+            className="inline-flex min-h-[44px] items-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            {t('noRecordsCta')}
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
