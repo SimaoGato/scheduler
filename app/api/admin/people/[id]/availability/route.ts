@@ -51,6 +51,12 @@ export async function GET(
     }
 
     if (!person) {
+      // Deliberate deviation from the Implementation Plan's Design decision 4
+      // (`person_not_found`): matches the sibling GET
+      // `app/api/admin/people/[id]/skills/route.ts`'s 404 spelling instead,
+      // for cross-route consistency. AC6 only pins the 400 `invalid_id`
+      // code literally, so this is compatible. See STORY-27's Design
+      // decision 4 post-review update for the full rationale.
       return NextResponse.json({ error: 'not_found' }, { status: 404 })
     }
 
@@ -131,9 +137,20 @@ export async function POST(
     }
 
     if (!person) {
+      // Deliberate deviation from the Implementation Plan's Design decision 4
+      // (`person_not_found`): matches the sibling GET
+      // `app/api/admin/people/[id]/skills/route.ts`'s 404 spelling instead,
+      // for cross-route consistency. AC6 only pins the 400 `invalid_id`
+      // code literally, so this is compatible. See STORY-27's Design
+      // decision 4 post-review update for the full rationale.
       return NextResponse.json({ error: 'not_found' }, { status: 404 })
     }
 
+    // TOCTOU note: the is_active check above and this write are not
+    // transactional — a person could be soft-deleted between them. Accepted
+    // low-severity risk (admin-only surface, narrow window); see
+    // app/api/admin/people/[id]/skills/[roleId]/route.ts lines 91-96 for the
+    // precedent and CLAUDE.md's TOCTOU-acceptance convention.
     // Mass-assignment guard: explicit object literal from validated locals
     // only — never upsert(body).
     const { error } = await serviceClient
