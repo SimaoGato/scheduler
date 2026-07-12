@@ -1,5 +1,7 @@
 # STORY-29: Give unlinked Members clear guidance when there's nothing to claim
 Epic: EPIC-02
+Status: done ✅
+PR: 47
 
 ## User story
 As a Member with no linked person record, I want to be told clearly what to
