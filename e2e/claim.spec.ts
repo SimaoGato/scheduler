@@ -1,6 +1,13 @@
 /**
  * e2e/claim.spec.ts — STORY-11: Claim existing person record on first login
  *
+ * STORY-29 note: the test below previously named "AC4: direct navigation to
+ * /claim redirects home when no unlinked people exist" asserted a redirect
+ * to home. STORY-29 removed that silent redirect in favor of rendering an
+ * explanatory "nothing to claim yet" message in place — the test has been
+ * updated (not deleted) to assert the new behavior. See
+ * docs/stories/STORY-29-claim-page-no-record-guidance.md.
+ *
  * AC coverage:
  *   Automated (CI-safe with placeholder Supabase credentials):
  *     - Regression: unauthenticated POST /api/people/claim returns 401 JSON
@@ -30,13 +37,16 @@
  *       link is verified to be persisted in the DB (not just the redirect).
  *     - AC3: skip → no link, redirect home as member, no fetch to the claim
  *       API.
- *     - AC4 (page-level defense-in-depth half): direct navigation to
- *       /pt-PT/claim when no unlinked+active people exist redirects home.
+ *     - AC4 (page-level defense-in-depth half, STORY-29 updated): direct
+ *       navigation to /pt-PT/claim when no unlinked+active people exist no
+ *       longer redirects home (STORY-29 removed that silent redirect) — it
+ *       now renders an explanatory "nothing to claim yet" message in place.
  *       Since we cannot know ahead of time what other unlinked people exist
  *       in this Supabase project, this test snapshots every currently
  *       unlinked+active person, temporarily deactivates them all for the
  *       duration of the test, then restores them exactly as they were in a
- *       `finally` block.
+ *       `finally` block. See also e2e-integration/claim-no-records.spec.ts
+ *       for the CI-automated equivalent of this same scenario.
  *     - AC5 (page-level defense-in-depth half): the test's own account is
  *       linked (via the real claim API, so the link is tied to whatever
  *       user id the E2E_WITH_AUTH session actually has) to a dedicated
@@ -73,7 +83,10 @@
  *      4. Confirm the browser lands on /pt-PT/claim (not /pt-PT/), and the
  *         unlinked person name(s) from step 1 appear in the list.
  *
- *   2. AC4 — first login with NO unlinked people -> straight to home:
+ *   2. AC4 (STORY-11, unchanged by STORY-29) — first login with NO unlinked
+ *      people -> straight to home. STORY-29 only changed what /claim renders
+ *      on direct/later navigation to the page (see AC4 test above); the auth
+ *      callback's first-login redirect decision below is untouched:
  *      1. In Table Editor, confirm no public.people rows have
  *         linked_user_id IS NULL AND is_active = true (either link or
  *         deactivate all of them for this check).
@@ -418,16 +431,19 @@ test('regression: claiming a second different person while already linked return
   }
 });
 
-// AC4 (page-level defense-in-depth): direct navigation to /pt-PT/claim when
-// no unlinked+active people exist redirects home. Since we cannot know ahead
-// of time what other unlinked people exist in this Supabase project, this
-// test snapshots every currently unlinked+active person, temporarily
-// deactivates them all (the least disruptive reversible way to construct
-// "zero unlinked people" — is_active is already a soft-delete flag, so this
-// mirrors the real deactivation flow rather than deleting real data), then
-// restores them exactly as they were in a `finally` block regardless of
-// test outcome.
-test('AC4: direct navigation to /claim redirects home when no unlinked people exist', async ({
+// AC4 (page-level defense-in-depth, STORY-29 updated): direct navigation to
+// /pt-PT/claim when no unlinked+active people exist no longer redirects
+// home — STORY-29 replaced that silent redirect with an explanatory
+// "nothing to claim yet" message rendered in place (see
+// docs/stories/STORY-29-claim-page-no-record-guidance.md). Since we cannot
+// know ahead of time what other unlinked people exist in this Supabase
+// project, this test snapshots every currently unlinked+active person,
+// temporarily deactivates them all (the least disruptive reversible way to
+// construct "zero unlinked people" — is_active is already a soft-delete
+// flag, so this mirrors the real deactivation flow rather than deleting
+// real data), then restores them exactly as they were in a `finally` block
+// regardless of test outcome.
+test('AC4: direct navigation to /claim renders the no-records message when no unlinked people exist', async ({
   page,
 }) => {
   test.skip(!process.env.E2E_WITH_AUTH, '/claim requires authentication; see manual steps in file header.');
@@ -457,7 +473,11 @@ test('AC4: direct navigation to /claim redirects home when no unlinked people ex
     }
 
     await page.goto('/pt-PT/claim');
-    await expect(page).toHaveURL(/\/pt-PT\/?$/);
+    // No redirect: the page stays on /pt-PT/claim and renders the new
+    // "nothing to claim yet" state instead.
+    await expect(page).toHaveURL(/\/pt-PT\/claim\/?$/);
+    await expect(page.getByTestId('claim-no-records')).toBeVisible();
+    await expect(page.getByTestId('claim-person-list')).toHaveCount(0);
   } finally {
     if (idsToRestore.length > 0) {
       await client.from('people').update({ is_active: true }).in('id', idsToRestore);
