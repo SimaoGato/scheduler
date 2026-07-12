@@ -121,7 +121,7 @@
     "errorAlreadyLinked": "Your account is already linked to another person. Refresh the page and try again.",
     "errorGeneric": "Something went wrong. Please try again.",
     "noRecordsTitle": "There's nothing to claim yet",
-    "noRecordsDescription": "There isn't a team record for you yet. Ask an Admin to add you to the team (Equipa) or link your account to an existing record.",
+    "noRecordsDescription": "There isn't a team record for you yet. Ask an Admin to add you to the team (Team) or link your account to an existing record.",
     "noRecordsCta": "Back to home"
   },
   "SkillManagement": {

@@ -132,7 +132,7 @@ changes.
    notes — yes, it is required here, not optional.
 2. **New i18n keys** (both locale files, `Claim` namespace):
    - `noRecordsTitle` — pt-PT: "Ainda não há nada para associares" / en: "There's nothing to claim yet"
-   - `noRecordsDescription` — pt-PT: "Ainda não existe um registo de equipa para ti. Fala com um administrador para te adicionar à equipa (Equipa) ou associar a tua conta a um registo existente." / en: "There isn't a team record for you yet. Ask an Admin to add you to the team (Equipa) or link your account to an existing record."
+   - `noRecordsDescription` — pt-PT: "Ainda não existe um registo de equipa para ti. Fala com um administrador para te adicionar à equipa (Equipa) ou associar a tua conta a um registo existente." / en: "There isn't a team record for you yet. Ask an Admin to add you to the team (Team) or link your account to an existing record."
    - `noRecordsCta` — pt-PT: "Voltar ao início" / en: "Back to home"
    (Exact copy is a suggestion for the implementer to carry over verbatim or
    adjust minimally — the wording tone should match `Home.Member.noAccessTitle`/
