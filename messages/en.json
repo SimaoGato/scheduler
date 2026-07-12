@@ -119,7 +119,10 @@
     "skipButton": "None of these are me",
     "errorAlreadyClaimed": "That person has already been linked to another account. Choose another name or skip this step.",
     "errorAlreadyLinked": "Your account is already linked to another person. Refresh the page and try again.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "noRecordsTitle": "There's nothing to claim yet",
+    "noRecordsDescription": "There isn't a team record for you yet. Ask an Admin to add you to the team (Equipa) or link your account to an existing record.",
+    "noRecordsCta": "Back to home"
   },
   "SkillManagement": {
     "title": "{name}'s skills",

@@ -119,7 +119,10 @@
     "skipButton": "Não é nenhuma destas",
     "errorAlreadyClaimed": "Essa pessoa já foi associada a outra conta. Escolhe outro nome ou salta este passo.",
     "errorAlreadyLinked": "A tua conta já está associada a outra pessoa. Atualiza a página e tenta novamente.",
-    "errorGeneric": "Ocorreu um erro. Tenta novamente."
+    "errorGeneric": "Ocorreu um erro. Tenta novamente.",
+    "noRecordsTitle": "Ainda não há nada para associares",
+    "noRecordsDescription": "Ainda não existe um registo de equipa para ti. Fala com um administrador para te adicionar à equipa (Equipa) ou associar a tua conta a um registo existente.",
+    "noRecordsCta": "Voltar ao início"
   },
   "SkillManagement": {
     "title": "Competências de {name}",
