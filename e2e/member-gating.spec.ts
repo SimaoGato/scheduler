@@ -18,11 +18,19 @@
  * Manual verification steps (requires real Supabase credentials in .env.local,
  * Google OAuth configured, and at least one admin + one member account):
  *
- *   AC1 — Member "no access yet" view:
+ *   AC1 — Member home page (STORY-30 personal availability quick-overview):
  *     1. Log in with a Google account whose row has role = 'member' in
  *        public.users.
- *     2. Confirm the home page shows "Bem-vindo ao Escala!" and the
- *        no-access description, and does NOT show the "Ver escala" button.
+ *     2. If the account has a linked people row: confirm the home page
+ *        shows the availability summary ("Resumo da disponibilidade",
+ *        available/blocked Sunday counts, next-blocked date or the
+ *        fully-available line) and a "Gerir disponibilidade" link to
+ *        /availability. If the account has no linked people row: confirm
+ *        the reused no-linked-person guidance renders instead (same
+ *        copy/link as the Availability page's AC7 state), with a link to
+ *        /claim. The old static "Bem-vindo ao Escala!" welcome message and
+ *        "Ver escala" button no longer exist (see STORY-30, superseding
+ *        STORY-28).
  *
  *   AC2 — Member nav hides admin links:
  *     1. While logged in as a Member, confirm the nav renders exactly one

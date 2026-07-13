@@ -4,21 +4,36 @@
  * AC coverage:
  *   Automated (CI-safe, no auth required):
  *     - AC1 (login page): Google sign-in button shows cursor: pointer
+ *     - AC2 (disabled button, STORY-30 replacement): a CI-safe static-source
+ *       check that `disabled:pointer-events-none` is present in
+ *       components/ui/button.tsx's buttonVariants, replacing the two
+ *       E2E_WITH_AUTH-gated live-button tests removed below (see note).
  *     - AC3: lint, tsc, build all pass after the change
  *
  *   E2E_WITH_AUTH-gated (requires .env.local + real Supabase + Google OAuth):
  *     - AC1 (nav links): admin nav links show cursor: pointer on hover
- *     - AC1 (home CTA): home page disabled CTA button shows cursor: pointer computed
- *       (even though pointer-events: none prevents actual interaction)
- *     - AC2 (disabled button): disabled button has pointer-events: none applied
  *
  *   Manual verification only:
- *     - AC1 (nav links, home CTA): visual confirmation of hand cursor on hover
+ *     - AC1 (nav links): visual confirmation of hand cursor on hover
  *     - AC2 (disabled button): visual confirmation of no pointer cursor despite
  *       the computed cursor: pointer value (pointer-events: none prevents hover)
+ *
+ * STORY-30 removal note: the two tests previously here — "AC1: home page CTA
+ * button shows cursor: pointer" and "AC2: disabled button has pointer-events:
+ * none" — targeted the static, permanently-disabled "Ver escala" home CTA
+ * button (Home.cta), which STORY-30 removed entirely in favor of a real
+ * availability summary / team-composition dashboard with no disabled
+ * button. There is no longer a reachable disabled button on the home page to
+ * assert against, so both tests were deleted rather than left permanently
+ * skipped. AC2's underlying regression coverage (the `disabled:pointer-
+ * events-none` Tailwind class staying present on Button) is preserved below
+ * via a CI-safe static-source check (BUGFIX-02 pattern), so the behavior
+ * this file's whole point is to catch does not go fully unguarded.
  */
 
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // AC1: login page button (Google sign-in) shows cursor: pointer
 // CI-safe: no auth required, reachable at /pt-PT/login
@@ -48,31 +63,13 @@ test('AC1: admin nav links show cursor: pointer', async ({ page }) => {
   expect(cursor).toBe('pointer');
 });
 
-// AC1 (auth-gated): home page CTA button shows cursor: pointer
-// The home page has a disabled CTA button which is inside (app)/
-test('AC1: home page CTA button shows cursor: pointer', async ({ page }) => {
-  test.skip(!process.env.E2E_WITH_AUTH, 'Home page CTA button requires authentication to be visible in the (app)/ route group.');
-
-  await page.goto('/');
-  // Home.cta in messages/pt-PT.json is "Ver escala".
-  const cta = page.getByRole('button', { name: 'Ver escala' });
-  await expect(cta).toBeVisible();
-
-  const cursor = await cta.evaluate((el) => window.getComputedStyle(el).cursor);
-  expect(cursor).toBe('pointer');
-});
-
-// AC2 (auth-gated): disabled button has pointer-events: none
-// Verifies that the disabled mechanism is in place (pointer-events: none)
-// even though the cursor computed style reports 'pointer'
-test('AC2: disabled button has pointer-events: none', async ({ page }) => {
-  test.skip(!process.env.E2E_WITH_AUTH, 'Home page CTA button requires authentication to be visible in the (app)/ route group.');
-
-  await page.goto('/');
-  // Home.cta in messages/pt-PT.json is "Ver escala".
-  const cta = page.getByRole('button', { name: 'Ver escala' });
-  await expect(cta).toBeVisible();
-
-  const pointerEvents = await cta.evaluate((el) => window.getComputedStyle(el).pointerEvents);
-  expect(pointerEvents).toBe('none');
+// AC2 (CI-safe, STORY-30 replacement): static-source check that
+// `disabled:pointer-events-none` remains in buttonVariants — see the
+// STORY-30 removal note in the file header for why this replaces the
+// previous two E2E_WITH_AUTH-gated tests against the now-deleted home CTA
+// button. Reads the file directly (BUGFIX-02 pattern) rather than requiring
+// a live reachable disabled button.
+test('AC2: Button component keeps disabled:pointer-events-none in buttonVariants', () => {
+  const source = readFileSync(join(__dirname, '..', 'components', 'ui', 'button.tsx'), 'utf8');
+  expect(source).toMatch(/disabled:pointer-events-none/);
 });
