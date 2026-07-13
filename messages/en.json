@@ -25,15 +25,22 @@
     "actionLoading": "Processing..."
   },
   "Member": {
-    "noAccessTitle": "Welcome to Escala!",
-    "noAccessDescription": "Your account is active, but you don't have access to any features yet. Talk to an administrator to get permissions.",
     "noRoleError": "Error loading your profile. Please contact the administrator.",
     "accessDenied": "You don't have permission to access this page."
   },
   "Home": {
-    "welcome": "Welcome to Escala.",
-    "description": "Schedule management for service teams.",
-    "cta": "View schedule"
+    "memberSummaryTitle": "Availability summary",
+    "memberSummaryIntro": "In the next {total} Sundays:",
+    "memberSummaryAvailableCount": "{count, plural, one {# available Sunday} other {# available Sundays}}",
+    "memberSummaryBlockedCount": "{count, plural, one {# blocked Sunday} other {# blocked Sundays}}",
+    "memberSummaryNextBlocked": "Next blocked Sunday: {date}",
+    "memberSummaryNoUpcomingBlocks": "You're available for all of the next {total} Sundays.",
+    "memberSummaryLink": "Manage availability",
+    "adminSummaryTitle": "Team summary",
+    "adminActivePeopleCount": "{count, plural, one {# active person} other {# active people}}",
+    "adminActiveRolesCount": "{count, plural, one {# active role} other {# active roles}}",
+    "adminBlocksNext30Days": "{count, plural, one {# person with blocks recorded in the next 30 days} other {# people with blocks recorded in the next 30 days}}",
+    "quickLinksTitle": "Quick links"
   },
   "PeopleManagement": {
     "title": "Team",
