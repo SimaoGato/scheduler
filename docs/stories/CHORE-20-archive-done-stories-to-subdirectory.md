@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: low (organizational/documentation hygiene, no code or runtime
 change)
-Status: draft
+Status: done ✅
+PR: #49
 
 ## Task
 As someone tracking project progress, I want completed stories/chores moved
