@@ -25,15 +25,22 @@
     "actionLoading": "A processar..."
   },
   "Member": {
-    "noAccessTitle": "Bem-vindo ao Escala!",
-    "noAccessDescription": "A tua conta está ativa, mas ainda não tens acesso a nenhuma funcionalidade. Fala com um administrador para obteres permissões.",
     "noRoleError": "Erro ao carregar o teu perfil. Por favor, contacta o administrador.",
     "accessDenied": "Não tens permissão para aceder a essa página."
   },
   "Home": {
-    "welcome": "Bem-vindo ao Escala.",
-    "description": "Gestão de escalas para equipas de serviço.",
-    "cta": "Ver escala"
+    "memberSummaryTitle": "Resumo da disponibilidade",
+    "memberSummaryIntro": "Nos próximos {total} domingos:",
+    "memberSummaryAvailableCount": "{count, plural, one {# domingo disponível} other {# domingos disponíveis}}",
+    "memberSummaryBlockedCount": "{count, plural, one {# domingo bloqueado} other {# domingos bloqueados}}",
+    "memberSummaryNextBlocked": "Próximo domingo indisponível: {date}",
+    "memberSummaryNoUpcomingBlocks": "Estás disponível em todos os próximos {total} domingos.",
+    "memberSummaryLink": "Gerir disponibilidade",
+    "adminSummaryTitle": "Resumo da equipa",
+    "adminActivePeopleCount": "{count, plural, one {# pessoa ativa} other {# pessoas ativas}}",
+    "adminActiveRolesCount": "{count, plural, one {# função ativa} other {# funções ativas}}",
+    "adminBlocksNext30Days": "{count, plural, one {# pessoa com bloqueios registados nos próximos 30 dias} other {# pessoas com bloqueios registados nos próximos 30 dias}}",
+    "quickLinksTitle": "Acesso rápido"
   },
   "PeopleManagement": {
     "title": "Equipa",
