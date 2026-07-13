@@ -536,3 +536,40 @@ strict AC3 scope per Challenge's Critical #2 and Warning findings):
 - Design decision #6 (`docs/stories/README.md`'s own presence at the top
   level is an accepted, intentional exception to AC5's literal "only 9 items
   + this chore" wording).
+
+## Implementation notes
+
+**Plan execution completed.** All steps from the Implementation Plan executed
+in order:
+
+1. Backed up 5 global command files before editing (`.bak` files created,
+   verified, then deleted).
+2. Applied exact edits to all 5 global files (status-glance.md, stories.md,
+   triage.md, fix.md, deliver.md) — diffs verified against backups confirm
+   only intended clauses added, no other changes.
+3. Created `docs/stories/README.md` with exact content from plan.
+4. Created `docs/stories/done/` directory.
+5. Moved 46 files via `git mv` classification script — all 46 show as renames
+   in `git status` (history preserved).
+6. Verification results:
+   - `ls docs/stories/*.md` → 10 open stories/chores + README.md (11 total)
+   - `ls docs/stories/done/*.md` → 46 files (exact count and names match plan)
+   - `git status --porcelain` → all 46 shown as `R` (rename) entries
+7. Created feature branch `chore/CHORE-20-archive-done-stories` and committed
+   repo-local changes (52 files: 46 renames + 5 open story files + README.md).
+8. Pushed branch and opened draft PR #49.
+
+**AC coverage:**
+- AC1 (files moved via git mv) ✓ — git status shows 46 renames
+- AC2 (self-path references updated) ✓ — verified at Refine; zero files
+  reference their own path
+- AC3 (global commands scan both directories) ✓ — all 5 files edited; diffs
+  verified; PR description notes out-of-repo edits
+- AC4 (documented convention) ✓ — `docs/stories/README.md` explains when/how
+  to archive; `deliver.md` Stage 7 now enacts the convention
+- AC5 (directory contents match expected) ✓ — top-level has exactly 10 open
+  + README; done/ has exactly 46
+
+**Ready for QA/Review:** Manual verification steps can proceed per test plan
+(run `/status-glance`, verify total/breakdown unchanged, confirm numbering
+logic computes correctly across both directories).
