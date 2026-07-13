@@ -81,6 +81,75 @@ value used by `availability/page.tsx`, but that file was out of scope — the fi
 was to define `const SUNDAY_HORIZON = 12` locally in the home page, not import
 it back from the availability module.
 
+## Scope enforcement during Challenge and Review (CHORE-20 lesson)
+
+When a story plan includes a design decision or judgment call that it explicitly
+flags as "non-blocking" in its own "Open questions" or "Key design decisions"
+section, that transparency does NOT exempt the decision from scope enforcement.
+Challenge and Review personas must still independently verify the decision
+against the story's declared acceptance criteria and out-of-scope list. The
+plan author's transparency is good practice, but it does not transfer the
+enforcement burden — that remains Challenge/Review's structural role. Symptom:
+a plan that says "Design decision #3: I'm changing X, flagged as non-blocking
+in Open questions #2" still requires Challenge to read AC3 and confirm whether
+X actually stays in scope. Example from CHORE-20 (cycle 2 Challenge phase):
+cycle 1's plan included a decision to move BUGFIX-*.md creation location from
+top-level `docs/stories/` into `docs/stories/done/`, with a flagged note "this
+is non-blocking." Challenge read AC3 (which explicitly asks only for numbering
+logic to scan both directories, not for creation location to change) and
+correctly reverted the decision as scope creep, even though the plan had been
+transparent about making it. Second example: the same cycle 1 plan included a
+decision to add BUGFIX-*.md to `status-glance.md`'s file-type scan, also
+flagged. Challenge reverted this too — AC3 asked only for the path to cover
+both directories, not for file types to expand. Keep the transparency in plans;
+it surfaces reasoning and risks clearly. But do not treat plan flags as self-enforcement.
+
+## Branch and commit discipline for out-of-repo and multi-file edits (CHORE-20 lesson)
+
+**Out-of-repo edits require explicit rollback plan and PR disclosure:**
+When a story's implementation plan includes edits to files outside the git
+repo (e.g., `~/.claude/commands/*.md` global command definitions), implement
+a rollback safety net because these files are not version-controlled by the
+repo: (1) before editing, snapshot each file: `cp ~/.claude/commands/status-glance.md{,.bak}`;
+(2) apply the edits; (3) verify the edits are correct by diffing against the snapshot:
+`diff -u ~/.claude/commands/status-glance.md{,.bak}` (confirming only intended
+changes, nothing extra); (4) delete the `.bak` files after verification (do not
+leave them behind). Additionally, the PR description must explicitly disclose
+these out-of-repo changes in plain language with file names and nature of the edits,
+since the GitHub diff will not show them. This breaks the convention that "the PR
+is the complete picture of all changes" — highlight it explicitly so reviewers
+know to ask for a walkthrough. Example: CHORE-20 PR #49 note in description:
+"Five global command files (`~/.claude/commands/{status-glance,stories,triage,fix,deliver}.md`)
+were also updated to scan both `docs/stories/` and `docs/stories/done/` directories.
+These are not visible in the diff but are required for the feature to work."
+
+**Untracked files can silently bundle into commits:**
+Before the first `git add` in a story's implementation phase, run `git status`
+and check if any pre-existing untracked files are present (not `.gitignore`-d,
+not staged, not part of the story's work). A careless `git add .` or `git add
+docs/` can bundle these into the commit without the implementer noticing. At
+Review time, the diff will show unexpected file changes that weren't part of
+the story's plan, requiring rework. Mitigation: (1) Implementer runs `git
+status` before the first broad `git add`, stashes or selectively ignores
+pre-existing untracked files, then uses targeted paths like `git add
+docs/stories/done/` instead of `git add .`; (2) Reviewer, upon seeing
+unexpected files in the diff, asks the implementer to verify they were
+intentional — do not approve diffs with mystery files. Example: CHORE-20
+Implementation bundled an untracked file in its first commit; Review caught it
+and Rework fixed it via `git reset --soft` + selective re-commit.
+
+**Rewriting already-pushed commits on solo branches:**
+When Review identifies unwanted changes in a commit that has already been
+pushed to a solo feature branch (e.g., `chore/CHORE-20-...`), use `git reset
+--soft HEAD~1` (not interactive rebase, which requires interactive terminal
+input incompatible with automated environments) to undo the commit while
+keeping its changes staged. Then selectively unstage the unwanted changes:
+`git restore --staged <unwanted-file>`. Re-commit with only the intended files.
+Force-push with `git push --force-with-lease` (never bare `--force`, which
+silently loses remote tracking and can overwrite concurrent pushes). Example:
+CHORE-20 Implementation notes document this pattern fixing the untracked-file
+bundling issue in a second iteration.
+
 ## Stack notes
 
 **Node.js and TypeScript:**
