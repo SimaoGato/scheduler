@@ -1,5 +1,7 @@
 # STORY-30: Home page becomes a personal availability quick-overview
 Epic: EPIC-03
+Status: done ✅
+PR: 48
 
 ## User story
 As a logged-in user (Member or Admin), I want the home page to show me
