@@ -292,3 +292,79 @@ is the correct, conservative classification.
   needs to run them by hand today, not an automated interaction with Google's
   login UI. This confirms the out-of-scope carve-out is precautionary, not
   actually blocking any of the 17 remaining files in the eventual follow-up.
+
+## CI runtime
+
+Per AC3, measuring the `integration-test` job ("Local Supabase integration
+tests") duration before and after this story's changes.
+
+- **Before:** re-verified against the latest green `main` run at
+  implementation time (superseding the `29358768711` / 4m10s figure recorded
+  during refinement, since CI timing drifts run to run). Run
+  [`29359207224`](https://github.com/SimaoGato/scheduler/actions/runs/29359207224)
+  (2026-07-14, commit `48169cb`, merged to `main`): job "Local Supabase
+  integration tests" ran `18:47:56`–`18:52:19` UTC, i.e. **4m23s**.
+- **After:** pending — will be filled in once this story's PR triggers a
+  green `integration-test` run. Measured the same way: `gh run view <run-id>
+  --json jobs -q '.jobs[] | select(.name == "Local Supabase integration
+  tests")'`.
+- **Delta:** pending, see above.
+
+Locally (outside CI timing, for reference only): the 3 migrated tests in
+`e2e-integration/app-nav.spec.ts` ran in 2.3s in isolation, and the full
+`npm run test:integration` suite (54 tests, `--workers=1` to match CI's
+serial mode) ran in 19.7s — both against a live local Supabase instance with
+seeded admin/member users. Adding 3 read-only navigation tests is not
+expected to move the CI job's wall-clock time meaningfully; the job's
+duration is dominated by `Start local Supabase` (~2m46s) and `Install
+Playwright browsers` (~44s), not by the test execution step itself
+(~15s for the whole suite in the baseline run above).
+
+## Recommendation
+
+**Worth extending as-is.** This pilot confirms the pattern is not net-new
+R&D — `adminPage`/`memberPage` (STORY-26) were already proven across 8
+passing tests in `availability.spec.ts` before this story even started, and
+migrating `app-nav.spec.ts` required zero fixture changes, only:
+swap `page` → `adminPage`/`memberPage`, drop the `test.skip(!process.env
+.E2E_WITH_AUTH, ...)` gate, move the file into `e2e-integration/`. That is
+mechanical, file-by-file port work for the remaining 17 files, not fixture
+engineering.
+
+Key findings that de-risk the remaining migration:
+
+- **No real OAuth UI dependency anywhere.** `grep -in
+  "accounts.google\|signInWithOAuth\|google.com\|OAuth UI\|Google login"
+  e2e/*.spec.ts` across all 18 originally-gated files returned zero matches
+  on real Google-UI automation — every hit is a doc-comment describing the
+  manual setup a developer needs today. The `E2E_WITH_AUTH` gate on all 17
+  remaining files can be safely dropped once each is migrated to the
+  fixture; none of them are structurally blocked on OAuth automation.
+- **Worker isolation is already solved precedent, not new design work.**
+  `playwright.integration.config.ts` already forces `workers:
+  process.env.CI ? 1 : undefined`, so CI always runs `e2e-integration/`
+  serially — read-only/navigation-only files (like the migrated
+  `app-nav.spec.ts`) need zero additional isolation work. Files that create
+  or mutate rows tied to the two fixed seeded users (`ADMIN_ID`/`MEMBER_ID`)
+  must follow the already-established worker-isolated-fixture + unconditional
+  cleanup pattern (STORY-14/STORY-25/STORY-26: names keyed by
+  `testInfo.workerIndex`, `afterEach`/`finally` cleanup) — this repo has
+  three prior worked examples to copy from, not something to invent per
+  file.
+- **CI-time budgeting:** the before/after delta measured in this story (see
+  "CI runtime" above) gives a concrete per-batch cost estimate. Since the
+  job's fixed overhead (starting local Supabase, installing Playwright
+  browsers) dominates over incremental test-execution time, batching several
+  related files into one follow-up chore (rather than one file per chore)
+  is likely more CI-time-efficient than doing all 17 as 17 separate PRs —
+  worth weighing against the "small, reviewable PR" tradeoff at planning
+  time for the follow-up.
+
+**Sequencing recommendation:** proceed file-by-file (or in small related
+batches) starting with the lowest-risk/highest-value files first — read-only
+nav/gating/visibility checks (e.g. any remaining files similar in shape to
+the migrated `app-nav.spec.ts`) before data-mutating flows (e.g.
+`claim.spec.ts`, `role-management.spec.ts`, `user-management.spec.ts`),
+since data-mutating files require the worker-isolated-fixture-and-cleanup
+pattern to be applied correctly and carry more regression risk if a cleanup
+step is missed.
