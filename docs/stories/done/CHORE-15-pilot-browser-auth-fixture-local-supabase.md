@@ -1,6 +1,7 @@
 # CHORE-15: Pilot a browser-based auth fixture against local Supabase (unblock E2E_WITH_AUTH tests in CI)
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: 51
 
 ## Task
 CHORE-05 built a local-Supabase-backed CI job with real seeded admin/member
