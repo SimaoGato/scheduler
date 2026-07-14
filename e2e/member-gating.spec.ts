@@ -13,7 +13,8 @@
  *     longer mirrors the *authenticated* Member nav state — as of STORY-26
  *     the Member nav renders one link ("Disponibilidade"), not an empty
  *     landmark; only a null/unrecognized role still returns no <nav> at all
- *     (see e2e/app-nav.spec.ts for the Member-nav-has-one-link coverage).
+ *     (see e2e-integration/app-nav.spec.ts for the Member-nav-has-one-link
+ *     coverage, migrated off E2E_WITH_AUTH gating by CHORE-15).
  *
  * Manual verification steps (requires real Supabase credentials in .env.local,
  * Google OAuth configured, and at least one admin + one member account):
