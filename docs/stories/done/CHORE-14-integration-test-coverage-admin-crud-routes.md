@@ -1,6 +1,7 @@
 # CHORE-14: Extend local-Supabase integration tests to admin CRUD API routes
 Epic: maintenance
-Status: draft
+Status: done ✅
+PR: #50
 
 ## Task
 CHORE-05 added a local-Supabase-backed `integration-test` CI job and proved
