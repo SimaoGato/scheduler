@@ -52,6 +52,7 @@
 
 import { test, expect } from './fixtures'
 import { serviceClient } from './service-client'
+import { ADMIN_EMAIL, MEMBER_EMAIL } from '../supabase/test-users.mjs'
 
 // ---------------------------------------------------------------------------
 // AC1/AC2: GET /api/admin/people
@@ -169,8 +170,8 @@ test.describe('CHORE-14: GET /api/admin/users', () => {
 
     const body = (await response.json()) as Array<{ email: string }>
     expect(Array.isArray(body)).toBe(true)
-    expect(body.some((row) => row.email === 'ci-admin@example.test')).toBe(true)
-    expect(body.some((row) => row.email === 'ci-member@example.test')).toBe(true)
+    expect(body.some((row) => row.email === ADMIN_EMAIL)).toBe(true)
+    expect(body.some((row) => row.email === MEMBER_EMAIL)).toBe(true)
   })
 
   test('AC2: member GET /api/admin/users returns 403 (proves requireAdmin\'s RLS-backed public.users role read rejects a non-admin)', async ({
