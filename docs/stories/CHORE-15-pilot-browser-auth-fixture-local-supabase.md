@@ -304,11 +304,21 @@ tests") duration before and after this story's changes.
   [`29359207224`](https://github.com/SimaoGato/scheduler/actions/runs/29359207224)
   (2026-07-14, commit `48169cb`, merged to `main`): job "Local Supabase
   integration tests" ran `18:47:56`–`18:52:19` UTC, i.e. **4m23s**.
-- **After:** pending — will be filled in once this story's PR triggers a
-  green `integration-test` run. Measured the same way: `gh run view <run-id>
-  --json jobs -q '.jobs[] | select(.name == "Local Supabase integration
-  tests")'`.
-- **Delta:** pending, see above.
+- **After:** measured against this story's own PR
+  ([#51](https://github.com/SimaoGato/scheduler/pull/51)) CI run
+  [`29360390376`](https://github.com/SimaoGato/scheduler/actions/runs/29360390376)
+  (branch `story/CHORE-15-pilot-browser-auth-fixture-local-supabase`): job
+  "Local Supabase integration tests" ran `19:05:35`–`19:11:55` UTC, i.e.
+  **6m20s**.
+- **Delta:** +1m57s (4m23s → 6m20s). Breaking down by step, almost all of
+  the delta is attributable to `Start local Supabase` (2m46s before vs.
+  4m35s after — Docker image-pull/runner variance, a known noise source per
+  this story's own "Risks and rollback" section), not to the added tests
+  themselves: the `Run integration tests` step itself only grew from 15s to
+  19s (+4s) despite 3 new tests being added, consistent with the
+  "Recommendation" section's expectation that per-file test-execution cost
+  is small relative to the job's fixed overhead (starting local Supabase,
+  installing Playwright browsers).
 
 Locally (outside CI timing, for reference only): the 3 migrated tests in
 `e2e-integration/app-nav.spec.ts` ran in 2.3s in isolation, and the full
