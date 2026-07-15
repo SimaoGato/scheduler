@@ -22,6 +22,19 @@
  *         soft-deleted people's stale blocks (regression test).
  *   AC5 — 375px viewport: no horizontal overflow, >= 44px tap targets.
  *   AC6 — i18n key parity: covered globally by e2e/i18n-key-parity.spec.ts.
+ *
+ * CHORE-18 additions (redesign home page visual design — Card-based layout):
+ * additive-only, nothing above was modified or removed.
+ *   - `data-slot="card"` assertions on member-availability-summary,
+ *     admin-team-summary, and admin-quick-links (proves the testid'd element
+ *     is Card's own root, not just an ancestor).
+ *   - `getByRole('heading', { level: 1|2 })` assertions scoped to each
+ *     testid'd container (proves the existing <h1>/<h2> heading elements
+ *     survive being nested inside CardTitle, per the story's Design
+ *     decision 6 / Challenge cycle 1 CRITICAL fix).
+ *   - A new `CHORE-18: AC4 desktop viewport (1280px)` describe block below,
+ *     mirroring the existing 375px block (this story's AC4 requires both
+ *     375px and 1280px coverage; STORY-30 only had 375px).
  */
 
 import { test, expect } from './fixtures'
@@ -209,6 +222,12 @@ test.describe('STORY-30: AC1 Member availability summary (linked person)', () =>
     const link = summary.getByRole('link', { name: messages.Home.memberSummaryLink })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', '/pt-PT/availability')
+
+    // CHORE-18 AC2/AC3: member-availability-summary is itself Card's root
+    // element (not just an ancestor), and its heading survives the
+    // CardTitle wrap as a real <h1>.
+    await expect(summary).toHaveAttribute('data-slot', 'card')
+    await expect(summary.getByRole('heading', { level: 1 })).toBeVisible()
   })
 
   test('two blocked dates: shows 10 available / 2 blocked and the earliest next-blocked date', async ({
@@ -245,6 +264,11 @@ test.describe('STORY-30: AC1 Member availability summary (linked person)', () =>
     await expect(summary).not.toContainText(
       messages.Home.memberSummaryNoUpcomingBlocks.replace('{total}', '12')
     )
+
+    // CHORE-18 AC2/AC3: member-availability-summary is itself Card's root
+    // element, and its heading survives the CardTitle wrap as a real <h1>.
+    await expect(summary).toHaveAttribute('data-slot', 'card')
+    await expect(summary.getByRole('heading', { level: 1 })).toBeVisible()
   })
 })
 
@@ -316,6 +340,14 @@ test.describe('STORY-30: AC3 Admin team summary and quick links', () => {
       await expect(rolesLink).toHaveAttribute('href', '/pt-PT/admin/roles')
       await expect(usersLink).toBeVisible()
       await expect(usersLink).toHaveAttribute('href', '/pt-PT/admin/users')
+
+      // CHORE-18 AC1/AC3: both testid'd elements are themselves Card's root
+      // element, and their headings survive the CardTitle wrap as real
+      // <h1>/<h2> elements.
+      await expect(summary).toHaveAttribute('data-slot', 'card')
+      await expect(summary.getByRole('heading', { level: 1 })).toBeVisible()
+      await expect(quickLinks).toHaveAttribute('data-slot', 'card')
+      await expect(quickLinks.getByRole('heading', { level: 2 })).toBeVisible()
     } finally {
       await deletePerson(person.id)
       await deleteRole(role.id)
@@ -447,6 +479,66 @@ test.describe('STORY-30: AC5 mobile viewport (375px)', () => {
 
     const scrollWidth = await adminPage.evaluate(() => document.documentElement.scrollWidth)
     expect(scrollWidth).toBeLessThanOrEqual(375)
+
+    const links = adminPage.getByTestId('admin-quick-links').getByRole('link')
+    const count = await links.count()
+    expect(count).toBe(3)
+    for (let i = 0; i < count; i++) {
+      const link = links.nth(i)
+      await expect(link).toBeVisible()
+      const box = await link.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CHORE-18 AC4: desktop viewport (1280px) — no horizontal overflow,
+// >= 44px tap targets. Mirrors the 375px block above structurally; the tap
+// target floor doesn't shrink at wider viewports, so the same assertion is
+// reused at 1280px.
+// ---------------------------------------------------------------------------
+
+test.describe('CHORE-18: AC4 desktop viewport (1280px)', () => {
+  let personId: string
+
+  test.beforeEach(async ({}, testInfo) => {
+    const person = await createPerson(`CHORE-18 QA AC4 Person (w${testInfo.workerIndex})`, MEMBER_ID)
+    personId = person.id
+  })
+
+  test.afterEach(async () => {
+    await deletePerson(personId)
+  })
+
+  test('Member view: no overflow, availability link >= 44px', async ({ memberPage, memberRequest }) => {
+    // Seed a block so the longest-case next-blocked-date line is on screen.
+    const sundays = expectedSundays(12)
+    const response = await memberRequest.post('/api/availability/blocks', { data: { date: sundays[0] } })
+    expect(response.status()).toBe(200)
+
+    await memberPage.setViewportSize({ width: 1280, height: 800 })
+    await memberPage.goto('/pt-PT/')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const scrollWidth = await memberPage.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(1280)
+
+    const link = memberPage.getByTestId('member-availability-summary').getByRole('link')
+    await expect(link).toBeVisible()
+    const box = await link.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+  })
+
+  test('Admin view: no overflow, all quick-link tap targets >= 44px', async ({ adminPage }) => {
+    await adminPage.setViewportSize({ width: 1280, height: 800 })
+    await adminPage.goto('/pt-PT/')
+    await expect(adminPage).not.toHaveURL(/\/login/)
+
+    const scrollWidth = await adminPage.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(1280)
 
     const links = adminPage.getByTestId('admin-quick-links').getByRole('link')
     const count = await links.count()
