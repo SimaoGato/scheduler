@@ -1,5 +1,5 @@
 # BUGFIX-06: Header/nav mobile overflow regression (Funções + Disponibilidade added after STORY-23's fix)
-Status: draft
+Status: implemented
 Related story: STORY-23 (fix-header-nav-mobile-overflow, done ✅, PR 28),
 STORY-17 (added the "Funções" roles nav link after STORY-23 shipped),
 STORY-26 (added the "Disponibilidade" nav link after STORY-23 shipped)
@@ -638,3 +638,70 @@ already exists and is being reused, not invented.
   doc-comment updates in `e2e/header-identity-widget.spec.ts` and
   `e2e/design-system.spec.ts`.
 - No backend, data, ai-ml, or infra changes.
+
+## Manual Verification (implementation)
+
+Performed in a sandboxed Linux dev environment using the local Supabase
+instance (`supabase start`, seeded via `supabase/seed-test-users.mjs`) and
+Playwright's real Chromium (WSL2 `libnspr4`/`libnss3`/`libasound2t64`
+workaround from CLAUDE.md's Playwright section).
+
+- **Red step (Steps step 2):** confirmed `e2e-integration/header-nav-mobile-overflow.spec.ts`
+  fails against the pre-fix `AppHeader.tsx` at both 375px and 390px — exactly
+  the 4 admin AC1 tests fail (nav `<li>` `y` < logo `y`, the bug's DOM
+  signature), all 8 other tests (member, tap-target/screenshot) already pass
+  because the bug's signature is specific to the admin 4-link case. This
+  confirms the test is non-vacuous (fault-injection style, CLAUDE.md CHORE-14
+  pattern).
+- **Green step (Steps step 4):** after applying Design decision 1's
+  `AppHeader.tsx` restructuring, all 12 tests pass at both 375px and 390px.
+- **Regression check (Steps step 5):** `e2e-integration/app-nav.spec.ts`
+  (3/3 passed) and the full smoke suite `npm run test:e2e` (75 passed, 91
+  auth-gated skipped, 0 failed, against CI's actual placeholder-credential
+  build) both pass with no regressions. `npm run test:integration`'s wider
+  suite has 12 pre-existing failures unrelated to this change (fixture-data
+  duplicate-key collisions in `blocked-dates`/`home`/`claim-no-records`/
+  `admin-availability` specs, caused by state accumulated in this sandbox's
+  long-running local Supabase instance across unrelated prior sessions — none
+  of these specs touch `AppHeader.tsx`, `AppNav.tsx`, or header/nav layout).
+- **Keyboard tab-order walkthrough (Steps step 7 — 375px):** driven via a
+  real Playwright `page.keyboard.press('Tab')` walk (not a static DOM read)
+  against the authenticated admin session at 375px. Observed order: Escala
+  (logo) → avatar/user-menu trigger → Disponibilidade → Utilizadores →
+  Equipa → Funções. This matches on-screen visual order exactly (row 1:
+  logo, avatar; row 2+: nav links) — zero DOM/visual/tab-order divergence at
+  mobile, confirming Design decision 1's CRITICAL #1 fix.
+- **Keyboard tab-order walkthrough (Steps step 8 — 768px and 1280px):** same
+  Tab-key walk repeated at both desktop widths. Observed order is identical
+  to the 375px case (Escala → avatar → nav links) at both widths, while the
+  on-screen visual order at desktop is logo → nav → avatar (via
+  `sm:order-2`/`sm:order-3`). This confirms the accepted Option B divergence
+  (cycle-2 revision note) is present exactly as documented — a desktop
+  keyboard user reaches the avatar/user-menu before the nav links, opposite
+  of on-screen order — and reads as the deliberate, narrow trade-off
+  recorded in the inline `AppHeader.tsx` comment, not a missed regression.
+- **Visual spot-check (Steps step 8):** screenshots captured at 375px, 390px
+  (via the integration test's own artifact capture), 768px, and 1280px.
+  - 375px/390px (admin, 4 links): logo + avatar on row 1, nav wraps 3+1 onto
+    row 2, "Funções" alone on its own right-aligned row directly below the
+    other 3 links — reads as an intentional continuation of the nav block,
+    not as broken/floating (Challenger WARNING #3 concern addressed).
+  - 768px: single row, no wrapping, tight right-hand grouping — no
+    regression from the 640px residual-limitation note.
+  - 1280px: pixel-identical to the pre-fix desktop layout — logo far left,
+    nav + avatar grouped tight on the right, single row. Confirms this is a
+    layout-correctness fix with zero desktop visual regression.
+- **Belt-and-suspenders `E2E_WITH_AUTH` check (Steps step 9):** NOT run — no
+  real Google OAuth credentials are available in this sandboxed environment
+  (`.env.local` has no Google client config reachable for an interactive
+  OAuth flow, and this environment has no way to complete a real Google
+  sign-in). Noted explicitly per the plan's fallback instruction rather than
+  silently skipped. The local-Supabase-password-authenticated
+  `e2e-integration` suite above (which exercises the same `AppHeader.tsx`
+  DOM) is the coverage that actually ran.
+- **Definition of Done gates:** `npm run lint` (0), `npx tsc --noEmit` (0,
+  after fixing an unrelated pre-existing type-only import issue in the new
+  spec file — `Page` is not re-exported from `./fixtures`, imported from
+  `@playwright/test` directly instead), `npm run build` (0), `npm run
+  test:e2e` (0, 75 passed / 91 skipped) all confirmed green against a build
+  using CI's actual placeholder Supabase credentials.
