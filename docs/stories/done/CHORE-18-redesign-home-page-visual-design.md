@@ -1,7 +1,8 @@
 # CHORE-18: Redesign home page visual design (Card-based layout)
 Epic: maintenance
 Priority: low (visual-quality debt, not a functional defect)
-Status: draft
+Status: done ✅
+PR: 54
 Depends on: CHORE-17 (Card UI primitive)
 Related story: STORY-30 (home-page-personal-quick-overview — this chore
 restyles that story's output; no data/logic changes)
