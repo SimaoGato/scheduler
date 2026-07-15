@@ -579,5 +579,50 @@ and `e2e-integration/home.spec.ts` (not just plan prose).
 No CRITICAL issues remain. Per CLAUDE.md's retry budget, this is cycle 2 and
 the plan is approved — safe to proceed to Implementation.
 
+## Manual Verification (Step 6)
+
+Performed against a real local Supabase instance (`supabase start`, test
+users seeded via `supabase/seed-test-users.mjs`) and a `npm run build` +
+`npm start` server, using Playwright's `adminPage`/`memberPage` auth
+fixtures (`e2e-integration/fixtures.ts`) to drive real logged-in sessions —
+not a static/structural check. Screenshots captured at 375px and 1280px, in
+both light theme (default) and dark theme (via `page.emulateMedia({
+colorScheme: 'dark' })`, since next-themes' blocking inline script is
+authoritative on a cold `page.goto()` load — a `resolved-theme` cookie alone
+is only authoritative for soft navigations per CLAUDE.md's CHORE-13 note).
+
+- **Card separation**: Confirmed. Admin view renders two visually distinct
+  bordered/shadowed cards ("Resumo da equipa" and "Acesso rápido"); Member
+  view renders one card ("Resumo da disponibilidade"). Clear visual grouping
+  in both light and dark theme, at both viewport widths — no cramped or
+  overlapping text, no horizontal overflow.
+- **Headings preserved**: Confirmed. All three headings (Admin `<h1>` "Resumo
+  da equipa", Admin `<h2>` "Acesso rápido", Member `<h1>` "Resumo da
+  disponibilidade") are present, visually unchanged in size/weight from the
+  pre-redesign screenshot in this story's Context section (same
+  `text-2xl font-semibold` / `text-lg font-semibold` sizing, now living on
+  the inner heading tag per Design decision 6).
+- **Stat-emphasis falsifiable check** (Revision cycle 1, Challenge WARNING 2
+  criteria): for all four stat lines — Admin "1 pessoa ativa" / "0 funções
+  ativas", Member "11 domingos disponíveis" / "1 domingo bloqueado" — the
+  numeral is the first token on the line and is rendered at `text-xl
+  font-bold`, visibly larger and bolder than the surrounding `text-sm` body
+  copy in the same card. The eye lands on the number first, consistent with
+  a dashboard "stat" read, not merely "a bold sentence." Judged sufficient;
+  no further size increase needed.
+- **Dark theme contrast**: Eyeballed against the screenshots — card
+  background/border/text all read cleanly with no washed-out or
+  low-contrast text in either the stat lines or the `CardDescription` intro
+  line. No new ad hoc colors were introduced (reuses `bg-card` /
+  `text-card-foreground` / `text-muted-foreground`, already
+  contrast-verified by `e2e/card-ui-primitive.spec.ts` AC2 from CHORE-17).
+- **Quick-links row**: unchanged visual treatment (ghost-variant buttons,
+  out of this chore's scope to restyle further) now sits inside the second
+  card's `CardContent` padding; no wrapping/overflow regression observed at
+  375px.
+
+Outcome: the redesign reads as intentionally designed per the user's own
+"simple, but good" framing — sign-off given.
+
 ## Definition of Done
 See CLAUDE.md.
