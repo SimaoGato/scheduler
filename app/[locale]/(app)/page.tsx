@@ -6,6 +6,7 @@ import { resolveSelfPersonId } from '@/lib/people/resolve-self';
 import { getBlockedDates } from '@/lib/availability/blocked-dates';
 import { getUpcomingSundays } from '@/lib/availability/upcoming-sundays';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 
 interface PageProps {
   // Next.js 16: searchParams is a Promise
@@ -166,33 +167,45 @@ export default async function HomePage({ searchParams }: PageProps) {
             {m('accessDenied')}
           </div>
         )}
-        <div data-testid="member-availability-summary">
-          <h1 className="mb-2 text-2xl font-semibold">{h('memberSummaryTitle')}</h1>
-          <p className="mb-4 text-sm text-muted-foreground">
-            {h('memberSummaryIntro', { total: SUNDAY_HORIZON })}
-          </p>
-          <ul className="mb-4 flex flex-col gap-1 text-sm">
-            <li>{h('memberSummaryAvailableCount', { count: availableCount })}</li>
-            <li>{h('memberSummaryBlockedCount', { count: blockedCount })}</li>
-          </ul>
-          {formattedNextBlocked !== null ? (
-            <p className="mb-6 text-sm">
-              {h('memberSummaryNextBlocked', { date: formattedNextBlocked })}
-            </p>
-          ) : (
-            // AC4 neutral-framing principle applies here too: zero blocks is
-            // good news for a Member, not an incomplete state.
-            <p className="mb-6 text-sm">
-              {h('memberSummaryNoUpcomingBlocks', { total: SUNDAY_HORIZON })}
-            </p>
-          )}
-          <Link
-            href="/availability"
-            className="inline-flex min-h-[44px] items-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            {h('memberSummaryLink')}
-          </Link>
-        </div>
+        <Card data-testid="member-availability-summary">
+          <CardHeader>
+            <CardTitle>
+              <h1 className="text-2xl font-semibold">{h('memberSummaryTitle')}</h1>
+            </CardTitle>
+            <CardDescription>
+              {h('memberSummaryIntro', { total: SUNDAY_HORIZON })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="mb-4 flex flex-col gap-1 text-sm">
+              <li className="text-xl font-bold">
+                {h('memberSummaryAvailableCount', { count: availableCount })}
+              </li>
+              <li className="text-xl font-bold">
+                {h('memberSummaryBlockedCount', { count: blockedCount })}
+              </li>
+            </ul>
+            {formattedNextBlocked !== null ? (
+              <p className="text-sm">
+                {h('memberSummaryNextBlocked', { date: formattedNextBlocked })}
+              </p>
+            ) : (
+              // AC4 neutral-framing principle applies here too: zero blocks is
+              // good news for a Member, not an incomplete state.
+              <p className="text-sm">
+                {h('memberSummaryNoUpcomingBlocks', { total: SUNDAY_HORIZON })}
+              </p>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Link
+              href="/availability"
+              className="inline-flex min-h-[44px] items-center rounded-md border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {h('memberSummaryLink')}
+            </Link>
+          </CardFooter>
+        </Card>
       </main>
     );
   }
@@ -294,36 +307,57 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <div data-testid="admin-team-summary" className="mb-6">
-        <h1 className="mb-2 text-2xl font-semibold">{t('adminSummaryTitle')}</h1>
-        <ul className="flex flex-col gap-1 text-sm">
-          {activePeopleCount !== null && (
-            <li>{t('adminActivePeopleCount', { count: activePeopleCount })}</li>
-          )}
-          {activeRolesCount !== null && (
-            <li>{t('adminActiveRolesCount', { count: activeRolesCount })}</li>
-          )}
-        </ul>
-      </div>
+      <Card data-testid="admin-team-summary" className="mb-6">
+        <CardHeader>
+          <CardTitle>
+            <h1 className="text-2xl font-semibold">{t('adminSummaryTitle')}</h1>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="flex flex-col gap-1 text-sm">
+            {activePeopleCount !== null && (
+              <li className="text-xl font-bold">
+                {t('adminActivePeopleCount', { count: activePeopleCount })}
+              </li>
+            )}
+            {activeRolesCount !== null && (
+              <li className="text-xl font-bold">
+                {t('adminActiveRolesCount', { count: activeRolesCount })}
+              </li>
+            )}
+          </ul>
+        </CardContent>
+        {/* CHORE-18: intentionally nested inside admin-team-summary's Card as
+            a second CardContent block (Design decision 1) — getByTestId is
+            depth-independent, so this does not affect existing e2e
+            assertions. */}
+        <CardContent>
+          <div data-testid="admin-blocks-next-30-days" className="text-sm">
+            {blocksNext30Days !== null && t('adminBlocksNext30Days', { count: blocksNext30Days })}
+          </div>
+        </CardContent>
+      </Card>
 
-      <div data-testid="admin-blocks-next-30-days" className="mb-6 text-sm">
-        {blocksNext30Days !== null && t('adminBlocksNext30Days', { count: blocksNext30Days })}
-      </div>
-
-      <div data-testid="admin-quick-links">
-        <h2 className="mb-2 text-lg font-semibold">{t('quickLinksTitle')}</h2>
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 min-w-0">
-          <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
-            <Link href="/admin/people">{nav('people')}</Link>
-          </Button>
-          <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
-            <Link href="/admin/roles">{nav('roles')}</Link>
-          </Button>
-          <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
-            <Link href="/admin/users">{nav('userManagement')}</Link>
-          </Button>
-        </div>
-      </div>
+      <Card data-testid="admin-quick-links">
+        <CardHeader>
+          <CardTitle>
+            <h2 className="text-lg font-semibold">{t('quickLinksTitle')}</h2>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 min-w-0">
+            <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+              <Link href="/admin/people">{nav('people')}</Link>
+            </Button>
+            <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+              <Link href="/admin/roles">{nav('roles')}</Link>
+            </Button>
+            <Button variant="ghost" asChild className="min-h-[44px] px-3 text-sm">
+              <Link href="/admin/users">{nav('userManagement')}</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }
