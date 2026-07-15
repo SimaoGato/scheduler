@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: low (foundational — enables CHORE-18/CHORE-19, no user-visible
 change on its own)
-Status: draft
+Status: done ✅
+PR: 53
 
 ## Task
 Add a shadcn/ui `Card` component (and the small set of subcomponents that
