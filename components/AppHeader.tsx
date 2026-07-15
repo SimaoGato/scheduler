@@ -42,18 +42,54 @@ export default async function AppHeader() {
 
   return (
     <header className="border-b bg-background px-4 py-3">
-      <div className="container mx-auto flex items-center justify-between">
+      <div className="container mx-auto flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
         <Link
           href="/"
-          className="inline-flex items-center min-h-[44px] text-lg font-semibold"
+          className="inline-flex items-center min-h-[44px] text-lg font-semibold shrink-0"
         >
           {t('name')}
         </Link>
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-4">
-          <AppNav role={role} />
-          {user && (
+        {/* DOM order is Link -> avatar -> nav, matching the mobile (<sm) visual
+            order exactly, so keyboard tab order and screen-reader reading order
+            match what's on screen at the default (mobile-first) breakpoint —
+            no CSS `order` at all is used for the mobile case. `ml-auto` here
+            (unprefixed) pins the avatar to the right edge of row 1, next to the
+            logo. At >=sm, sm:order-3 + sm:ml-0 move it back after the nav to
+            restore the exact pre-fix desktop grouping (see BUGFIX-06 for why
+            this is load-bearing — do not remove without re-verifying 375px,
+            390px, AND 1280px, and re-checking tab order with a real keyboard).
+
+            ACCEPTED RISK (BUGFIX-06 cycle 2, precedent: CLAUDE.md's STORY-18
+            TOCTOU-acceptance pattern): at >=sm this override makes DOM order
+            (Link -> avatar -> nav) diverge from visual order (Link -> nav ->
+            avatar) — a desktop keyboard user tabs to the avatar/user-menu
+            BEFORE the nav links, opposite of on-screen left-to-right order.
+            This is deliberate, not missed: the visual order genuinely differs
+            between breakpoints (mobile wants avatar-then-nav, desktop wants
+            nav-then-avatar), so a single DOM order can match only one
+            breakpoint's default visual order without duplicating the
+            AppNav/UserWidget subtree (rejected — see the cycle-2 revision
+            note above: UserWidgetMenu's fixed data-testid values would
+            collide across 7 existing E2E_WITH_AUTH-gated specs). Mobile was
+            chosen as the bug-free breakpoint because it's this bugfix's
+            actual subject. The desktop divergence blocks no action and
+            creates no keyboard trap — every element stays reachable, just in
+            a non-visual order. Do not "fix" this by adding order-* at mobile
+            instead; that reintroduces the original CRITICAL #1 regression on
+            the breakpoint this bugfix exists to repair. */}
+        {user && (
+          <div className="ml-auto sm:order-3 sm:ml-0">
             <UserWidget displayName={displayName} roleLabel={roleLabel} />
-          )}
+          </div>
+        )}
+        {/* Mobile (<sm): no order override — this div is the third DOM child so
+            it naturally renders as row 2+, full width, wrapping its own <ul>
+            across the whole container width instead of a squeezed sub-column —
+            this is the fix. Desktop (>=sm): sm:order-2 + sm:ml-auto move it
+            back between the logo and the avatar, restoring the current tight
+            right-hand grouping. */}
+        <div className="w-full min-w-0 sm:order-2 sm:w-auto sm:ml-auto">
+          <AppNav role={role} />
         </div>
       </div>
     </header>
