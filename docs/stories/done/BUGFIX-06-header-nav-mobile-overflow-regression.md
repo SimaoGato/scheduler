@@ -1,5 +1,6 @@
 # BUGFIX-06: Header/nav mobile overflow regression (Funções + Disponibilidade added after STORY-23's fix)
-Status: implemented
+Status: done ✅
+PR: 52
 Related story: STORY-23 (fix-header-nav-mobile-overflow, done ✅, PR 28),
 STORY-17 (added the "Funções" roles nav link after STORY-23 shipped),
 STORY-26 (added the "Disponibilidade" nav link after STORY-23 shipped)
