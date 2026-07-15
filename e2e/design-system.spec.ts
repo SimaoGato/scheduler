@@ -35,6 +35,18 @@ test('design-system AC5: nav tap targets meet 44 px minimum at mobile width', as
   expect(box!.height).toBeGreaterThanOrEqual(44);
 });
 
-// Note: the no-horizontal-overflow assertion at 375 px is already covered by
-// e2e/smoke.spec.ts ("responsive shell: no horizontal overflow at mobile width").
-// Do not duplicate it here to avoid double-failure noise in CI.
+// Note: the no-horizontal-overflow assertion at 375 px for the *unauthenticated
+// login shell* is already covered by e2e/smoke.spec.ts ("responsive shell: no
+// horizontal overflow at mobile width"). Do not duplicate it here to avoid
+// double-failure noise in CI.
+//
+// BUGFIX-06 correction: smoke.spec.ts's assertion does NOT cover the
+// authenticated app header/nav rendered by AppHeader.tsx/AppNav.tsx above
+// (this file's own AC1/AC5 tests just above are skipped for exactly that
+// reason — the nav requires auth). That gap previously let a mobile
+// header/nav overflow regression ship twice undetected by CI. The
+// CI-enforced source of truth for authenticated header/nav overflow and
+// layout coherence at 375px/390px is
+// e2e-integration/header-nav-mobile-overflow.spec.ts, which runs
+// unconditionally on every PR via the `integration-test` CI job against
+// real local-Supabase admin/member sessions.

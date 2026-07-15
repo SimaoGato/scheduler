@@ -32,8 +32,9 @@
  *
  *  AC4 — Admin, 375 px, no overflow (STORY-23 extends this to the admin nav's
  *  widest page, `/pt-PT/admin/people`, not just `/`):
- *    1. Log in as an admin (3 nav links visible: Utilizadores, Equipa,
- *       Funções; see STORY-16, extended by STORY-17).
+ *    1. Log in as an admin (4 nav links visible: Disponibilidade,
+ *       Utilizadores, Equipa, Funções; see STORY-16, extended by STORY-17
+ *       and STORY-26).
  *    2. Set browser to 375 px wide (DevTools device mode).
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
@@ -50,6 +51,21 @@
  *    2. Set browser to 375 px wide.
  *    3. Confirm no horizontal scrollbar;
  *       document.documentElement.scrollWidth <= 375.
+ *
+ *  BUGFIX-06 note: this file's AC4/AC5 tests are `E2E_WITH_AUTH`-gated and
+ *  never run in CI (no real Google-OAuth credentials there) — that gap is
+ *  exactly what let a mobile header/nav overflow regression ship twice
+ *  (STORY-17's "Funções" link, STORY-26's "Disponibilidade" link, neither
+ *  re-verified against this scrollWidth-only check). The CI-enforced,
+ *  unconditionally-run source of truth for header/nav overflow and layout
+ *  coherence (including a stricter "no nav content wraps above the logo"
+ *  positional check, not just scrollWidth) is now
+ *  `e2e-integration/header-nav-mobile-overflow.spec.ts`, which runs on every
+ *  PR via the `integration-test` CI job against real local-Supabase admin/
+ *  member sessions, parametrized over 375px AND 390px. The tests below are
+ *  kept for local/manual verification of the real Google-OAuth-authenticated
+ *  path only (which the local-Supabase-password fixtures don't cover) — do
+ *  not treat them as CI coverage.
  */
 
 import { test, expect } from '@playwright/test';
