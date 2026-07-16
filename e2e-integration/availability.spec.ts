@@ -458,6 +458,14 @@ test.describe('CHORE-19: AC1 availability summary Card', () => {
     await expect(summary).toContainText(
       messages.Availability.summaryNoUpcomingBlocks.replace('{total}', '12')
     )
+
+    // WARNING 2 (PR #55 review): summaryIntro ("Nos próximos {total}
+    // domingos:") is a CardDescription sibling of availability-summary, not
+    // inside it — assert it on the Card itself so a typo or a dropped
+    // {total} interpolation is caught.
+    await expect(card).toContainText(
+      messages.Availability.summaryIntro.replace('{total}', '12')
+    )
   })
 
   test('two blocked dates: shows 10 available / 2 blocked and the earliest next-unavailable date', async ({
@@ -606,5 +614,13 @@ test.describe('CHORE-19: AC2/AC5 blocked-row badge at 375px', () => {
       return second.left - first.right
     })
     expect(gap).toBeGreaterThanOrEqual(8)
+
+    // WARNING 1 (PR #55 review): assert the blocked-row state-label span
+    // actually carries the solid-fill destructive badge classes, so a future
+    // refactor that silently drops them fails this test instead of only the
+    // CSS-token-only e2e/availability-destructive-contrast.spec.ts check.
+    const stateLabel = blockedButton.locator('span').nth(1)
+    await expect(stateLabel).toHaveClass(/bg-destructive/)
+    await expect(stateLabel).toHaveClass(/text-destructive-foreground/)
   })
 })
