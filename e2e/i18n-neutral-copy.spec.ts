@@ -34,6 +34,10 @@ const GUARDED_KEYS = [
   'Home.memberSummaryNoUpcomingBlocks',
   'Home.memberSummaryBlockedCount',
   'Home.memberSummaryAvailableCount',
+  // CHORE-19 (PR #55 review SUGGESTION): the availability page summary Card
+  // shares the same "absence-of-row means default-available" data model as
+  // the Home page's STORY-30 summary — guard it the same way.
+  'Availability.summaryNoUpcomingBlocks',
 ] as const;
 
 const FORBIDDEN_SUBSTRINGS_PT = ['aviso', 'atenção', 'pendente', 'falta'];
