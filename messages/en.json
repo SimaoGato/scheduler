@@ -156,6 +156,11 @@
     "noLinkedPersonDescription": "To manage your availability, first link your account to your name on the team.",
     "noLinkedPersonCta": "Link account",
     "adminTitle": "{name}'s availability",
-    "backToTeam": "Back to team"
+    "backToTeam": "Back to team",
+    "summaryIntro": "In the next {total} Sundays:",
+    "summaryAvailableCount": "{count, plural, one {# available Sunday} other {# available Sundays}}",
+    "summaryBlockedCount": "{count, plural, one {# blocked Sunday} other {# blocked Sundays}}",
+    "summaryNextUnavailable": "Next unavailable Sunday: {date}",
+    "summaryNoUpcomingBlocks": "No unavailable Sundays in the next {total}."
   }
 }

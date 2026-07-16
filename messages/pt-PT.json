@@ -156,6 +156,11 @@
     "noLinkedPersonDescription": "Para gerires a tua disponibilidade, primeiro associa a tua conta ao teu nome na equipa.",
     "noLinkedPersonCta": "Associar conta",
     "adminTitle": "Disponibilidade de {name}",
-    "backToTeam": "Voltar à equipa"
+    "backToTeam": "Voltar à equipa",
+    "summaryIntro": "Nos próximos {total} domingos:",
+    "summaryAvailableCount": "{count, plural, one {# domingo disponível} other {# domingos disponíveis}}",
+    "summaryBlockedCount": "{count, plural, one {# domingo bloqueado} other {# domingos bloqueados}}",
+    "summaryNextUnavailable": "Próximo domingo indisponível: {date}",
+    "summaryNoUpcomingBlocks": "Nenhum domingo indisponível nos próximos {total}."
   }
 }
