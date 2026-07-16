@@ -26,11 +26,34 @@
  *         never 500.
  *   AC7 — 375px viewport: no horizontal overflow, all controls (including
  *         the admin-only back-link) keep >= 44px tap targets.
+ *
+ * CHORE-19 addition (redesign availability page visual design — Card-based
+ * layout): additive-only, nothing above was modified or removed.
+ *   - A new `CHORE-19: AC1 admin-on-behalf summary Card` describe block:
+ *     confirms the same summary block (available/blocked counts,
+ *     next-unavailable date) renders in admin-on-behalf mode with fully
+ *     neutral, shared copy — no personalized second-person framing —
+ *     alongside the existing personalized `adminTitle` heading, which
+ *     predates this story and is untouched.
  */
 
 import { test, expect } from './fixtures'
 import { serviceClient } from './service-client'
 import { MEMBER_ID } from '../supabase/test-users.mjs'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+function ptMessages(): Record<string, Record<string, string>> {
+  const raw = readFileSync(join(__dirname, '..', 'messages', 'pt-PT.json'), 'utf8')
+  return JSON.parse(raw)
+}
+
+function renderPlural(template: string, count: number): string {
+  const match = template.match(/^\{count, plural, one \{([^}]*)\} other \{([^}]*)\}\}$/)
+  if (!match) throw new Error(`template is not a bare ICU plural block: ${template}`)
+  const branch = count === 1 ? match[1] : match[2]
+  return branch.replace('#', String(count))
+}
 
 // ---------------------------------------------------------------------------
 // Date helpers — same independent reimplementation as
@@ -399,5 +422,58 @@ test.describe('STORY-27: AC7 375px viewport tap targets', () => {
     expect(backLinkBox).not.toBeNull()
     expect(backLinkBox!.height).toBeGreaterThanOrEqual(44)
     expect(backLinkBox!.width).toBeGreaterThanOrEqual(44)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CHORE-19 AC1: the same summary Card renders in admin-on-behalf mode, with
+// fully neutral copy shared with the Member self-service view — no new
+// admin-specific summary branch.
+// ---------------------------------------------------------------------------
+
+test.describe('CHORE-19: AC1 admin-on-behalf summary Card', () => {
+  let personId: string
+
+  test.beforeEach(async ({}, testInfo) => {
+    const person = await createPerson(`CHORE-19 QA Admin Summary (w${testInfo.workerIndex})`, null)
+    personId = person.id
+    const sundays = expectedSundays(12)
+    await seedBlockedDates(personId, [sundays[1]])
+  })
+
+  test.afterEach(async () => {
+    await deletePerson(personId)
+  })
+
+  test('shows the neutral summary Card alongside the personalized adminTitle heading', async ({
+    adminPage,
+  }) => {
+    await adminPage.goto(`/pt-PT/admin/people/${personId}/availability`)
+    await expect(adminPage).not.toHaveURL(/\/login/)
+    await expect(adminPage).not.toHaveURL(/\?denied=1/)
+
+    const messages = ptMessages()
+
+    const card = adminPage.getByTestId('availability-card')
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAttribute('data-slot', 'card')
+
+    // The pre-existing personalized adminTitle heading (predates this
+    // story, out of scope for the neutrality rule) still renders as a real
+    // <h1> inside the Card.
+    const heading = card.getByRole('heading', { level: 1 })
+    await expect(heading).toBeVisible()
+    await expect(heading).toContainText(`CHORE-19 QA Admin Summary (w${test.info().workerIndex})`)
+
+    // The summary metrics block itself is fully neutral — no second-person
+    // ("a tua"/"your") framing anywhere in its text.
+    const summary = adminPage.getByTestId('availability-summary')
+    await expect(summary).toBeVisible()
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 11))
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 1))
+
+    const summaryText = await summary.textContent()
+    expect(summaryText).not.toMatch(/\btua\b/i)
+    expect(summaryText).not.toMatch(/\bteu\b/i)
   })
 })
