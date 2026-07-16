@@ -1,7 +1,8 @@
 # CHORE-19: Redesign availability page visual design (Card-based layout)
 Epic: maintenance
 Priority: low (visual-quality debt, not a functional defect)
-Status: draft
+Status: done ✅
+PR: 55
 Depends on: CHORE-17 (Card UI primitive)
 Related story: STORY-26 (member-block-unblock-sundays), STORY-25
 (blocked-dates-data-model-and-api) — this chore restyles their output; no
