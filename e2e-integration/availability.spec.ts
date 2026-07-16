@@ -28,11 +28,59 @@
  *         with a link to /claim.
  *   AC8 — the availability nav entry is visible and routes correctly for
  *         both Member and Admin.
+ *
+ * CHORE-19 additions (redesign availability page visual design — Card-based
+ * layout): additive-only, nothing above was modified or removed.
+ *   - A new `CHORE-19: AC1 availability summary Card` describe block:
+ *     available/blocked ICU-plural counts + next-unavailable-or-no-blocks
+ *     line, rendered inside a Card (`availability-card` / `availability-summary`
+ *     testids), for both a zero-blocks and a some-blocks fixture. Mirrors
+ *     home.spec.ts's STORY-30 AC1 two-scenario pattern.
+ *   - A new `CHORE-19: AC4 1280px viewport` describe block, mirroring the
+ *     existing AC6 375px block but at 1280px (this story's AC4 requires both
+ *     viewports; STORY-26 only covered 375px).
+ *   - A new `CHORE-19: AC2/AC5 blocked-row badge at 375px` test extending
+ *     AC6's 375px coverage with a seeded blocked date, so the new
+ *     solid-fill blocked-state badge's tap target and span-gap are
+ *     exercised against a real blocked row (not just available-state rows).
  */
 
 import { test, expect } from './fixtures'
 import { serviceClient } from './service-client'
 import { MEMBER_ID } from '../supabase/test-users.mjs'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+// ---------------------------------------------------------------------------
+// pt-PT messages helper (CHORE-10 / STORY-19 convention), mirrored from
+// home.spec.ts.
+// ---------------------------------------------------------------------------
+
+function ptMessages(): Record<string, Record<string, string>> {
+  const raw = readFileSync(join(__dirname, '..', 'messages', 'pt-PT.json'), 'utf8')
+  return JSON.parse(raw)
+}
+
+// Renders a `{count, plural, one {...} other {...}}`-only ICU template for a
+// given count, substituting `#` with the count. Mirrored from home.spec.ts.
+function renderPlural(template: string, count: number): string {
+  const match = template.match(/^\{count, plural, one \{([^}]*)\} other \{([^}]*)\}\}$/)
+  if (!match) throw new Error(`template is not a bare ICU plural block: ${template}`)
+  const branch = count === 1 ? match[1] : match[2]
+  return branch.replace('#', String(count))
+}
+
+function formatPtDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return new Intl.DateTimeFormat('pt-PT', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date)
+}
 
 // ---------------------------------------------------------------------------
 // Date helpers — reimplement lib/availability/upcoming-sundays.ts's UTC
@@ -369,5 +417,194 @@ test.describe('STORY-26: AC8 availability nav entry', () => {
     await expect(link).toBeVisible()
     await link.click()
     await expect(adminPage).toHaveURL(/\/pt-PT\/availability\/?$/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CHORE-19 AC1: summary (available/blocked counts, next-unavailable date)
+// renders inside a Card, live-accurate from the sundays + blockedDates
+// state — no new Supabase queries/API routes involved.
+// ---------------------------------------------------------------------------
+
+test.describe('CHORE-19: AC1 availability summary Card', () => {
+  let personId: string
+
+  test.beforeEach(async ({}, testInfo) => {
+    const person = await createLinkedPerson(`CHORE-19 QA Person (w${testInfo.workerIndex})`, MEMBER_ID)
+    personId = person.id
+  })
+
+  test.afterEach(async () => {
+    await deletePerson(personId)
+  })
+
+  test('zero blocks: shows 12 available / 0 blocked and the no-upcoming-blocks line', async ({
+    memberPage,
+  }) => {
+    await memberPage.goto('/pt-PT/availability')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const messages = ptMessages()
+
+    const card = memberPage.getByTestId('availability-card')
+    await expect(card).toBeVisible()
+    await expect(card).toHaveAttribute('data-slot', 'card')
+    await expect(card.getByRole('heading', { level: 1 })).toBeVisible()
+
+    const summary = memberPage.getByTestId('availability-summary')
+    await expect(summary).toBeVisible()
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 12))
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 0))
+    await expect(summary).toContainText(
+      messages.Availability.summaryNoUpcomingBlocks.replace('{total}', '12')
+    )
+  })
+
+  test('two blocked dates: shows 10 available / 2 blocked and the earliest next-unavailable date', async ({
+    memberPage,
+    memberRequest,
+  }) => {
+    const sundays = expectedSundays(12)
+    const earlier = sundays[2]
+    const later = sundays[5]
+
+    for (const date of [later, earlier]) {
+      const response = await memberRequest.post('/api/availability/blocks', { data: { date } })
+      expect(response.status()).toBe(200)
+    }
+
+    await memberPage.goto('/pt-PT/availability')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const messages = ptMessages()
+    const summary = memberPage.getByTestId('availability-summary')
+    await expect(summary).toBeVisible()
+
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 10))
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 2))
+
+    const expectedNextUnavailableText = messages.Availability.summaryNextUnavailable.replace(
+      '{date}',
+      formatPtDate(earlier)
+    )
+    await expect(summary).toContainText(expectedNextUnavailableText)
+    await expect(summary).not.toContainText(
+      messages.Availability.summaryNoUpcomingBlocks.replace('{total}', '12')
+    )
+  })
+
+  test('toggling a Sunday live-updates the summary counts without reloading', async ({
+    memberPage,
+  }) => {
+    await memberPage.goto('/pt-PT/availability')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const messages = ptMessages()
+    const summary = memberPage.getByTestId('availability-summary')
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 12))
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 0))
+
+    const button = memberPage.locator('main ul li button').first()
+    await button.click()
+    await expect(button).toHaveAttribute('aria-pressed', 'true')
+
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 11))
+    await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 1))
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CHORE-19 AC4: no horizontal overflow and >= 44px tap targets at 1280px
+// (STORY-26's AC6 only covered 375px).
+// ---------------------------------------------------------------------------
+
+test.describe('CHORE-19: AC4 1280px viewport', () => {
+  let personId: string
+
+  test.beforeEach(async ({}, testInfo) => {
+    const person = await createLinkedPerson(`CHORE-19 QA 1280 (w${testInfo.workerIndex})`, MEMBER_ID)
+    personId = person.id
+  })
+
+  test.afterEach(async () => {
+    await deletePerson(personId)
+  })
+
+  test('no horizontal overflow and >= 44px tap targets at 1280px viewport', async ({ memberPage }) => {
+    await memberPage.setViewportSize({ width: 1280, height: 900 })
+    await memberPage.goto('/pt-PT/availability')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const scrollWidth = await memberPage.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(1280)
+
+    const card = memberPage.getByTestId('availability-card')
+    await expect(card).toBeVisible()
+    const summary = memberPage.getByTestId('availability-summary')
+    await expect(summary).toBeVisible()
+
+    const buttons = memberPage.locator('main ul li button')
+    const count = await buttons.count()
+    for (let i = 0; i < count; i++) {
+      const button = buttons.nth(i)
+      await expect(button).toBeVisible()
+      const box = await button.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CHORE-19 AC2/AC5: the blocked-state badge (bg-destructive
+// text-destructive-foreground on the stateLabel span) at 375px, against a
+// real seeded blocked date — the pre-existing AC6 375px test only exercised
+// available-state rows.
+// ---------------------------------------------------------------------------
+
+test.describe('CHORE-19: AC2/AC5 blocked-row badge at 375px', () => {
+  let personId: string
+
+  test.beforeEach(async ({}, testInfo) => {
+    const person = await createLinkedPerson(`CHORE-19 QA Blocked (w${testInfo.workerIndex})`, MEMBER_ID)
+    personId = person.id
+  })
+
+  test.afterEach(async () => {
+    await deletePerson(personId)
+  })
+
+  test('a blocked row keeps >= 44px tap target, >= 8px span gap, and no horizontal overflow at 375px', async ({
+    memberPage,
+    memberRequest,
+  }) => {
+    const sundays = expectedSundays(12)
+    const blockedDate = sundays[0]
+
+    const response = await memberRequest.post('/api/availability/blocks', { data: { date: blockedDate } })
+    expect(response.status()).toBe(200)
+
+    await memberPage.setViewportSize({ width: 375, height: 812 })
+    await memberPage.goto('/pt-PT/availability')
+    await expect(memberPage).not.toHaveURL(/\/login/)
+
+    const scrollWidth = await memberPage.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(375)
+
+    const blockedButton = memberPage.locator('main ul li button').first()
+    await expect(blockedButton).toHaveAttribute('aria-pressed', 'true')
+    await expect(blockedButton).toBeVisible()
+
+    const box = await blockedButton.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+
+    const gap = await blockedButton.evaluate((el) => {
+      const spans = el.querySelectorAll('span')
+      const first = spans[0].getBoundingClientRect()
+      const second = spans[1].getBoundingClientRect()
+      return second.left - first.right
+    })
+    expect(gap).toBeGreaterThanOrEqual(8)
   })
 })
