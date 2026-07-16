@@ -471,3 +471,93 @@ element.
 
 ## Definition of Done
 See CLAUDE.md.
+
+## Implementation notes (post-delivery)
+
+Status: implemented on `story/CHORE-19-availability-page-redesign`.
+
+### AC verification
+
+- **AC1** (summary in Card) — automated: `e2e-integration/availability.spec.ts`
+  `CHORE-19: AC1 availability summary Card` (zero-blocks, some-blocks, and a
+  live-toggle-updates-the-summary test) and
+  `e2e-integration/admin-availability.spec.ts`
+  `CHORE-19: AC1 admin-on-behalf summary Card` (neutral copy in admin mode).
+  All pass.
+- **AC2** (row separation + badge cue, interaction/optimistic-update
+  unchanged) — automated: all pre-existing STORY-26 AC1/AC2/AC4/AC5 tests
+  pass unmodified against the restructured markup. The blocked-state badge
+  (`bg-destructive text-destructive-foreground` on the `stateLabel` span) is
+  asserted via `e2e-integration/availability.spec.ts`
+  `CHORE-19: AC2/AC5 blocked-row badge at 375px`. Visual "clear separation"
+  additionally confirmed manually (see below).
+- **AC3** (testid preservation) — automated: full STORY-25/26/27 regression
+  suite (`e2e-integration/availability.spec.ts`,
+  `e2e-integration/admin-availability.spec.ts`,
+  `e2e-integration/blocked-dates.spec.ts`) passes with zero edits to
+  existing test bodies. Ran locally with `--workers=1` against a local
+  Supabase instance (74/74 integration tests passed; one test failed only
+  under `--workers=1`-less default parallelism due to the pre-existing,
+  documented `MEMBER_ID` fixture-collision race between
+  `availability.spec.ts` and `admin-availability.spec.ts` — not a
+  regression, matches CI's own `workers: 1` integration-test job
+  configuration).
+- **AC4** (no overflow, >=44px tap targets, 375px + 1280px) — automated:
+  existing STORY-26 AC6 (375px) and STORY-27 AC7 (375px, incl. back-link)
+  pass unmodified; new `CHORE-19: AC4 1280px viewport` test added (no
+  existing coverage at that width for this page).
+- **AC5** (WCAG AA contrast, both themes) — automated:
+  `e2e/availability-destructive-contrast.spec.ts` asserts
+  `--destructive-foreground` on solid `--destructive` (the blocked-row badge
+  and the error banner) meets >=4.5:1 in both themes, computed directly from
+  `app/globals.css`'s real HSL values (4.62:1 light / 9.59:1 dark, matching
+  the plan's independently pre-verified math). Also manually cross-checked
+  visually in both themes (screenshots below) — badge and error-banner text
+  read clearly with no perceptible contrast issue.
+- **AC6** (lint/tsc/build/test:e2e all exit 0) — `npm run lint`,
+  `npx tsc --noEmit`, and `npm run build` all exit 0. `npm run test:e2e`
+  (smoke suite) exits 0: 83 passed, 91 skipped (auth-gated, expected — no
+  `E2E_WITH_AUTH`/browser OAuth creds in this environment), 0 failed. The
+  integration suite (`e2e-integration/*`, run against a local Docker
+  Supabase instance per CLAUDE.md's WSL2 Playwright workaround) also passes:
+  74/74 with `--workers=1`, matching CI's `integration-test` job.
+
+### Manual visual verification (dev server, both themes, both viewports)
+
+Ran `npm start` against the local Supabase instance, signed in as the seeded
+`ci-member@example.test` / `ci-admin@example.test` test accounts (real
+session cookies via `signInWithPassword`, same technique as
+`e2e-integration/fixtures.ts`), and captured full-page screenshots at
+375px/1280px x light/dark for both Member self-service and Admin-on-behalf
+modes, plus a forced-error-response render of the error banner:
+
+- The summary Card reads as intentional at both viewports: bold available/
+  blocked counts, a clear next-unavailable line, sitting above the
+  per-Sunday list inside one bordered container (not a stack of separate
+  cards) — matches the "simple, but good" bar from the original feedback.
+- Blocked rows are immediately distinguishable from available rows via the
+  solid red badge (`Indisponível`) plus the existing light red row wash —
+  legible in both light and dark theme, no contrast issues visible.
+- The error banner (solid `bg-destructive` fill, extended per Warning 1)
+  reads clearly and is visually consistent with the blocked-row badge's
+  color treatment.
+- Admin-on-behalf mode shows the same neutral summary copy alongside the
+  pre-existing personalized `adminTitle` heading ("Disponibilidade de
+  {name}") and the "Voltar à equipa" back-link, all inside the same Card.
+- No horizontal overflow or layout breakage observed at either viewport in
+  either theme.
+
+### Warnings addressed
+
+1. **Error banner contrast** — applied the same solid-fill remediation
+   (`bg-destructive text-destructive-foreground`) to the pre-existing error
+   banner in `AvailabilityToggleList.tsx`, since it shared the failing
+   `bg-destructive/10 text-destructive` combination and now lives inside the
+   redesigned Card. Covered by the same `availability-destructive-contrast.spec.ts`
+   test (the badge and the banner use the identical token pair).
+2. **Blocked-row badge tap-target/gap coverage at 375px** — added
+   `CHORE-19: AC2/AC5 blocked-row badge at 375px` to
+   `e2e-integration/availability.spec.ts`, seeding a real blocked date and
+   asserting >=44px tap target, >=8px span gap, and no horizontal overflow
+   against that specific blocked row (previously only available-state rows
+   were exercised at 375px).
