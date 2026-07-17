@@ -300,7 +300,15 @@ test('AC3b: compiled CSS contains a self-hosted @font-face rule (no external Goo
   const fontFaceBlocks = combined.match(/@font-face\s*\{[^}]*\}/g) ?? [];
   expect(fontFaceBlocks.length).toBeGreaterThan(0);
 
-  const hasLocalSrc = fontFaceBlocks.some((block) => /src:[^;]*\/_next\/static\/media\//.test(block));
+  // Next.js self-hosts downloaded Google Fonts under .next/static/media and
+  // references them with a build-relative `url(../media/<hash>.woff2)` path
+  // (no http(s) scheme) rather than a remote fonts.gstatic.com URL — that
+  // relative path IS the self-hosting proof; it resolves to
+  // /_next/static/media/ once served, but the compiled CSS source itself
+  // never spells out that absolute prefix.
+  const hasLocalSrc = fontFaceBlocks.some(
+    (block) => /src:\s*url\([^)]*media\/[^)]*\.woff2?\)/.test(block) && !/url\(https?:/.test(block)
+  );
   expect(hasLocalSrc).toBe(true);
 
   expect(combined).not.toMatch(/fonts\.googleapis\.com/);
