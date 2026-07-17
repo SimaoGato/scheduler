@@ -177,17 +177,42 @@ export default async function HomePage({ searchParams }: PageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="mb-4 flex flex-col gap-1 text-sm">
-              <li className="text-xl font-bold">
-                {h('memberSummaryAvailableCount', { count: availableCount })}
+            <ul className="mb-4 flex flex-wrap gap-6">
+              <li>
+                <p className="text-sm font-semibold">
+                  {h.rich('memberSummaryAvailableCount', {
+                    count: availableCount,
+                    num: (chunks) => (
+                      <span data-testid="member-available-numeral" className="font-mono text-3xl font-bold">
+                        {chunks}
+                      </span>
+                    ),
+                  })}
+                </p>
               </li>
-              <li className="text-xl font-bold">
-                {h('memberSummaryBlockedCount', { count: blockedCount })}
+              <li>
+                <p className="text-sm font-semibold">
+                  {h.rich('memberSummaryBlockedCount', {
+                    count: blockedCount,
+                    num: (chunks) => (
+                      <span data-testid="member-blocked-numeral" className="font-mono text-3xl font-bold">
+                        {chunks}
+                      </span>
+                    ),
+                  })}
+                </p>
               </li>
             </ul>
             {formattedNextBlocked !== null ? (
               <p className="text-sm">
-                {h('memberSummaryNextBlocked', { date: formattedNextBlocked })}
+                {h.rich('memberSummaryNextBlocked', {
+                  date: formattedNextBlocked,
+                  num: (chunks) => (
+                    <span data-testid="member-next-blocked-date" className="font-mono font-medium">
+                      {chunks}
+                    </span>
+                  ),
+                })}
               </p>
             ) : (
               // AC4 neutral-framing principle applies here too: zero blocks is
@@ -314,27 +339,45 @@ export default async function HomePage({ searchParams }: PageProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {activePeopleCount !== null && (
-              <li className="text-xl font-bold">
-                {t('adminActivePeopleCount', { count: activePeopleCount })}
+              <li
+                data-testid="admin-active-people-hero"
+                className="rounded-lg bg-brand p-5 text-brand-foreground shadow-[0_4px_0_0_hsl(var(--brand)/55%)]"
+              >
+                <p className="text-sm font-semibold">
+                  {t.rich('adminActivePeopleCount', {
+                    count: activePeopleCount,
+                    num: (chunks) => (
+                      <span
+                        data-testid="admin-active-people-numeral"
+                        className="font-mono text-4xl font-bold sm:text-5xl"
+                      >
+                        {chunks}
+                      </span>
+                    ),
+                  })}
+                </p>
               </li>
             )}
             {activeRolesCount !== null && (
-              <li className="text-xl font-bold">
-                {t('adminActiveRolesCount', { count: activeRolesCount })}
+              <li className="rounded-lg border p-5">
+                <p className="text-sm font-semibold">
+                  {t.rich('adminActiveRolesCount', {
+                    count: activeRolesCount,
+                    num: (chunks) => <span className="font-mono text-3xl font-bold">{chunks}</span>,
+                  })}
+                </p>
               </li>
             )}
+            <li data-testid="admin-blocks-next-30-days" className="rounded-lg border p-5 text-sm">
+              {blocksNext30Days !== null &&
+                t.rich('adminBlocksNext30Days', {
+                  count: blocksNext30Days,
+                  num: (chunks) => <span className="font-mono text-3xl font-bold">{chunks}</span>,
+                })}
+            </li>
           </ul>
-        </CardContent>
-        {/* CHORE-18: intentionally nested inside admin-team-summary's Card as
-            a second CardContent block (Design decision 1) — getByTestId is
-            depth-independent, so this does not affect existing e2e
-            assertions. */}
-        <CardContent>
-          <div data-testid="admin-blocks-next-30-days" className="text-sm">
-            {blocksNext30Days !== null && t('adminBlocksNext30Days', { count: blocksNext30Days })}
-          </div>
         </CardContent>
       </Card>
 
