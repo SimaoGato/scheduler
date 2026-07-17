@@ -60,14 +60,14 @@ function extractBaseString(source: string): string {
 
 // Extracts the `size: { ... }` object literal body from the cva() config.
 function extractSizeBlock(source: string): string {
-  const match = source.match(/size:\s*{([^}]*)}/s);
+  const match = source.match(/size:\s*{([^}]*)}/);
   if (!match) throw new Error('Could not find size variants block in button.tsx');
   return match[1];
 }
 
 // Extracts the `variant: { ... }` object literal body from the cva() config.
 function extractVariantBlock(source: string): string {
-  const match = source.match(/variant:\s*{([^}]*)}/s);
+  const match = source.match(/variant:\s*{([^}]*)}/);
   if (!match) throw new Error('Could not find variant variants block in button.tsx');
   return match[1];
 }
