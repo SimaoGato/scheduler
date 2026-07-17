@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard — global-blast-radius CSS change (CLAUDE.md's "inherited
 CSS" complexity rule), sequenced as part of the pre-EPIC-04 UI push
-Status: draft
+Status: done ✅
+PR: 57
 Depends on: CHORE-23 (design-token foundation — must land first so this
 chore consumes verified tokens rather than introducing new ones)
 Related: CHORE-18/19 (Card-based page redesigns), CHORE-21/22 (draft, team
@@ -478,3 +479,14 @@ money/security dimension is present, so it does not rise to `complex`.
   `AppNav`, `home.spec.ts`, `header-nav-mobile-overflow.spec.ts`, and
   other Button-consumer/coexisting specs per step 5 of the Implementation
   Plan.
+
+## Known issues discovered during QA (out of scope)
+
+- **Pre-existing horizontal overflow on /pt-PT/admin/roles at 375px**: During
+  manual QA of the roles page, a horizontal overflow was observed affecting
+  the hand-rolled "Remover" (Remove) button in `RoleTable.tsx` at 375px
+  viewport. This is a pre-existing issue (confirmed present on main branch
+  via a separate worktree build before this PR's changes) and is unrelated
+  to the shared `Button` primitive changes introduced by CHORE-24. This
+  requires a separate BUGFIX ticket to address the RoleTable layout pattern.
+  Documented here to prevent it from being lost during story archival.
