@@ -31,15 +31,15 @@
   "Home": {
     "memberSummaryTitle": "Availability summary",
     "memberSummaryIntro": "In the next {total} Sundays:",
-    "memberSummaryAvailableCount": "{count, plural, one {# available Sunday} other {# available Sundays}}",
-    "memberSummaryBlockedCount": "{count, plural, one {# blocked Sunday} other {# blocked Sundays}}",
-    "memberSummaryNextBlocked": "Next blocked Sunday: {date}",
+    "memberSummaryAvailableCount": "{count, plural, one {<num>#</num> available Sunday} other {<num>#</num> available Sundays}}",
+    "memberSummaryBlockedCount": "{count, plural, one {<num>#</num> blocked Sunday} other {<num>#</num> blocked Sundays}}",
+    "memberSummaryNextBlocked": "Next blocked Sunday: <num>{date}</num>",
     "memberSummaryNoUpcomingBlocks": "You're available for all of the next {total} Sundays.",
     "memberSummaryLink": "Manage availability",
     "adminSummaryTitle": "Team summary",
-    "adminActivePeopleCount": "{count, plural, one {# active person} other {# active people}}",
-    "adminActiveRolesCount": "{count, plural, one {# active role} other {# active roles}}",
-    "adminBlocksNext30Days": "{count, plural, one {# person with blocks recorded in the next 30 days} other {# people with blocks recorded in the next 30 days}}",
+    "adminActivePeopleCount": "{count, plural, one {<num>#</num> active person} other {<num>#</num> active people}}",
+    "adminActiveRolesCount": "{count, plural, one {<num>#</num> active role} other {<num>#</num> active roles}}",
+    "adminBlocksNext30Days": "{count, plural, one {<num>#</num> person with blocks recorded in the next 30 days} other {<num>#</num> people with blocks recorded in the next 30 days}}",
     "quickLinksTitle": "Quick links"
   },
   "PeopleManagement": {

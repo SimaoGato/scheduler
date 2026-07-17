@@ -31,15 +31,15 @@
   "Home": {
     "memberSummaryTitle": "Resumo da disponibilidade",
     "memberSummaryIntro": "Nos próximos {total} domingos:",
-    "memberSummaryAvailableCount": "{count, plural, one {# domingo disponível} other {# domingos disponíveis}}",
-    "memberSummaryBlockedCount": "{count, plural, one {# domingo bloqueado} other {# domingos bloqueados}}",
-    "memberSummaryNextBlocked": "Próximo domingo indisponível: {date}",
+    "memberSummaryAvailableCount": "{count, plural, one {<num>#</num> domingo disponível} other {<num>#</num> domingos disponíveis}}",
+    "memberSummaryBlockedCount": "{count, plural, one {<num>#</num> domingo bloqueado} other {<num>#</num> domingos bloqueados}}",
+    "memberSummaryNextBlocked": "Próximo domingo indisponível: <num>{date}</num>",
     "memberSummaryNoUpcomingBlocks": "Estás disponível em todos os próximos {total} domingos.",
     "memberSummaryLink": "Gerir disponibilidade",
     "adminSummaryTitle": "Resumo da equipa",
-    "adminActivePeopleCount": "{count, plural, one {# pessoa ativa} other {# pessoas ativas}}",
-    "adminActiveRolesCount": "{count, plural, one {# função ativa} other {# funções ativas}}",
-    "adminBlocksNext30Days": "{count, plural, one {# pessoa com bloqueios registados nos próximos 30 dias} other {# pessoas com bloqueios registados nos próximos 30 dias}}",
+    "adminActivePeopleCount": "{count, plural, one {<num>#</num> pessoa ativa} other {<num>#</num> pessoas ativas}}",
+    "adminActiveRolesCount": "{count, plural, one {<num>#</num> função ativa} other {<num>#</num> funções ativas}}",
+    "adminBlocksNext30Days": "{count, plural, one {<num>#</num> pessoa com bloqueios registados nos próximos 30 dias} other {<num>#</num> pessoas com bloqueios registados nos próximos 30 dias}}",
     "quickLinksTitle": "Acesso rápido"
   },
   "PeopleManagement": {
