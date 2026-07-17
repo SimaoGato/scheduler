@@ -45,6 +45,17 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
+    /* CHORE-23: mockup's oklch(0.74 0.17 55) converted to HSL via standard
+       OKLab->linear-sRGB->sRGB matrices (CSS Color 4), then measured (not
+       eyeballed) with this repo's HSL->luminance->ratio method. Verified:
+       --brand-foreground on --brand = 8.31:1 (WCAG AA normal text, both
+       themes — see e2e/design-language-foundation.spec.ts). NOT verified as
+       a standalone text color on --background/--card (~2.4:1, fails) — the
+       mockup itself only ever uses this as a bg-fill + dark-text pair, and
+       this chore ships only that pairing. Unconsumed by any component in
+       this diff; CHORE-24 wires it into Button/Badge. */
+    --brand: 27.7 95.5% 56.7%;
+    --brand-foreground: 240 10% 3.9%;
   }
   .dark {
     /* BUGFIX-04: see :root's color-scheme comment above. */
@@ -70,6 +81,12 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+    /* CHORE-23: intentionally identical to :root's --brand/--brand-foreground
+       — the pair's contrast is self-contained (bg-fill + dark-text) and does
+       not depend on the page background, matching the mockup's own choice to
+       reuse one accent value in both themes. */
+    --brand: 27.7 95.5% 56.7%;
+    --brand-foreground: 240 10% 3.9%;
   }
 }
 
@@ -92,6 +109,8 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-brand: hsl(var(--brand));
+  --color-brand-foreground: hsl(var(--brand-foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -99,21 +118,44 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* CHORE-23: Space Grotesk / JetBrains Mono, loaded via next/font/google in
+     lib/fonts.ts and wired onto <html> in app/[locale]/layout.tsx as CSS
+     variables. This makes Space Grotesk the app's literal default body font
+     (Tailwind's --font-sans key feeds preflight's `html { font-family }`) —
+     an intentional, global change, not opt-in. Documented fallback stacks
+     below cover the case where the variable is somehow unset. */
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular,
+    Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 /*
  * Design tokens — reference these instead of hardcoded values
  *
  * Color utilities:  bg-background, bg-foreground, bg-card, bg-muted,
- *                   bg-primary, bg-secondary, bg-accent, bg-destructive
+ *                   bg-primary, bg-secondary, bg-accent, bg-destructive,
+ *                   bg-brand
  * Text utilities:   text-foreground, text-muted-foreground, text-card-foreground,
- *                   text-primary-foreground, text-secondary-foreground
+ *                   text-primary-foreground, text-secondary-foreground,
+ *                   text-brand-foreground
  * Border utilities: border-border, ring-ring
  * Radius:           rounded-sm, rounded-md, rounded-lg, rounded-xl
  *                   (mapped from --radius CSS variable, default 0.5 rem)
+ * Font:             font-sans (Space Grotesk, default body font),
+ *                   font-mono (JetBrains Mono, for numeric/date data —
+ *                   CHORE-25/26 apply this per-element; not yet consumed
+ *                   by any component in this diff)
  *
  * All tokens are HSL CSS variables defined in @layer base :root above.
  * To customise the palette, edit the :root values; do NOT hardcode raw colours.
+ *
+ * CHORE-23: --brand/--brand-foreground are new, additive tokens (a warm
+ * amber/orange bg-fill + near-black-text pair) — not yet consumed by any
+ * component. They do NOT replace --primary/--accent/etc; see the CHORE-23
+ * story's Implementation Plan Decision 1/2 for the rationale. Only verified
+ * as a bg-fill + dark-text pairing (8.31:1); NOT verified as standalone text
+ * on --background/--card.
  */
 
 @layer base {
