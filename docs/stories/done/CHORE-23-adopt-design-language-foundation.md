@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: low — timing/sequencing is a product decision, not urgent; scope
 deliberately limited to shared foundations only, not a full re-theme
-Status: draft
+Status: done ✅
+PR: 56
 Related: CHORE-18 (home page redesign), CHORE-19 (availability page
 redesign), CHORE-21 (team page mobile redesign, draft), CHORE-22 (header/nav
 redesign, draft), user-provided mockup in `App design refinement/`
