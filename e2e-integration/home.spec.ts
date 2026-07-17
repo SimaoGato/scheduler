@@ -35,6 +35,21 @@
  *   - A new `CHORE-18: AC4 desktop viewport (1280px)` describe block below,
  *     mirroring the existing 375px block (this story's AC4 requires both
  *     375px and 1280px coverage; STORY-30 only had 375px).
+ *
+ * CHORE-25 additions (hero stat card + mono numerals): additive-only, plus
+ * two intentional test-update sites (both documented inline where changed):
+ *   - `renderPlural()` and the "two blocked dates" test's
+ *     `expectedNextBlockedText` raw `.replace()` now strip the `<num>`/
+ *     `</num>` tag notation Decision 3 wrapped around 6 Home.* keys' numeral/
+ *     date placeholders, before doing their own string substitution — the
+ *     real DOM never contains the literal tag text (t.rich() replaces it
+ *     with the num render-prop's output), so the old un-stripped comparisons
+ *     would now fail with a 4-character mismatch.
+ *   - New live-DOM assertions: AC1 (admin-active-people-hero's bg-brand/
+ *     text-brand-foreground classes) in the AC3 Admin test, and AC3
+ *     (`font-family: JetBrains Mono` on the Admin hero numeral and all three
+ *     Member numeral/date spans) in the AC3 Admin test and the "two blocked
+ *     dates" Member test respectively.
  */
 
 import { test, expect } from './fixtures'
@@ -59,11 +74,19 @@ function ptMessages(): Record<string, Record<string, string>> {
 // count, substituting `#` with the count. Matches the exact shape of
 // Home.adminActivePeopleCount / adminActiveRolesCount / adminBlocksNext30Days
 // / memberSummaryAvailableCount / memberSummaryBlockedCount.
+//
+// CHORE-25: these 5 keys' branches are now wrapped in <num>...</num>
+// (Decision 3) so that page.tsx's t.rich() call can render the numeral in a
+// mono <span>. t.rich() consumes the tag when rendering real DOM (replaced
+// by the num render-prop's output), but this helper treats the JSON
+// template as a plain string and does its own `#` substitution — it must
+// strip the literal <num>/</num> tag characters first, or the expected
+// string will contain characters the actual rendered text never does.
 function renderPlural(template: string, count: number): string {
   const match = template.match(/^\{count, plural, one \{([^}]*)\} other \{([^}]*)\}\}$/)
   if (!match) throw new Error(`template is not a bare ICU plural block: ${template}`)
   const branch = count === 1 ? match[1] : match[2]
-  return branch.replace('#', String(count))
+  return branch.replace(/<\/?num>/g, '').replace('#', String(count))
 }
 
 // ---------------------------------------------------------------------------
@@ -256,10 +279,14 @@ test.describe('STORY-30: AC1 Member availability summary (linked person)', () =>
     await expect(summary).toContainText(renderPlural(messages.Home.memberSummaryAvailableCount, 10))
     await expect(summary).toContainText(renderPlural(messages.Home.memberSummaryBlockedCount, 2))
 
-    const expectedNextBlockedText = messages.Home.memberSummaryNextBlocked.replace(
-      '{date}',
-      formatPtDate(earlier)
-    )
+    // CHORE-25: memberSummaryNextBlocked is one of Decision 3's <num>-wrapped
+    // keys (<num>{date}</num>). This raw .replace() builds its expectation
+    // directly from the JSON template rather than going through
+    // renderPlural(), so it needs the identical tag-stripping fix applied
+    // there — see that function's doc comment for why.
+    const expectedNextBlockedText = messages.Home.memberSummaryNextBlocked
+      .replace(/<\/?num>/g, '')
+      .replace('{date}', formatPtDate(earlier))
     await expect(summary).toContainText(expectedNextBlockedText)
     await expect(summary).not.toContainText(
       messages.Home.memberSummaryNoUpcomingBlocks.replace('{total}', '12')
@@ -269,6 +296,23 @@ test.describe('STORY-30: AC1 Member availability summary (linked person)', () =>
     // element, and its heading survives the CardTitle wrap as a real <h1>.
     await expect(summary).toHaveAttribute('data-slot', 'card')
     await expect(summary.getByRole('heading', { level: 1 })).toBeVisible()
+
+    // CHORE-25 AC3: the three Member numeral/date spans render in the
+    // JetBrains Mono font token, while their <p> label wrappers stay
+    // display-font (proves the numeral/label split, not just mono presence
+    // somewhere on the page).
+    await expect(memberPage.getByTestId('member-available-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
+    await expect(memberPage.getByTestId('member-blocked-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
+    await expect(memberPage.getByTestId('member-next-blocked-date')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
   })
 })
 
@@ -348,6 +392,22 @@ test.describe('STORY-30: AC3 Admin team summary and quick links', () => {
       await expect(summary.getByRole('heading', { level: 1 })).toBeVisible()
       await expect(quickLinks).toHaveAttribute('data-slot', 'card')
       await expect(quickLinks.getByRole('heading', { level: 2 })).toBeVisible()
+
+      // CHORE-25 AC1: the "Active people" stat is a hero box with a solid
+      // bg-brand/text-brand-foreground treatment, visually distinct from its
+      // outlined siblings — asserted directly on the stable
+      // admin-active-people-hero testid (no parent-traversal chain needed).
+      const hero = adminPage.getByTestId('admin-active-people-hero')
+      await expect(hero).toBeVisible()
+      await expect(hero).toHaveClass(/bg-brand/)
+      await expect(hero).toHaveClass(/text-brand-foreground/)
+
+      // CHORE-25 AC3: the hero numeral renders in JetBrains Mono, while the
+      // label wrapper stays display-font.
+      await expect(adminPage.getByTestId('admin-active-people-numeral')).toHaveCSS(
+        'font-family',
+        /JetBrains Mono/
+      )
     } finally {
       await deletePerson(person.id)
       await deleteRole(role.id)
