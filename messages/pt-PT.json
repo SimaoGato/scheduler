@@ -5,10 +5,18 @@
   },
   "Nav": {
     "ariaLabel": "Navegação principal",
+    "home": "Início",
     "availability": "Disponibilidade",
+    "manage": "Gerir",
     "userManagement": "Utilizadores",
     "people": "Equipa",
     "roles": "Funções"
+  },
+  "Manage": {
+    "title": "Gerir",
+    "teamDescription": "Gerir pessoas da equipa",
+    "rolesDescription": "Gerir funções e vagas por domingo",
+    "usersDescription": "Gerir contas de utilizador"
   },
   "UserManagement": {
     "title": "Gestão de utilizadores",
