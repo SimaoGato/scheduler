@@ -26,6 +26,11 @@
  *     Button base's default --ring token, which measured only ~1.03:1
  *     against --header in light theme (below the 3:1 floor for focus
  *     indicators). See AppNav.tsx's HEADER_AWARE_FOCUS_RING comment.
+ *   - CHORE-22: computed WCAG AA contrast (>=4.5:1) for --brand as literal
+ *     text color on --header in both themes — the first live consumer of
+ *     `text-brand` directly against `--header` (previously only verified as
+ *     a solid `bg-brand`/`text-brand-foreground` pairing, CHORE-23). This is
+ *     BottomNav.tsx's active-tab text/indicator color.
  */
 
 import { readFileSync } from 'node:fs';
@@ -174,6 +179,24 @@ test("PR #59 fix: --header-foreground on --header meets WCAG 2.4.11 non-text con
   const darkHeaderForeground = extractHslVar(darkBlock, 'header-foreground');
   const darkRatio = contrastRatioFromHsl(darkHeaderForeground, darkHeader);
   expect(darkRatio).toBeGreaterThanOrEqual(WCAG_NON_TEXT_MIN_RATIO);
+});
+
+// --- CHORE-22: computed WCAG AA contrast for --brand (as text) on --header -
+
+test("CHORE-22: --brand as text color on --header meets WCAG AA (>=4.5:1) in both themes, verifying BottomNav.tsx's active-tab text/indicator color", () => {
+  const css = readFileSync(GLOBALS_CSS_PATH, 'utf8');
+  const rootBlock = extractThemeBlock(css, ':root');
+  const darkBlock = extractThemeBlock(css, '\\.dark');
+
+  const lightHeader = extractHslVar(rootBlock, 'header');
+  const lightBrand = extractHslVar(rootBlock, 'brand');
+  const lightRatio = contrastRatioFromHsl(lightBrand, lightHeader);
+  expect(lightRatio).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT_MIN_RATIO);
+
+  const darkHeader = extractHslVar(darkBlock, 'header');
+  const darkBrand = extractHslVar(darkBlock, 'brand');
+  const darkRatio = contrastRatioFromHsl(darkBrand, darkHeader);
+  expect(darkRatio).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT_MIN_RATIO);
 });
 
 // --- Wiring check: @theme inline maps the four --color-header* utilities ---
