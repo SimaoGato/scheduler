@@ -41,11 +41,11 @@ export default async function AppHeader() {
   }
 
   return (
-    <header className="border-b bg-background px-4 py-3">
+    <header className="border-b border-header-border bg-header px-4 py-3 text-header-foreground">
       <div className="container mx-auto flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
         <Link
           href="/"
-          className="inline-flex items-center min-h-[44px] text-lg font-semibold shrink-0"
+          className="inline-flex items-center min-h-[44px] text-lg font-bold tracking-wider shrink-0"
         >
           {t('name')}
         </Link>
