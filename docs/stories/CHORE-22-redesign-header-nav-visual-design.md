@@ -1,106 +1,120 @@
-# CHORE-22: Collapse mobile nav into a hamburger menu
+# CHORE-22: Mobile bottom tab bar + Manage hub (replaces inline nav on phones)
 Epic: maintenance
 Priority: standard (explicit user dissatisfaction with current mobile nav;
-concrete direction now given, no longer just visual-debt polish)
+the updated design mockup now specifies the concrete replacement)
 Status: draft
 Related: BUGFIX-06 (header-nav-mobile-overflow-regression, functional fix —
-superseded on mobile by this chore), CHORE-18 (home page redesign), CHORE-19
-(availability page redesign)
+superseded on mobile by this chore), CHORE-28 (header recolor/desktop nav —
+owns ≥sm chrome), CHORE-31 (Settings redesign — the bottom bar's Settings
+tab lands there), updated mockup in
+`App design refinement/Escala Dashboard.dc.html` (`bottomBarStyle`,
+`mobileTabs`, `isManage` block)
+
+> **Direction change (2026-07-18 triage):** this chore originally proposed a
+> hamburger menu, based on the user's tentative quote ("hamburger menu or
+> whatever, i dont know — just for phone"). The user has since updated the
+> design mockup, which resolves that "or whatever" concretely: a **fixed
+> bottom tab bar** on mobile, plus a **Manage hub page** that collapses the
+> admin-only links. This rewrite supersedes the hamburger direction.
+> Re-confirm with the user at Refine if in doubt.
 
 ## Task
-As any user viewing the app on a phone, I want the nav links tucked behind a
-hamburger/menu button instead of always taking up a full second row under
-the header, so the header is compact and the page content starts higher up
-the screen.
+As any user on a phone, I want the app's navigation as a fixed bottom tab
+bar (like a native app) instead of nav links stacked under the header, so
+the header is compact, content starts higher, and main sections are always
+one thumb-tap away.
 
 ## Context
-User feedback (direct quote): "i was referring to the nav bar, I dont like
-it. Do something to fix it, i dont know, hamburger menu or whatever (just
-for phone)". Confirmed direction: below the `sm` breakpoint (640px), replace
-the always-visible, full-width-wrapping nav row (`AppNav`, currently row 2 of
-`AppHeader`, four plain text links: `Disponibilidade`, `Utilizadores`,
-`Equipa`, `Funções`) with a single hamburger/menu icon button in the header's
-row 1. Tapping it opens the nav links (e.g. a dropdown panel or slide-out),
-tapping again (or selecting a link, or tapping outside) closes it. Desktop
-(≥sm) keeps the current inline nav — **this chore is mobile-only**.
+The updated mockup specifies, below a mobile breakpoint (mockup uses
+700px; this app's established mobile gate is `sm`/640px — Refine picks
+one and states why):
 
-BUGFIX-06 fixed the *functional* wrapping/overflow bug for the old
-always-visible two-row layout. This chore replaces that mobile layout
-entirely with a collapsed menu, so BUGFIX-06's specific wrap/order mechanics
-(the `sm:order-*`/`ml-auto` arrangement documented in `AppHeader.tsx`) no
-longer apply below `sm` once this ships — re-verify the `>=sm` desktop
-behavior is untouched, since BUGFIX-06's arrangement is still what governs
-that breakpoint.
+- **Bottom bar** (`bottomBarStyle`): fixed to the viewport bottom, on the
+  navy header surface, with `env(safe-area-inset-bottom)` padding. Tabs
+  render as icon-less label buttons with a small accent indicator bar on
+  the active tab, muted text otherwise, `minHeight: 48`.
+- **Tabs (member)**: Home · Availability · Settings. **Tabs (admin)**:
+  Home · Availability · Manage · Settings. (The mockup also shows a
+  Schedule tab — that arrives with STORY-31/EPIC-05, not this chore; the
+  bar must make adding it later trivial.)
+- **Manage hub** (`isManage` block): a mobile-only page listing the
+  admin-only destinations (Team, Roles, Users) as full-width card link
+  rows (title + muted description + trailing arrow). Active-tab state for
+  Manage also covers being *inside* Team/Roles/Users.
+- **Content padding**: main content gets bottom padding (mockup: 110px) so
+  the fixed bar never covers page content.
+- Desktop (≥ breakpoint) keeps the inline header nav — this chore is
+  mobile-only. The mockup also moves Settings out of the desktop nav into
+  a small header button; that desktop concern belongs to CHORE-28, not
+  here.
+
+BUGFIX-06 fixed the *functional* wrapping/overflow of the old always-
+visible nav rows. This chore removes that mobile layout entirely; the
+`sm:order-*`/`ml-auto` arrangement documented in `AppHeader.tsx` remains
+load-bearing for desktop only — update the stale mobile reasoning in that
+comment block.
 
 ## Acceptance criteria
-1. Given the header at 375px/390px viewport, when rendered, then the nav
-   links are not shown inline; instead a single hamburger/menu button is
-   visible in the header's first row, with an accessible name (e.g.
-   `aria-label`) indicating it opens navigation, and a ≥44px tap target.
-2. Given the collapsed mobile header, when the hamburger button is tapped,
-   then the nav links (all role-appropriate items, same set `AppNav`
-   currently renders for the signed-in user's role) become visible in an
-   open menu/panel, each with a ≥44px tap target.
-3. Given the open mobile nav menu, when a link is tapped, or the hamburger
-   button is tapped again, or (if feasible with the chosen implementation)
-   focus/click moves outside the menu, then the menu closes. Follow the
-   existing `UserWidgetMenu.tsx` click-outside/Escape-dismiss pattern
-   (CLAUDE.md) if a custom disclosure is built, for consistency with the
-   avatar menu's dismiss behavior already in this codebase.
-4. Given the header at ≥1280px (desktop), when rendered, then the nav still
-   renders inline exactly as it does today (no hamburger button shown,
-   BUGFIX-06's existing desktop arrangement unchanged).
-5. Given a keyboard-only user, when tabbing through the mobile header, then
-   the hamburger button is reachable and operable via Enter/Space, and once
-   open, the menu's links are reachable via Tab in a sensible order; when
-   closed via Escape, focus returns to the hamburger button (ARIA APG
-   disclosure convention, same as `UserWidgetMenu`).
-6. Given light and dark theme, when the hamburger button and open menu
-   render, then all text/icons meet WCAG AA contrast in both themes, reusing
-   existing verified tokens.
-7. Given all existing `data-testid`/role-based locators in
-   `e2e/app-nav.spec.ts` and `e2e-integration/header-nav-mobile-overflow.spec.ts`,
-   when this ships, then desktop (≥sm) assertions continue to pass
-   unmodified; mobile-width assertions in those specs are expected to need
-   rework since the mobile DOM structure fundamentally changes — update
-   them to assert the new hamburger/open-menu behavior instead of the old
-   wrapped-row behavior (this is an anticipated, not accidental, test change
-   — call it out explicitly in the PR).
+1. Given the app at 375px/390px viewport, when any `(app)` page renders,
+   then no inline nav links appear under the header; instead a fixed
+   bottom tab bar is visible with the role-appropriate tabs (member:
+   Home/Availability/Settings; admin: + Manage), each tab having a ≥44px
+   tap target, an accessible name, and labels from i18n keys in both
+   locale files.
+2. Given the bottom bar, when the current route matches a tab (including
+   Team/Roles/Users mapping to the Manage tab), then that tab shows the
+   active accent indicator; all tab text meets WCAG AA contrast on the
+   bar surface in both themes.
+3. Given an admin taps Manage, when the hub renders, then it lists Team,
+   Roles, and Users as full-width card link rows (≥44px, i18n'd
+   title + description) navigating to the existing routes; a member
+   never sees the Manage tab or hub (direct navigation to the hub as a
+   member follows the existing per-page admin-guard convention).
+4. Given any scrollable page at mobile width, when scrolled to the
+   bottom, then the fixed bar does not cover the last content (bottom
+   padding applied) and honors `env(safe-area-inset-bottom)`.
+5. Given the app at ≥1280px (and ≥ the chosen breakpoint), when rendered,
+   then the bottom bar and Manage hub are absent and today's inline nav
+   renders unchanged (BUGFIX-06's desktop arrangement intact).
+6. Given a keyboard user at mobile width, when tabbing, then bar tabs are
+   reachable and operable in a sensible order; the bar is a `<nav>`
+   landmark with an accessible label, and is not announced twice alongside
+   the (removed-on-mobile) header nav.
+7. Given existing nav specs (`e2e/app-nav.spec.ts`,
+   `e2e-integration/header-nav-mobile-overflow.spec.ts`), when this
+   ships, then desktop assertions pass unmodified; mobile-width assertions
+   are rewritten for the bottom-bar DOM (an anticipated test change —
+   call it out in the PR), plus new coverage for AC1–AC4 including a
+   screenshot artifact at 375px per the BUGFIX-06 evidence pattern.
 8. Given `npm run lint && npx tsc --noEmit && npm run build && npm run
    test:e2e`, then all exit 0.
 
 ## Out of scope
-- Any change to desktop (≥sm) nav behavior or BUGFIX-06's desktop DOM-order/
-  tab-order arrangement — unchanged.
-- The page content below the header (home, availability, team) — those are
-  CHORE-18/19/21's concerns.
-- Adding new nav items or changing role-based nav visibility logic — only
-  how the existing items are presented on mobile.
-- Building a new global dropdown/disclosure primitive from scratch if the
-  existing `UserWidgetMenu.tsx` pattern (native `<details>`/`<summary>` +
-  click-outside/Escape wrapper) can be reused or closely mirrored — prefer
-  reuse over a new pattern; Refine should confirm the concrete approach.
+- Desktop (≥sm) nav behavior, the header recolor, and the desktop
+  Settings-button placement — CHORE-28.
+- A Schedule tab — arrives with the schedule pages (STORY-31/EPIC-05);
+  just don't hardcode the bar in a way that makes adding a tab painful.
+- Icons for tabs — the mockup uses text labels + indicator dot only; if
+  icons are ever wanted that's a later polish pass.
+- Changing role-gating logic — only presentation of existing destinations.
 
 ## Technical notes
-- Primary files: `components/AppHeader.tsx`, `components/AppNav.tsx`. Likely
-  needs a new `'use client'` wrapper (mirroring `UserWidgetMenu.tsx`'s
-  ref + document-level click/keydown listener pattern from STORY-13) since
-  open/close state and outside-click/Escape dismissal require client-side
-  interactivity that `AppNav` (currently role-gated but otherwise static)
-  doesn't have today.
-- `AppHeader.tsx` currently has a large load-bearing comment block
-  documenting BUGFIX-06's `sm:order-*`/`ml-auto` mobile-vs-desktop DOM order
-  tradeoff. Since this chore removes the inline mobile nav entirely (replaced
-  by a hamburger button), most of that comment's mobile-specific reasoning
-  becomes obsolete — update/replace it rather than leaving stale reasoning
-  next to new code. Re-verify desktop (`sm:order-2`) is still correct once
-  the mobile branch changes.
-- Re-check `AppNav`'s role-gating (`role !== 'admin'` → fewer/no links,
-  STORY-16's "return null when empty" convention) still works sensibly
-  inside a hamburger panel — e.g. don't render an empty/pointless hamburger
-  button for a role with zero nav items.
-- Visually render (dev server or Vercel preview) at 375px, 390px, and
-  1280px, both themes, open and closed states, before marking done.
+- Primary files: `components/AppHeader.tsx`, `components/AppNav.tsx`, a
+  new bottom-bar client component, a new
+  `app/[locale]/(app)/admin/manage/page.tsx` (or similar) hub page, and
+  `app/[locale]/(app)/layout.tsx` for the content bottom padding.
+- The bar needs the current route for active state → `'use client'` with
+  `usePathname` from `@/i18n/navigation` (locale-aware), unlike the
+  server-rendered `AppNav`.
+- Role gating: reuse the same role source `AppNav` uses today; member gets
+  no Manage tab (STORY-16 "return null when empty" spirit — never an
+  empty hub).
+- Fixed positioning + `env(safe-area-inset-bottom)`: test on a real phone
+  or emulated safe-area, not just desktop devtools.
+- Manage hub is admin-only → follow the per-page admin guard convention
+  (CLAUDE.md) with `?denied=1` redirect.
+- Land after CHORE-28 if possible so the bar restyles onto the already-navy
+  surface (orchestrator decision, per CLAUDE.md multi-story guidance).
 
 ## Definition of Done
 See CLAUDE.md.
