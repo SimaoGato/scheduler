@@ -39,6 +39,18 @@ Card-based visual redesign. This page (`components/PeopleTable.tsx`) has
 not had equivalent treatment and is the last major admin surface still using
 the plain `<table>` + always-visible-multi-button-row pattern from STORY-14.
 
+**Update (2026-07-18 triage):** the updated mockup
+(`App design refinement/Escala Dashboard.dc.html`, `isTeam` block /
+`teamPeople`) now gives a concrete target for this page: each person as a
+bordered card row with a circular initials avatar (mono font), name
+(display font, bold) + role meta line (mono, muted), a level badge
+(outline pill), and pill-shaped actions on the right. Note the mockup
+shows only one "Availability" action per row — a simplification; all five
+real actions must remain reachable (AC2), e.g. behind a consolidated
+row-level affordance. Reuse the same row idiom as CHORE-29 (Roles) and
+CHORE-30 (Users); whichever lands first establishes the shared
+avatar/row pattern.
+
 ## Acceptance criteria
 1. Given the Equipa page at a 375px/390px viewport, when a row's actions are
    shown, then the row's Name and Conta values remain visually aligned with

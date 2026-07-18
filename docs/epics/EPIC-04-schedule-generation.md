@@ -33,6 +33,12 @@ scheduling with a fair, rule-respecting draft produced in seconds.
 - The editable review UI and manual overrides (EPIC-05).
 - Image/message output (EPIC-06).
 - History seeding (none — fairness starts fresh).
+- Multi-team support (EPIC-07, deferred) — **but the schedule/assignment
+  data model story must read EPIC-07's "Forward-compat guidance" section
+  before finalizing schema**: no speculative `team_id` columns now, but no
+  constraints/RLS shapes that would make adding team scoping later more
+  than a mechanical migration. Also read STORY-31 (publish-gated member
+  schedule view) so the model carries a draft/published state from day one.
 
 ## Dependencies
 - EPIC-02 (roles, slots, people, skills), EPIC-03 (availability).
