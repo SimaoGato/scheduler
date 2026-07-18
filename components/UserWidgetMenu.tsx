@@ -125,7 +125,13 @@ export default function UserWidgetMenu({
       </summary>
 
       <div
-        className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-md border bg-background shadow-md"
+        // CHORE-28 Design decision 3: the header sets text-header-foreground
+        // (near-white) on <header>, and `color` inherits through the DOM
+        // regardless of this panel's own bg-background (light/white in
+        // light theme) — without this explicit reset the panel would render
+        // near-white text on a near-white surface. Required fix, not
+        // optional polish.
+        className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-md border bg-background text-foreground shadow-md"
         data-testid="user-widget-menu"
       >
         <div className="px-3 py-2">
