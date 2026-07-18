@@ -22,15 +22,17 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const errorMessage = getErrorMessage(error, t);
 
   return (
-    <main className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
+    <main
+      className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-[0_6px_0_0_hsl(var(--brand)/55%)] dark:ring-1 dark:ring-header-border"
+    >
       <div className="mb-8 text-center">
         <h1
-          className="text-3xl font-bold tracking-tight"
+          className="text-3xl font-bold uppercase tracking-wide"
           data-testid="login-app-name"
         >
           {tApp('name')}
         </h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
+        <p className="mt-1.5 text-sm text-muted-foreground font-mono">
           {tApp('tagline')}
         </p>
       </div>
@@ -39,7 +41,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div
           aria-live="polite"
           data-testid="auth-error"
-          className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
         >
           {errorMessage}
         </div>
