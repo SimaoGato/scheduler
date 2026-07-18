@@ -19,6 +19,13 @@
  *   - Wiring check: @theme inline maps all four --color-header* lines so
  *     bg-header/text-header-foreground/text-header-muted/border-header-border
  *     utilities exist.
+ *   - PR #59 review (CRITICAL fix): computed WCAG 2.4.11/1.4.11 non-text
+ *     contrast (>=3:1) for --header-foreground on --header in both themes —
+ *     this pairing is reused as AppNav.tsx's focus-visible ring color
+ *     (`focus-visible:ring-header-foreground`), replacing the shared
+ *     Button base's default --ring token, which measured only ~1.03:1
+ *     against --header in light theme (below the 3:1 floor for focus
+ *     indicators). See AppNav.tsx's HEADER_AWARE_FOCUS_RING comment.
  */
 
 import { readFileSync } from 'node:fs';
@@ -94,6 +101,7 @@ function contrastRatioFromHsl(
 }
 
 const WCAG_AA_NORMAL_TEXT_MIN_RATIO = 4.5;
+const WCAG_NON_TEXT_MIN_RATIO = 3.0;
 
 // --- AC1a: static HSL-format check ------------------------------------------
 
@@ -147,6 +155,25 @@ test('AC2: --header-muted on --header meets WCAG AA (>=4.5:1) in both themes', (
   const darkHeaderMuted = extractHslVar(darkBlock, 'header-muted');
   const darkRatio = contrastRatioFromHsl(darkHeaderMuted, darkHeader);
   expect(darkRatio).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT_MIN_RATIO);
+});
+
+// --- PR #59 review (CRITICAL fix): --header-foreground reused as the ------
+// --- AppNav focus-visible ring color must clear the 3:1 non-text floor ----
+
+test("PR #59 fix: --header-foreground on --header meets WCAG 2.4.11 non-text contrast (>=3:1) in both themes, verifying its reuse as AppNav.tsx's focus-visible ring color", () => {
+  const css = readFileSync(GLOBALS_CSS_PATH, 'utf8');
+  const rootBlock = extractThemeBlock(css, ':root');
+  const darkBlock = extractThemeBlock(css, '\\.dark');
+
+  const lightHeader = extractHslVar(rootBlock, 'header');
+  const lightHeaderForeground = extractHslVar(rootBlock, 'header-foreground');
+  const lightRatio = contrastRatioFromHsl(lightHeaderForeground, lightHeader);
+  expect(lightRatio).toBeGreaterThanOrEqual(WCAG_NON_TEXT_MIN_RATIO);
+
+  const darkHeader = extractHslVar(darkBlock, 'header');
+  const darkHeaderForeground = extractHslVar(darkBlock, 'header-foreground');
+  const darkRatio = contrastRatioFromHsl(darkHeaderForeground, darkHeader);
+  expect(darkRatio).toBeGreaterThanOrEqual(WCAG_NON_TEXT_MIN_RATIO);
 });
 
 // --- Wiring check: @theme inline maps the four --color-header* utilities ---
