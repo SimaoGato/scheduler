@@ -17,15 +17,35 @@
  *   AC2 — the current route's nav item has bg-brand/text-brand-foreground
  *         and aria-current="page"; other items have neither. Includes the
  *         sub-route prefix-match regression case (worker-isolated fixture
- *         person, per STORY-14/25/27 pattern). The hover-regression case
- *         (active item's computed background-color stays --brand on hover,
- *         in both light and dark theme) lives in the sibling file
- *         e2e-integration/header-recolor-hover.spec.ts — see that file's
- *         header comment for why it needs its own file.
+ *         person, per STORY-14/25/27 pattern), and the hover-regression
+ *         case (active item's computed background-color AND color stay on
+ *         --brand/--brand-foreground on hover, in both light and dark
+ *         theme).
  *   AC3 — wordmark still navigates home and has font-bold/tracking-wider
  *         classes.
  *   AC4 — the user-widget dropdown panel has text-foreground (Design
  *         decision 3's required inherited-color fix).
+ *
+ * PR #59 review fixes:
+ *   - CRITICAL: nav links now carry a header-aware focus-visible ring
+ *     override (`focus-visible:ring-header-foreground`) — see
+ *     components/AppNav.tsx's HEADER_AWARE_FOCUS_RING comment. Asserted in
+ *     AC2's class-presence test below.
+ *   - WARNING 1: the hover-regression test previously lived in its own file
+ *     (e2e-integration/header-recolor-hover.spec.ts) with a file-level
+ *     `test.use({ channel: 'chromium' })`, justified by a claim that
+ *     Playwright's default headless Chromium project emulates a
+ *     touch-primary pointer and never matches `@media (hover: hover)`.
+ *     Independently re-verified against this repo's actual playwright-core
+ *     version (chromium 149.0.7827.55) and actual compiled Tailwind CSS
+ *     output: `matchMedia('(hover: hover)').matches` is `true` and
+ *     `:hover` styles apply correctly under `page.hover()` in BOTH the
+ *     default project and `channel: 'chromium'` — the original claim does
+ *     not hold in this environment/version. The `channel: 'chromium'`
+ *     override and the separate file are therefore unnecessary; the
+ *     hover-regression tests are folded back in here.
+ *   - WARNING 2: the hover assertion now also checks `.color` (not just
+ *     `.backgroundColor`), since ACTIVE_NAV_ITEM_CLASSES overrides both.
  */
 
 import { test, expect } from './fixtures'
@@ -84,12 +104,17 @@ test('AC2: on /pt-PT/admin/people (admin), the Equipa link is active; other link
   const activeClass = await activeLink.getAttribute('class')
   expect(activeClass).toMatch(/\bbg-brand\b/)
   expect(activeClass).toMatch(/\btext-brand-foreground\b/)
+  // PR #59 review (CRITICAL fix): every nav link — active or not — carries
+  // the header-aware focus-visible ring override. See AppNav.tsx's
+  // HEADER_AWARE_FOCUS_RING comment for why this applies uniformly.
+  expect(activeClass).toMatch(/\bfocus-visible:ring-header-foreground\b/)
 
   for (const label of ['Disponibilidade', 'Utilizadores', 'Funções']) {
     const link = nav.getByRole('link', { name: label })
     await expect(link).not.toHaveAttribute('aria-current', 'page')
     const className = await link.getAttribute('class')
     expect(className).not.toMatch(/\bbg-brand\b/)
+    expect(className).toMatch(/\bfocus-visible:ring-header-foreground\b/)
   }
 })
 
@@ -129,15 +154,59 @@ test.describe('AC2: sub-route prefix-match regression', () => {
     const nav = adminPage.getByRole('navigation', { name: 'Navegação principal' })
     const activeLink = nav.getByRole('link', { name: 'Equipa' })
     await expect(activeLink).toHaveAttribute('aria-current', 'page')
+    // PR #59 review (SUGGESTION 2): symmetry with the sibling AC2 tests
+    // above, which also assert the brand-fill classes, not just aria-current.
+    const activeClass = await activeLink.getAttribute('class')
+    expect(activeClass).toMatch(/\bbg-brand\b/)
+    expect(activeClass).toMatch(/\btext-brand-foreground\b/)
   })
 })
 
-// AC2's hover-regression case (Challenge cycle-1 CRITICAL fix) lives in its
-// own file, e2e-integration/header-recolor-hover.spec.ts — it needs a
-// file-level `test.use({ channel: 'chromium' })`, which Playwright forbids
-// inside a `describe` block (it forces a new worker). See that file's
-// header comment for why the channel override is required for the
-// assertion to be meaningful at all.
+// ---------------------------------------------------------------------------
+// AC2 (Challenge cycle-1 CRITICAL fix, folded in from the former
+// e2e-integration/header-recolor-hover.spec.ts per PR #59 review WARNING 1):
+// hovering the active link must keep its --brand background/text, not fall
+// back to ghost's --accent hover. Runs under the default Playwright project
+// (no `channel: 'chromium'` override — see this file's header comment for
+// why that requirement was independently re-verified as unnecessary).
+// ---------------------------------------------------------------------------
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`AC2: hovering the active link keeps --brand background and text, not --accent (${theme} theme)`, async ({
+    adminPage,
+  }) => {
+    if (theme === 'dark') {
+      await adminPage.addInitScript(() => {
+        window.localStorage.setItem('theme', 'dark')
+      })
+    }
+    await adminPage.goto('/pt-PT/admin/people')
+
+    const nav = adminPage.getByRole('navigation', { name: 'Navegação principal' })
+    // Note: Button's `asChild` renders via Radix `Slot`, which merges props
+    // (including className) directly onto the child <Link>/<a> — the
+    // resting/hover classes live on the <a> itself, not a parent node.
+    const activeLink = nav.getByRole('link', { name: 'Equipa' })
+
+    const restingStyle = await activeLink.evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return { backgroundColor: cs.backgroundColor, color: cs.color }
+    })
+
+    await activeLink.hover()
+
+    const hoverStyle = await activeLink.evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return { backgroundColor: cs.backgroundColor, color: cs.color }
+    })
+
+    // PR #59 review (WARNING 2): assert .color alongside .backgroundColor —
+    // ACTIVE_NAV_ITEM_CLASSES overrides both, so a text-color-only
+    // regression must also be caught here.
+    expect(hoverStyle.backgroundColor).toBe(restingStyle.backgroundColor)
+    expect(hoverStyle.color).toBe(restingStyle.color)
+  })
+}
 
 // ---------------------------------------------------------------------------
 // AC3: wordmark navigates home, has font-bold/tracking-wider classes.
