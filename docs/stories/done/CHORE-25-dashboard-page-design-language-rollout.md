@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard — visual-only, but sequenced as part of the pre-EPIC-04
 UI push the user explicitly requested
-Status: refined — ready for re-Challenge (fix cycle 1 of 2 applied)
+Status: done ✅
+PR: #58
 Depends on: CHORE-23 (tokens/fonts), CHORE-24 (shared pill-shape primitives)
 Related: CHORE-18 (existing home page Card redesign, being extended here,
 not replaced), user-provided mockup in `App design refinement/`
