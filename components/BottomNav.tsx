@@ -50,13 +50,21 @@ export default function BottomNav({ role }: Props) {
             // Manage's matcher ORs in /admin/people, /admin/roles,
             // /admin/users prefixes (covering their sub-routes too, e.g.
             // /admin/people/[id]/skills) — AC2's "Team/Roles/Users mapping
-            // to the Manage tab" requirement, verbatim.
+            // to the Manage tab" requirement, verbatim. Each check includes
+            // an exact-match branch plus a trailing-slash prefix branch,
+            // matching AppNav.tsx's isActive convention
+            // (`pathname.startsWith(`${href}/`)`) so a hypothetical route
+            // like /admin/peoplexyz doesn't false-positive-match
+            // /admin/people.
             isActive: (p: string) =>
               p === '/admin/manage' ||
               p.startsWith('/admin/manage/') ||
-              p.startsWith('/admin/people') ||
-              p.startsWith('/admin/roles') ||
-              p.startsWith('/admin/users'),
+              p === '/admin/people' ||
+              p.startsWith('/admin/people/') ||
+              p === '/admin/roles' ||
+              p.startsWith('/admin/roles/') ||
+              p === '/admin/users' ||
+              p.startsWith('/admin/users/'),
           },
         ]
       : []),
