@@ -47,7 +47,7 @@ export default async function AdminManagePage() {
   ] as const;
 
   return (
-    <main className="flex-1 container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">{t('title')}</h1>
       <ul className="flex flex-col gap-3">
         {links.map((link) => (
