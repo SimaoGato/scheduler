@@ -64,7 +64,12 @@
        pattern, cross-checked against this repo's own HSL->luminance->ratio
        helper (e2e/header-surface-tokens.spec.ts).
        Verified: --header-foreground on --header = 16.38:1 (light); NOT
-       verified as standalone text on --background/--card. */
+       verified as standalone text on --background/--card.
+       PR #59 review fix: also reused as AppNav.tsx's
+       focus-visible:ring-header-foreground color (see AppNav.tsx comment)
+       — 16.38:1 comfortably clears the WCAG 2.4.11/1.4.11 3:1 non-text
+       floor for focus indicators, replacing the default --ring token
+       which measured only ~1.03:1 against --header in light theme. */
     --header: 210 52% 11%;
     /* Border color only — no contrast gate needed (matches --border's own
        precedent, which also has no contrast test). */
@@ -112,7 +117,11 @@
        headerBorder: oklch(0.36 0.03 250), headerText: oklch(0.96 0.01 85),
        headerTextMuted: oklch(0.70 0.02 250).
        Verified: --header-foreground on --header = 16.12:1 (dark). NOT
-       verified as standalone text on --background/--card. */
+       verified as standalone text on --background/--card.
+       PR #59 review fix: also reused as AppNav.tsx's focus-visible ring
+       color — 16.12:1 clears the 3:1 non-text floor (dark theme's
+       default --ring already passed at ~12.2:1 here, but this token is
+       applied uniformly across both themes for simplicity). */
     --header: 210 52% 9%;
     --header-border: 211 22% 25%;
     --header-foreground: 40 34% 94%;
