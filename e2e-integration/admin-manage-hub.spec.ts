@@ -63,11 +63,11 @@ test('AC3: a member visiting /admin/manage directly is redirected with ?denied=1
   memberPage,
 }) => {
   await memberPage.goto('/pt-PT/admin/manage')
-  // The page redirects via `redirect(`/${routing.defaultLocale}/?denied=1`)`,
-  // which literally includes a trailing slash before the query string (the
-  // real URL is "/pt-PT/?denied=1"). Match with an optional slash, following
-  // the same sibling pattern already used in
-  // e2e-integration/admin-availability.spec.ts:317.
+  // The redirect target string is `/${routing.defaultLocale}/?denied=1`, but
+  // the actual browser URL observed is "/pt-PT?denied=1" (no trailing slash
+  // survives). Match with an optional slash so the assertion doesn't depend
+  // on that framework-internal detail, following the same sibling pattern
+  // already used in e2e-integration/admin-availability.spec.ts:317.
   await expect(memberPage).toHaveURL(/\/pt-PT\/?\?denied=1$/)
   await expect(memberPage.getByTestId('access-denied-banner')).toBeVisible()
 })
