@@ -49,15 +49,16 @@ export default async function AppHeader() {
         >
           {t('name')}
         </Link>
-        {/* DOM order is Link -> avatar -> nav, matching the mobile (<sm) visual
-            order exactly, so keyboard tab order and screen-reader reading order
-            match what's on screen at the default (mobile-first) breakpoint —
-            no CSS `order` at all is used for the mobile case. `ml-auto` here
-            (unprefixed) pins the avatar to the right edge of row 1, next to the
-            logo. At >=sm, sm:order-3 + sm:ml-0 move it back after the nav to
-            restore the exact pre-fix desktop grouping (see BUGFIX-06 for why
-            this is load-bearing — do not remove without re-verifying 375px,
-            390px, AND 1280px, and re-checking tab order with a real keyboard).
+        {/* CHORE-22: mobile (<sm) chrome moved to BottomNav (fixed bottom tab
+            bar, rendered in app/[locale]/(app)/layout.tsx) — AppNav is
+            `hidden` below `sm` and never participates in the mobile flex flow.
+            `ml-auto` here (unprefixed) is now mobile-dead weight kept only
+            because it's harmless (AppNav's div is hidden, not removed, at
+            <sm, so there's nothing for `ml-auto` to compete with). At >=sm,
+            sm:order-3 + sm:ml-0 move the avatar back after the nav to restore
+            the desktop grouping (see BUGFIX-06 for why this is load-bearing —
+            do not remove without re-verifying 375px, 390px, AND 1280px, and
+            re-checking tab order with a real keyboard).
 
             ACCEPTED RISK (BUGFIX-06 cycle 2, precedent: CLAUDE.md's STORY-18
             TOCTOU-acceptance pattern): at >=sm this override makes DOM order
@@ -82,13 +83,12 @@ export default async function AppHeader() {
             <UserWidget displayName={displayName} roleLabel={roleLabel} />
           </div>
         )}
-        {/* Mobile (<sm): no order override — this div is the third DOM child so
-            it naturally renders as row 2+, full width, wrapping its own <ul>
-            across the whole container width instead of a squeezed sub-column —
-            this is the fix. Desktop (>=sm): sm:order-2 + sm:ml-auto move it
-            back between the logo and the avatar, restoring the current tight
-            right-hand grouping. */}
-        <div className="w-full min-w-0 sm:order-2 sm:w-auto sm:ml-auto">
+        {/* CHORE-22: mobile presentation moved to BottomNav — this div is
+            `hidden` below `sm`, so there is no more row-2 wrapping behavior to
+            describe on mobile; the div doesn't render at all there. At >=sm,
+            sm:block restores it and sm:order-2 + sm:ml-auto move it back
+            between the logo and the avatar, same desktop grouping as before. */}
+        <div className="hidden w-full min-w-0 sm:order-2 sm:block sm:w-auto sm:ml-auto">
           <AppNav role={role} />
         </div>
       </div>
