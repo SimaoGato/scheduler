@@ -1,7 +1,8 @@
 # CHORE-27: Roll out design language on the login page
 Epic: maintenance
 Priority: standard — visual-only, part of the pre-EPIC-04 UI push
-Status: draft
+Status: done ✅
+PR: #61
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: updated mockup in `App design refinement/Escala Dashboard.dc.html`
 (login screen, `loginWrapStyle`/`loginCardStyle` block), STORY-10 (login
