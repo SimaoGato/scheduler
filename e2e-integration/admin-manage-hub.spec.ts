@@ -63,8 +63,11 @@ test('AC3: a member visiting /admin/manage directly is redirected with ?denied=1
   memberPage,
 }) => {
   await memberPage.goto('/pt-PT/admin/manage')
-  // No slash between "/pt-PT" and "?denied=1" — next.js/next-intl's redirect
-  // target renders without a trailing slash before the query string.
-  await expect(memberPage).toHaveURL(/\/pt-PT\?denied=1$/)
+  // The page redirects via `redirect(`/${routing.defaultLocale}/?denied=1`)`,
+  // which literally includes a trailing slash before the query string (the
+  // real URL is "/pt-PT/?denied=1"). Match with an optional slash, following
+  // the same sibling pattern already used in
+  // e2e-integration/admin-availability.spec.ts:317.
+  await expect(memberPage).toHaveURL(/\/pt-PT\/?\?denied=1$/)
   await expect(memberPage.getByTestId('access-denied-banner')).toBeVisible()
 })
