@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard — global chrome, visible on every page; part of the
 pre-EPIC-04 UI push
-Status: draft
+Status: done ✅
+PR: #59
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: CHORE-22 (mobile nav restructure — owns everything below `sm`),
 updated mockup in `App design refinement/Escala Dashboard.dc.html`
