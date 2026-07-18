@@ -56,6 +56,27 @@
        this diff; CHORE-24 wires it into Button/Badge. */
     --brand: 27.7 95.5% 56.7%;
     --brand-foreground: 240 10% 3.9%;
+    /* CHORE-28: header-surface tokens. Mockup source values
+       (Escala Dashboard.dc.html lines 511-534, theme()): light
+       header: oklch(0.22 0.035 250), headerBorder: oklch(0.30 0.035 250),
+       headerText: oklch(0.98 0.01 85), headerTextMuted: oklch(0.72 0.02 250).
+       Converted via the CHORE-23 OKLab->linear-sRGB->sRGB->HSL matrix
+       pattern, cross-checked against this repo's own HSL->luminance->ratio
+       helper (e2e/header-surface-tokens.spec.ts).
+       Verified: --header-foreground on --header = 16.38:1 (light); NOT
+       verified as standalone text on --background/--card. */
+    --header: 210 52% 11%;
+    /* Border color only — no contrast gate needed (matches --border's own
+       precedent, which also has no contrast test). */
+    --header-border: 211 32% 19%;
+    --header-foreground: 40 60% 97%;
+    /* Verified: --header-muted on --header = 6.92:1 (light). Zero consumers
+       in this story's own diff (the mockup's inactive nav items use
+       full-brightness headerText, not headerTextMuted) — forward
+       infrastructure for a named future consumer (CHORE-22's mobile bottom
+       nav, CHORE-27's login page, both of which use headerTextMuted in the
+       mockup). Not dead code. */
+    --header-muted: 211 12% 65%;
   }
   .dark {
     /* BUGFIX-04: see :root's color-scheme comment above. */
@@ -87,6 +108,17 @@
        reuse one accent value in both themes. */
     --brand: 27.7 95.5% 56.7%;
     --brand-foreground: 240 10% 3.9%;
+    /* CHORE-28: mockup source values (dark): header: oklch(0.20 0.03 250),
+       headerBorder: oklch(0.36 0.03 250), headerText: oklch(0.96 0.01 85),
+       headerTextMuted: oklch(0.70 0.02 250).
+       Verified: --header-foreground on --header = 16.12:1 (dark). NOT
+       verified as standalone text on --background/--card. */
+    --header: 210 52% 9%;
+    --header-border: 211 22% 25%;
+    --header-foreground: 40 34% 94%;
+    /* Verified: --header-muted on --header = 6.84:1 (dark). See :root's
+       comment above for why this token has no live consumer yet. */
+    --header-muted: 211 11% 63%;
   }
 }
 
@@ -111,6 +143,10 @@
   --color-warning-foreground: hsl(var(--warning-foreground));
   --color-brand: hsl(var(--brand));
   --color-brand-foreground: hsl(var(--brand-foreground));
+  --color-header: hsl(var(--header));
+  --color-header-foreground: hsl(var(--header-foreground));
+  --color-header-muted: hsl(var(--header-muted));
+  --color-header-border: hsl(var(--header-border));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
@@ -135,11 +171,11 @@
  *
  * Color utilities:  bg-background, bg-foreground, bg-card, bg-muted,
  *                   bg-primary, bg-secondary, bg-accent, bg-destructive,
- *                   bg-brand
+ *                   bg-brand, bg-header
  * Text utilities:   text-foreground, text-muted-foreground, text-card-foreground,
  *                   text-primary-foreground, text-secondary-foreground,
- *                   text-brand-foreground
- * Border utilities: border-border, ring-ring
+ *                   text-brand-foreground, text-header-foreground, text-header-muted
+ * Border utilities: border-border, ring-ring, border-header-border
  * Radius:           rounded-sm, rounded-md, rounded-lg, rounded-xl
  *                   (mapped from --radius CSS variable, default 0.5 rem)
  * Font:             font-sans (Space Grotesk, default body font),
@@ -156,6 +192,12 @@
  * story's Implementation Plan Decision 1/2 for the rationale. Only verified
  * as a bg-fill + dark-text pairing (8.31:1); NOT verified as standalone text
  * on --background/--card.
+ *
+ * CHORE-28: --header/--header-foreground/--header-muted/--header-border are
+ * new, additive header-surface tokens (dark navy chrome, verified in both
+ * themes — see the :root/.dark comments above for exact ratios). They power
+ * AppHeader.tsx's persistent chrome only; --header-muted has no live
+ * consumer yet (forward infrastructure — see its comment above).
  */
 
 @layer base {
