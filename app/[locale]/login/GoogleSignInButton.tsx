@@ -35,7 +35,7 @@ export default function GoogleSignInButton({ label, errorDefaultLabel }: GoogleS
         {label}
       </Button>
       {errorMessage && (
-        <p role="alert" className="mt-3 text-sm text-destructive">
+        <p role="alert" className="mt-3 rounded-md bg-destructive px-3 py-2 text-sm text-destructive-foreground">
           {errorMessage}
         </p>
       )}
