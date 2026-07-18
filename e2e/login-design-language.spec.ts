@@ -12,18 +12,25 @@
  *     pattern, 6px offset per the mockup's login-specific value); live-DOM
  *     checks that the centering root's computed background-color matches
  *     `--header`'s HSL (converted to rgb) in both light and dark theme, and
- *     that the card's computed `boxShadow` is present with a 6px vertical
- *     offset.
+ *     that the card's computed `boxShadow` last layer parses as the 6px
+ *     brand offset-shadow in both light and dark theme (dark theme also
+ *     carries the extra `dark:ring` layer ahead of it, per the WARNING 1
+ *     fix below — the shared assertion helper proves last-layer parsing
+ *     still holds with that extra layer present).
  *   - Challenge WARNING 1 (dark-mode card/backdrop separation): static-source
  *     check that the card also carries `dark:ring-1 dark:ring-header-border`
- *     — a visible four-edge boundary in dark theme, reusing the existing
- *     `--header-border` token already established by CHORE-28
- *     (`AppHeader.tsx`/`BottomNav.tsx` precedent) rather than inventing a new
- *     token. This is a decorative, non-text border; per the `--border`/
- *     `--header-border` precedent in `app/globals.css` ("Border color
- *     only — no contrast gate needed"), no WCAG ratio is asserted for it —
- *     visibility is confirmed by the mandated manual real-browser check
- *     (see story file's Manual verification section), not by this test.
+ *     — a decorative, non-WCAG-gated visual-separation aid in dark theme,
+ *     reusing the existing `--header-border` token already established by
+ *     CHORE-28 (`AppHeader.tsx`/`BottomNav.tsx` precedent) rather than
+ *     inventing a new token. Per the `--border`/`--header-border` precedent
+ *     in `app/globals.css` ("Border color only — no contrast gate needed"),
+ *     this pairing is not WCAG-gated app-wide; independent HSL→luminance→
+ *     ratio verification puts this ring at ~1.69:1 against `--header` in
+ *     dark theme, well short of the 3:1 non-text floor. It is a decorative
+ *     boundary, not a contrast-verified one — no WCAG ratio is asserted for
+ *     it here, and the card's actual demarcation against the backdrop in
+ *     dark theme comes from the offset-shadow (see AC4's manual-verification
+ *     note in the story file), not from this ring.
  *   - AC2 (wordmark display font, tagline mono font, i18n-sourced): static
  *     check for `uppercase`/`tracking-wide` on the `login-app-name` element
  *     and `font-mono` on the tagline; existing `e2e/smoke.spec.ts`'s
@@ -158,7 +165,7 @@ test('AC1: login card carries the CHORE-25 offset-shadow construct at a 6px offs
   expect(source).toMatch(/shadow-\[0_6px_0_0_hsl\(var\(--brand\)\/55%\)\]/);
 });
 
-test('WARNING 1 fix: login card carries a dark-mode ring using the existing --header-border token', () => {
+test('WARNING 1 fix: login card carries a decorative dark-mode ring using the existing --header-border token (not WCAG-gated, see file header comment)', () => {
   const source = readFileSync(PAGE_PATH, 'utf8');
   expect(source).toMatch(/\bdark:ring-1\b/);
   expect(source).toMatch(/\bdark:ring-header-border\b/);
@@ -267,7 +274,7 @@ test('AC1 (live, dark theme): login-centering-root background-color matches --he
   await context.close();
 });
 
-test('AC1 (live): login card boxShadow is present with a 6px vertical offset', async ({ page }) => {
+async function assertCardBoxShadowHas6pxOffset(page: import('@playwright/test').Page) {
   await page.goto('/pt-PT/login');
   const card = page.getByTestId('login-app-name').locator('xpath=ancestor::main[1]');
   await expect(card).toBeVisible();
@@ -276,20 +283,41 @@ test('AC1 (live): login card boxShadow is present with a 6px vertical offset', a
   expect(boxShadow).not.toBe('none');
 
   // Chromium composes ring-utility box-shadow layers (present even at
-  // ring-width 0 in light theme) alongside our own offset-shadow layer, so
-  // the computed value has multiple comma-separated layers, e.g.:
+  // ring-width 0 in light theme, and carrying the dark-mode
+  // `dark:ring-1 dark:ring-header-border` layer in dark theme) alongside
+  // our own offset-shadow layer, so the computed value has multiple
+  // comma-separated layers in both themes, e.g.:
   // "rgba(0,0,0,0) 0px 0px 0px 0px, ..., rgba(250,137,39,0.55) 0px 6px 0px 0px".
   // Split on top-level commas (not the ones inside an rgba(...) color) and
   // inspect the LAST layer, which is our brand offset-shadow
   // (`shadow-[0_6px_0_0_hsl(var(--brand)/55%)]` composes after any ring
-  // layers in Tailwind's cascade). Do not hardcode the full string — the
-  // color renders as rgba(), not the original hsl().
+  // layers in Tailwind's cascade, in both light and dark theme). Do not
+  // hardcode the full string — the color renders as rgba(), not the
+  // original hsl().
   const layers = boxShadow.split(/,(?![^(]*\))/).map((layer) => layer.trim());
   const lastLayer = layers[layers.length - 1];
   const pxValues = lastLayer.match(/(-?\d+(?:\.\d+)?)px/g) ?? [];
   expect(pxValues.length).toBeGreaterThanOrEqual(2);
   const yOffset = parseFloat(pxValues[1]);
   expect(yOffset).toBe(6);
+}
+
+test('AC1 (live, light theme): login card boxShadow is present with a 6px vertical offset', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ colorScheme: 'light' });
+  const page = await context.newPage();
+  await assertCardBoxShadowHas6pxOffset(page);
+  await context.close();
+});
+
+test('AC1 (live, dark theme): login card boxShadow last layer still parses as the 6px brand offset-shadow with the extra dark:ring layer present', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ colorScheme: 'dark' });
+  const page = await context.newPage();
+  await assertCardBoxShadowHas6pxOffset(page);
+  await context.close();
 });
 
 test('AC5: no horizontal overflow at 375px viewport on the redesigned login page', async ({ page }) => {
