@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard (explicit user dissatisfaction with current mobile nav;
 the updated design mockup now specifies the concrete replacement)
-Status: draft
+Status: done ✅
+PR: 60
 Related: BUGFIX-06 (header-nav-mobile-overflow-regression, functional fix —
 superseded on mobile by this chore), CHORE-28 (header recolor/desktop nav —
 owns ≥sm chrome), CHORE-31 (Settings redesign — the bottom bar's Settings
