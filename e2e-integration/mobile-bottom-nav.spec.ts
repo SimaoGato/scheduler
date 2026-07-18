@@ -112,11 +112,12 @@ test('AC5: at 1280px the bottom bar is absent from the accessibility tree', asyn
   const nav = adminPage.getByRole('navigation', { name: 'Navegação principal' })
   await expect(nav).toHaveCount(1)
 
-  const links = nav.getByRole('link')
-  // AppNav's desktop link set (Disponibilidade, Utilizadores, Equipa,
-  // Funções) — asserts the bottom-bar tabs (Início, Gerir, Definições) are
-  // not present, proving this is AppNav, not BottomNav.
-  await expect(links).toHaveCount(4)
+  // The exact desktop link count (AppNav's Disponibilidade/Utilizadores/
+  // Equipa/Funções set) is owned by e2e-integration/app-nav.spec.ts per
+  // CLAUDE.md's "E2E test count assertions on nav links" convention — do not
+  // duplicate that count assertion here. Asserting the bottom-bar-only labels
+  // (Início, Gerir) are absent is sufficient to prove this <nav> is AppNav,
+  // not BottomNav.
   await expect(nav.getByRole('link', { name: 'Início' })).toHaveCount(0)
   await expect(nav.getByRole('link', { name: 'Gerir' })).toHaveCount(0)
 })
