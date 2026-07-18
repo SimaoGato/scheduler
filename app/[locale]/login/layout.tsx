@@ -5,7 +5,7 @@ export default function LoginLayout({
 }) {
   return (
     <div
-      className="flex min-h-screen flex-col items-center justify-center bg-muted/50 px-4"
+      className="flex min-h-screen flex-col items-center justify-center bg-header px-4"
       data-testid="login-centering-root"
     >
       {children}
