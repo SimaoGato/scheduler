@@ -44,6 +44,24 @@ async function assertNoOverflow(page: Page, width: number) {
   const logo = page.getByRole('link', { name: 'Escala' })
   await expect(logo).toBeVisible()
 
+  // BUGFIX-06 general invariant, carried forward into the bottom-bar DOM:
+  // the avatar/user-menu trigger stays on the same row as the logo and never
+  // wraps below it. The specific old bug (AppNav wrapping above the logo) is
+  // structurally impossible now that AppNav is hidden on mobile, but the
+  // avatar is still a sibling flex item in the same header row (see
+  // AppHeader.tsx) and this is still a cheap, real regression to guard.
+  const avatarTrigger = page.getByTestId('user-widget-trigger')
+  await expect(avatarTrigger).toBeVisible()
+  const logoBox = await logo.boundingBox()
+  const avatarBox = await avatarTrigger.boundingBox()
+  expect(logoBox).not.toBeNull()
+  expect(avatarBox).not.toBeNull()
+  // Same row: their vertical centers are within a small tolerance of each
+  // other (not on separate wrapped lines).
+  const logoCenterY = logoBox!.y + logoBox!.height / 2
+  const avatarCenterY = avatarBox!.y + avatarBox!.height / 2
+  expect(Math.abs(logoCenterY - avatarCenterY)).toBeLessThanOrEqual(8)
+
   const bar = page.getByRole('navigation', { name: 'Navegação principal' })
   await expect(bar).toHaveCount(1)
   await expect(bar).toBeVisible()
