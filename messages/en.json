@@ -5,10 +5,18 @@
   },
   "Nav": {
     "ariaLabel": "Main navigation",
+    "home": "Home",
     "availability": "Availability",
+    "manage": "Manage",
     "userManagement": "Users",
     "people": "Team",
     "roles": "Roles"
+  },
+  "Manage": {
+    "title": "Manage",
+    "teamDescription": "Manage people on the team",
+    "rolesDescription": "Manage roles and slots per Sunday",
+    "usersDescription": "Manage user accounts"
   },
   "UserManagement": {
     "title": "User management",
