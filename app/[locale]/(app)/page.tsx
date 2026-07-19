@@ -46,7 +46,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           <div
             data-testid="access-denied-banner"
             aria-live="polite"
-            className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
           >
             {m('accessDenied')}
           </div>
@@ -80,7 +80,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             <div
               data-testid="access-denied-banner"
               aria-live="polite"
-              className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
             >
               {m('accessDenied')}
             </div>
@@ -100,7 +100,7 @@ export default async function HomePage({ searchParams }: PageProps) {
             <div
               data-testid="access-denied-banner"
               aria-live="polite"
-              className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
             >
               {m('accessDenied')}
             </div>
@@ -162,7 +162,7 @@ export default async function HomePage({ searchParams }: PageProps) {
           <div
             data-testid="access-denied-banner"
             aria-live="polite"
-            className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
           >
             {m('accessDenied')}
           </div>
@@ -326,7 +326,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         <div
           data-testid="access-denied-banner"
           aria-live="polite"
-          className="mb-6 rounded-md border border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="mb-6 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
         >
           {m('accessDenied')}
         </div>

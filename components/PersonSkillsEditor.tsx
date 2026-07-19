@@ -105,7 +105,7 @@ export default function PersonSkillsEditor({ personId, personName, roles, initia
         <div
           data-testid="skills-error"
           aria-live="polite"
-          className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="mb-4 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
         >
           {errorMessage}
         </div>
