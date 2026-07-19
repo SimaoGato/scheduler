@@ -48,11 +48,15 @@ function ptMessages(): Record<string, Record<string, string>> {
   return JSON.parse(raw)
 }
 
+// CHORE-26: both plural branches are now wrapped in `<num>...</num>` (the
+// t.rich() render-prop tag consumed by the real component to apply
+// font-mono) — strip the tags before substituting `#`, since this helper
+// does its own raw-string substitution rather than going through t.rich().
 function renderPlural(template: string, count: number): string {
   const match = template.match(/^\{count, plural, one \{([^}]*)\} other \{([^}]*)\}\}$/)
   if (!match) throw new Error(`template is not a bare ICU plural block: ${template}`)
   const branch = count === 1 ? match[1] : match[2]
-  return branch.replace('#', String(count))
+  return branch.replace(/<\/?num>/g, '').replace('#', String(count))
 }
 
 // ---------------------------------------------------------------------------
@@ -475,5 +479,18 @@ test.describe('CHORE-19: AC1 admin-on-behalf summary Card', () => {
     const summaryText = await summary.textContent()
     expect(summaryText).not.toMatch(/\btua\b/i)
     expect(summaryText).not.toMatch(/\bteu\b/i)
+
+    // CHORE-26 AC1: the same font-mono treatment applies identically in
+    // admin-on-behalf mode (proves the shared component's markup is
+    // mode-agnostic, matching the design decision to gate only endpoint
+    // URLs/title/back-link on isAdminMode).
+    await expect(adminPage.getByTestId('availability-available-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
+    await expect(adminPage.getByTestId('availability-blocked-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
   })
 })
