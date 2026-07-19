@@ -40,9 +40,9 @@ export default async function AdminRolesPage() {
   const t = await getTranslations('RoleManagement')
 
   // 6. Fetch all active roles via service-role client (bypasses RLS)
+  const serviceClient = createServiceClient()
   let roles: RoleRow[] = []
   try {
-    const serviceClient = createServiceClient()
     const { data, error } = await serviceClient
       .from('roles')
       .select('id, name, default_slots, is_active')
@@ -67,13 +67,13 @@ export default async function AdminRolesPage() {
   // 7. Qualified-people count per role — one aggregate query, not N+1
   // (STORY-30 metric-scope-consistency pattern: active roles x active
   // people only). Independent try/catch: a count-query error should not
-  // break the whole page, only fall back to a 0-count map.
+  // break the whole page, only fall back to a 0-count map. Reuses the same
+  // service-role client constructed above (no need for a second instance).
   let qualifiedCounts: Record<string, number> = {}
   try {
-    const serviceClient = createServiceClient()
     const { data: countsMap, error } = await qualifiedPeopleCountsByRole(
       serviceClient,
-      roles.map((role) => role.id)
+      roles.map((r) => r.id)
     )
 
     if (error) {

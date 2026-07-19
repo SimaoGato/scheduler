@@ -328,6 +328,31 @@ export default function RoleTable({ initialRoles, qualifiedCounts = {} }: Props)
                         {t('peopleCanServeCount', { count: qualifiedCount })}
                       </p>
                     </div>
+                    {/* CLAUDE.md BUGFIX-06 lesson: nesting a second,
+                        independent flex-wrap container inside this row can
+                        pass scrollWidth overflow checks per-context while
+                        the combined visual layout wraps incoherently.
+                        Verified this specific case is NOT that trap: this
+                        wrapper is intentionally kept nested (not flattened)
+                        because flattening was tried and real-browser-
+                        rendered at 375px with a long pt-PT role name — it
+                        regressed badly (the name/meta block's `flex-1` item
+                        has a zero flex-basis, so once the badge + 2 pill
+                        buttons became sibling flex items of the same outer
+                        line instead of one grouped item, they consumed the
+                        row's width first and left almost none for the name,
+                        wrapping it across 6+ narrow lines). Keeping the
+                        badge + buttons grouped under this single
+                        `flex-shrink-0` wrapper makes them behave as one
+                        outer flex item with a fixed content width (~200px:
+                        badge + two pill buttons), so the outer row has only
+                        one wrap decision to make — name-block vs.
+                        actions-block — matching the "one wrap decision
+                        point" principle BUGFIX-06 prescribes, just
+                        implemented via grouping instead of full flattening.
+                        Screenshotted at 375px in both the flattened
+                        (regressed) and this nested (correct) form; see PR
+                        #64 review response for the before/after comparison. */}
                     <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
                       <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-mono font-semibold text-secondary-foreground">
                         {t('slotsPerSundayBadge', { count: role.default_slots })}

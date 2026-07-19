@@ -10,7 +10,11 @@
  *
  * AC coverage:
  *   AC1 — 375px/390px: no horizontal overflow with seeded long pt-PT role
- *         names (the CHORE-24-documented, previously-ticketless bug).
+ *         names (the CHORE-24-documented, previously-ticketless bug). Also
+ *         captures a screenshot at each width as committed evidence that
+ *         the row's nested badge/actions flex-wrap container (CLAUDE.md
+ *         BUGFIX-06 lesson) reads as intentional, not incoherently wrapped
+ *         — see the inline comment on that container in RoleTable.tsx.
  *   AC2 — each active role renders as a card row: name (display font), a
  *         meta line with the ICU-pluralized qualified-people count (active
  *         people only — a soft-deleted person's skill row does not count),
@@ -112,13 +116,28 @@ test.describe('CHORE-29: AC1 no horizontal overflow with long role names', () =>
   })
 
   for (const width of WIDTHS) {
-    test(`admin sees no horizontal overflow at ${width}px`, async ({ adminPage }) => {
+    test(`admin sees no horizontal overflow at ${width}px (screenshot captured)`, async ({
+      adminPage,
+    }) => {
       await adminPage.setViewportSize({ width, height: 812 })
       await adminPage.goto('/pt-PT/admin/roles')
       await expect(adminPage).not.toHaveURL(/\/login/)
 
       const scrollWidth = await adminPage.evaluate(() => document.documentElement.scrollWidth)
       expect(scrollWidth).toBeLessThanOrEqual(width)
+
+      // PR #64 review WARNING: the row's action area (badge + Edit/Remove
+      // pills) is a nested flex-wrap container inside the row's own
+      // flex-wrap (CLAUDE.md BUGFIX-06 lesson — scrollWidth alone can pass
+      // per-context while the combined visual layout still wraps
+      // incoherently). Capture a real screenshot as committed evidence,
+      // not just a manual claim, alongside the scrollWidth assertion above
+      // — same evidence pattern as
+      // e2e-integration/header-nav-mobile-overflow.spec.ts (BUGFIX-06).
+      await adminPage.screenshot({
+        path: `test-results-integration/chore-29-roles-card-list-${width}.png`,
+        fullPage: true,
+      })
     })
   }
 })
@@ -239,6 +258,20 @@ test.describe('CHORE-29: AC2 zero qualified people (new role, no skill rows)', (
     await expect(adminPage).not.toHaveURL(/\/login/)
 
     const messages = messagesFor('pt-PT')
+    const row = adminPage.locator('li', {
+      hasText: `CHORE-29 QA Zero Role (w${test.info().workerIndex})`,
+    })
+    await expect(row).toBeVisible()
+    await expect(row).toContainText(renderPlural(messages.RoleManagement.peopleCanServeCount, 0))
+  })
+
+  test('en: meta line shows the zero-count plural branch (map miss defaults to 0)', async ({
+    adminPage,
+  }) => {
+    await adminPage.goto('/en/admin/roles')
+    await expect(adminPage).not.toHaveURL(/\/login/)
+
+    const messages = messagesFor('en')
     const row = adminPage.locator('li', {
       hasText: `CHORE-29 QA Zero Role (w${test.info().workerIndex})`,
     })
