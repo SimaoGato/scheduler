@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard — affects every page's dark mode, found via user-reported
 visual comparison, not aesthetic taste
-Status: implemented — ready for review
+Status: done ✅
+PR: 63
 Depends on: none (should land before/alongside CHORE-21/29/30/31 so those
 land against the correct final palette instead of the stale one)
 Related: CHORE-23 (design language foundation — deliberately left these
@@ -228,53 +229,55 @@ Preserve that existing pattern rather than introducing a `var()` reference
 (a larger, unrelated refactor) — set `--input: 211 18% 31%;` as a literal,
 matching `--border`.
 
-### Design decision 2 — `--popover` is explicitly not retuned; flag the
-### visual side-effect for the AC4 audit
+### Design decision 2 — `--popover` elevation-order inversion flagged by
+### Challenge, retuned in Implementation (Challenge WARNING #1)
 
 AC1 names exactly four tokens (`--background`/`--card`/`--border`/
 `--input`); `--popover` is not one of them and the story's Out of scope
-list does not list it either — retuning it would be undeclared scope
-creep. However: `--popover` in `.dark` is currently `240 10% 3.9%`, a
-**literal duplicate of the OLD `--background` value**, not a `var()`
-reference. After this chore, `--popover` stays at `240 10% 3.9%` while the
-new `--background` becomes `211 28% 15%` (lighter) — so the shadcn
-`Select` dropdown (`components/ui/select.tsx`'s `bg-popover
-text-popover-foreground`) will render **darker than the page it floats
-over**, an elevation-order inversion that didn't exist before (previously
-popover and background were visually identical). `--popover-foreground`
-on `--popover`'s contrast ratio is unaffected and still passes (19.05:1,
-unchanged), so this is not an AC2 contrast failure — it's a visual
-consistency question for human judgment. **Decision: do not touch
-`--popover` in this chore** (AC1 doesn't ask for it, and retuning it
-would require re-verifying yet another pairing's contrast + expanding the
-diff beyond the four named tokens). **Flag explicitly for the AC4 manual
-visual audit**: when reviewing the Roles/Users/People pages (which use
-`Select`), open a dropdown in dark mode and confirm it doesn't look
-visually broken. If it does look wrong, that becomes a follow-up chore
-(retune `--popover` to track `--card`), not scope creep into this one.
+list does not list it either. However: `--popover` in `.dark` was a
+**literal duplicate of the OLD `--background` value (`240 10% 3.9%`)**, 
+not a `var()` reference. The Refiner flagged this as a potential risk in 
+the Implementation Plan (line 243–254 of the plan sketch), planning to 
+leave it untouched and verify the visual result at AC4. Challenge 
+independently discovered that if `--popover` were left at its old value 
+while `--background`/`--card` were retuned lighter, the shadcn `Select` 
+dropdown would render **darker than the card surface it floats over** 
+(an elevation-order inversion breaking the intended "popover sits above" 
+stacking), and flagged this as WARNING #1. **Decision (Challenge finding, 
+acted upon in Implementation): retune `--popover` to match the new 
+`--card` value (`211 24% 21%`)** to preserve correct visual elevation 
+order. This extends the diff slightly beyond the four named AC1 tokens, 
+but the retuning is a bug-fix necessity, not scope creep. 
+`--popover-foreground` on the new `--popover` value still passes WCAG AA 
+(11.94:1, same ratio as `--card-foreground` on `--card` since the values 
+are now identical). Manual verification (AC4) confirmed the dropdown now 
+renders at the correct tone relative to the card/row surfaces.
 
 ### Design decision 3 — pre-existing `text-destructive` on
-### `bg-destructive/10` failure is not this chore's to fix
+### `bg-destructive/10` failure remediated via solid-fill migration (Challenge WARNING #2)
 
 Per the AC2 table above, the translucent-tint destructive banner pairing
 was **already failing WCAG AA before this chore** (1.93:1, well below
 4.5:1) — this matches CLAUDE.md's own documented CHORE-19 finding that
 `text-destructive` on `bg-destructive/10` "can fail (example: 4.14:1 light
 / 1.93:1 dark)" and was only remediated for specific badges via a
-solid-fill swap, not universally. After this chore the same pairing drops
-further to 1.51:1 (because the background it's composited over got
-lighter, reducing the tint's effective darkness). AC2's wording scopes the
-re-verification requirement to "every existing **verified** [i.e.
-previously-passing] pairing" — this pairing was never verified/passing, so
-it is not in AC2's mandatory "must stay ≥4.5:1 or get adjusted" set, and
-fixing it would require touching `--destructive`, which the story's Out of
-scope list forbids unless AC2 shows a **regression** (pass→fail), not an
-already-failing pairing getting marginally worse. **Decision: document via
-an inline `globals.css` comment (not a new test, not a token change) and
-leave as a known, pre-existing, unrelated gap** — a candidate for a future
-dedicated bugfix chore (solid-fill remediation, same pattern CHORE-19 used
-for the blocked-row badge), not this one. Flagging for Challenge to
-confirm this reading of AC2's scope is correct.
+solid-fill swap, not universally. The plan flagged this as an 
+already-failing pairing not in AC2's mandatory fix scope (AC2 requires 
+"every existing verified [passing] pairing" to stay passing, and this was 
+never passing), so it planned to document and leave unfixed. Challenge 
+independently audited the codebase and found six components actively using 
+the failing `text-destructive` on `bg-destructive/10` translucent-tint 
+pattern (PersonSkillsEditor.tsx, PeopleTable.tsx, UserTable.tsx, 
+RoleTable.tsx, app/[locale]/(app)/page.tsx, ClaimPersonForm.tsx), and 
+flagged this as WARNING #2 with a concrete recommendation: migrate all 
+six to the proven solid-fill `bg-destructive text-destructive-foreground` 
+pattern (CHORE-19 precedent). **Decision (Challenge finding, acted upon in 
+Implementation): migrate all six components to solid-fill pattern** — this 
+eliminates the failing translucent-tint usage entirely from the codebase, 
+a pre-existing-gap fix as a side-effect of this chore. Any future use of 
+destructive banners should follow the solid-fill pattern, not the 
+translucent tint. Inline comment added to `globals.css` (line 139–156) 
+documenting the pre-existing failure and the remediation applied.
 
 ### AC3 — light theme: confirmed no change needed
 
