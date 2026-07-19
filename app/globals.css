@@ -189,8 +189,8 @@
  *                   (mapped from --radius CSS variable, default 0.5 rem)
  * Font:             font-sans (Space Grotesk, default body font),
  *                   font-mono (JetBrains Mono, for numeric/date data —
- *                   CHORE-25/26 apply this per-element; not yet consumed
- *                   by any component in this diff)
+ *                   consumed per-element by CHORE-25 on the Dashboard and
+ *                   CHORE-26 on the Availability page)
  *
  * All tokens are HSL CSS variables defined in @layer base :root above.
  * To customise the palette, edit the :root values; do NOT hardcode raw colours.
