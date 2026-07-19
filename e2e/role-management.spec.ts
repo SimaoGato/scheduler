@@ -80,7 +80,7 @@ test('AC6-page-guard: GET /pt-PT/admin/roles unauthenticated → redirected to l
 
 async function ensureRoleGone(page: Page, name: string): Promise<void> {
   await page.goto('/pt-PT/admin/roles');
-  const row = page.locator('tr', { hasText: name });
+  const row = page.locator('li', { hasText: name });
   if ((await row.count()) === 0) return;
 
   const cancelButton = row.locator('[data-testid^="rm-cancel-"]');
@@ -91,7 +91,7 @@ async function ensureRoleGone(page: Page, name: string): Promise<void> {
   const removeButton = row.locator('[data-testid^="rm-remove-"]');
   if ((await removeButton.count()) > 0) {
     await removeButton.click();
-    await expect(page.locator('tr', { hasText: name })).toHaveCount(0);
+    await expect(page.locator('li', { hasText: name })).toHaveCount(0);
   }
 }
 
@@ -115,7 +115,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await page.getByTestId('rm-add-slots-input').fill('3');
     await page.getByTestId('rm-add-submit').click();
 
-    const row = page.locator('tr', { hasText: roleName });
+    const row = page.locator('li', { hasText: roleName });
     await expect(row).toBeVisible();
     await expect(row).toContainText('3');
   });
@@ -163,7 +163,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await page.getByTestId('rm-add-slots-input').fill('');
     await page.getByTestId('rm-add-submit').click();
     await expect(page.getByTestId('rm-error')).toBeVisible();
-    await expect(page.locator('tr', { hasText: roleName })).toHaveCount(0);
+    await expect(page.locator('li', { hasText: roleName })).toHaveCount(0);
   });
 
   test('AC3 (edit/PATCH): 0, -1, blank, "abc" slot values rejected with 400 and row unchanged', async ({ page }) => {
@@ -192,7 +192,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
 
     // Also exercise the UI inline-edit path.
     await page.goto('/pt-PT/admin/roles');
-    const row = page.locator('tr', { hasText: roleName });
+    const row = page.locator('li', { hasText: roleName });
     await row.locator('[data-testid^="rm-edit-"]').click();
     const slotsInput = row.locator('input').nth(1);
     await slotsInput.fill('');
@@ -205,9 +205,9 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await page.getByTestId('rm-add-input').fill(roleName);
     await page.getByTestId('rm-add-slots-input').fill('1');
     await page.getByTestId('rm-add-submit').click();
-    await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
+    await expect(page.locator('li', { hasText: roleName })).toBeVisible();
 
-    const row = page.locator('tr', { hasText: roleName });
+    const row = page.locator('li', { hasText: roleName });
     await row.locator('[data-testid^="rm-edit-"]').click();
     const nameInput = row.locator('input').nth(0);
     const slotsInput = row.locator('input').nth(1);
@@ -215,7 +215,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await slotsInput.fill('4');
     await row.locator('[data-testid^="rm-save-"]').click();
 
-    const renamedRow = page.locator('tr', { hasText: `${roleName} renamed` });
+    const renamedRow = page.locator('li', { hasText: `${roleName} renamed` });
     await expect(renamedRow).toBeVisible();
     await expect(renamedRow).toContainText('4');
   });
@@ -225,11 +225,11 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await page.getByTestId('rm-add-input').fill(roleName);
     await page.getByTestId('rm-add-slots-input').fill('1');
     await page.getByTestId('rm-add-submit').click();
-    await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
+    await expect(page.locator('li', { hasText: roleName })).toBeVisible();
 
-    const row = page.locator('tr', { hasText: roleName });
+    const row = page.locator('li', { hasText: roleName });
     await row.locator('[data-testid^="rm-remove-"]').click();
-    await expect(page.locator('tr', { hasText: roleName })).toHaveCount(0);
+    await expect(page.locator('li', { hasText: roleName })).toHaveCount(0);
   });
 
   test('AC7: case-insensitive duplicate name rejected with 409', async ({ page }) => {
@@ -246,7 +246,7 @@ test.describe('STORY-17: role management (auth-gated)', () => {
     await page.getByTestId('rm-add-submit').click();
     await expect(page.getByTestId('rm-error')).toBeVisible();
 
-    const rows = page.locator('tr', { hasText: roleName });
+    const rows = page.locator('li', { hasText: roleName });
     await expect(rows).toHaveCount(1);
   });
 });

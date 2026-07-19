@@ -185,9 +185,11 @@ test('AC1b: --brand-foreground on --brand meets WCAG AA (>=4.5:1) in both themes
 // (present in app/globals.css before this chore; Decision 1 forbids touching
 // existing token values, so it is intentionally left as-is) and, per
 // grep-verification, is never actually consumed as a solid pairing anywhere
-// in the app: every live usage of `bg-muted` is translucent (`bg-muted/25`,
-// `bg-muted/50` in UserTable.tsx/RoleTable.tsx/PeopleTable.tsx and the
-// login/claim layout shells), compositing over `--background`, not the raw
+// in the app: every live usage of `bg-muted` is translucent (`bg-muted/25` in
+// RoleTable.tsx's row hover state (CHORE-29: <li> row, not the old <thead>'s
+// `bg-muted/50`, which was removed along with the <table> markup);
+// `bg-muted/50` in UserTable.tsx/PeopleTable.tsx and the login/claim layout
+// shells), compositing over `--background`, not the raw
 // `--muted` value. AC2's own wording only requires "no *currently passing*
 // combination regresses below 4.5:1" — this pair was never passing as a raw
 // solid pairing, so it is excluded from the strict loop below and instead
