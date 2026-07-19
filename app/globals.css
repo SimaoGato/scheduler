@@ -86,11 +86,46 @@
   .dark {
     /* BUGFIX-04: see :root's color-scheme comment above. */
     color-scheme: dark;
-    --background: 240 10% 3.9%;
+    /* CHORE-32: mockup source dark.page = oklch(0.26 0.025 250)
+       (Escala Dashboard.dc.html theme(), lines ~508-534). Converted via the
+       CHORE-23/28 OKLab->linear-sRGB->sRGB->HSL matrix pattern, cross-
+       validated against CHORE-28's already-shipped --header* conversions.
+       Verified (this repo's HSL->luminance->ratio helper,
+       e2e/surface-tokens-retune.spec.ts): --foreground on --background =
+       14.69:1 (was 19.05:1 pre-retune — still comfortably clears AA);
+       --muted-foreground on --background = 5.99:1 (new pairing, not
+       previously tested, passes AA); --ring on --background = 10.38:1
+       (WCAG 2.4.11/1.4.11 non-text 3:1 floor, informational — --ring is
+       out of this chore's scope — comfortably passes). --border on
+       --background = 1.82:1 (non-text, informational only — plain
+       divider/outline borders are not WCAG-gated to 3:1 the way focus
+       indicators are; --ring above is the actual gated non-text token.
+       Improved from the pre-retune 1.34:1, not a regression). */
+    --background: 211 28% 15%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    /* CHORE-32: mockup source dark.card = oklch(0.32 0.028 250). Verified:
+       --card-foreground on --card = 11.94:1 (was 19.05:1 pre-retune, still
+       comfortably clears AA); --muted-foreground on --card (CardDescription
+       consumer) = 4.87:1 (was effectively ~19:1 pre-retune since old
+       --card==old --background; thin-but-passing margin above the 4.5:1 AA
+       floor — flagged per the CHORE-17 "surfacing marginal-but-pre-existing
+       contrast" precedent, not a new gap introduced by this chore); --ring
+       on --card = 8.43:1 (non-text 3:1 floor, informational, comfortably
+       passes). --border on --card = 1.48:1 (non-text, informational only,
+       see --background's comment above). */
+    --card: 211 24% 21%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    /* CHORE-32 fix (Challenge WARNING #1 — elevation-order inversion):
+       previously a literal duplicate of the OLD --background value
+       (240 10% 3.9%), not a var() reference. Left untouched after
+       retuning --background/--card to lighter values, --popover would
+       render darker than the surfaces it floats over (e.g. the shadcn
+       Select dropdown), inverting the intended "popover sits above card"
+       elevation order. Retuned to match the new --card value so popups
+       keep the correct visual stacking. Verified: --popover-foreground on
+       --popover = 11.94:1 (same ratio as --card-foreground on --card,
+       since the values are now identical), comfortably clears AA. */
+    --popover: 211 24% 21%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 5.9% 10%;
@@ -101,11 +136,35 @@
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
+    /* CHORE-32 (Design decision 3 — pre-existing gap, not fixed by
+       retuning a base token here): text-destructive on bg-destructive/10
+       composited over the new --background measures 1.51:1 (was 1.93:1
+       pre-retune) — already failing WCAG AA (4.5:1) before this chore per
+       CLAUDE.md's CHORE-19 finding, and mechanically drops further because
+       the lighter --background reduces the 10%-alpha tint's effective
+       darkness. Out of this chore's scope to fix via a token change
+       (would require touching --destructive, which AC2's wording ("every
+       existing verified [i.e. previously-passing] pairing") does not
+       cover for an already-failing pairing). Fold-in fix instead (Challenge
+       WARNING #2, same PR): the six error-banner components that used this
+       translucent-tint pattern (PersonSkillsEditor.tsx, PeopleTable.tsx,
+       UserTable.tsx, RoleTable.tsx, app/[locale]/(app)/page.tsx,
+       ClaimPersonForm.tsx) were migrated to the solid-fill
+       bg-destructive/text-destructive-foreground pattern (CHORE-19
+       precedent), leaving zero live consumers of the failing pairing in
+       this diff. Any future bg-destructive/10 + text-destructive usage
+       should use the solid-fill pattern instead. */
     --destructive-foreground: 0 0% 98%;
     --warning: 38 92% 60%;
     --warning-foreground: 240 10% 3.9%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
+    /* CHORE-32: mockup source dark.cardBorder = oklch(0.42 0.03 250). See
+       --background's comment above for the non-text informational ratios
+       (border on background = 1.82:1, border on card = 1.48:1). --input
+       mirrors this exact literal value, matching the pre-existing pattern
+       where --input duplicates --border rather than referencing it via
+       var() (see :root's --input for the same convention). */
+    --border: 211 18% 31%;
+    --input: 211 18% 31%;
     --ring: 240 4.9% 83.9%;
     /* CHORE-23: intentionally identical to :root's --brand/--brand-foreground
        — the pair's contrast is self-contained (bg-fill + dark-text) and does
