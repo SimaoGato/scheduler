@@ -6,6 +6,7 @@ import type { RoleRow } from '@/types/roles'
 
 interface Props {
   initialRoles: RoleRow[]
+  qualifiedCounts?: Record<string, number>
 }
 
 // Client-side shape check mirrors the server's parseDefaultSlots (blank,
@@ -25,7 +26,7 @@ const ERROR_CODE_KEYS: Record<string, string> = {
   not_found: 'errorGeneric',
 }
 
-export default function RoleTable({ initialRoles }: Props) {
+export default function RoleTable({ initialRoles, qualifiedCounts = {} }: Props) {
   const t = useTranslations('RoleManagement')
   const [rows, setRows] = useState<RoleRow[]>(initialRoles)
   const [addName, setAddName] = useState('')
@@ -207,9 +208,16 @@ export default function RoleTable({ initialRoles }: Props) {
         </div>
       )}
 
-      {/* Add-role section */}
+      {/* Add-role section — CHORE-29 AC1: this form (not the row list) was
+          the actual source of the pre-existing 375px overflow bug. flex-1
+          text inputs don't shrink below their intrinsic content width unless
+          min-w-0 overrides the flex item's default min-width: auto; without
+          it, the row's total intrinsic width exceeds the viewport at narrow
+          widths. flex-wrap sm:flex-nowrap (CLAUDE.md flexbox pattern) lets
+          the controls wrap onto their own lines below 640px, never at
+          desktop/tablet widths where there is ample space. */}
       <h2 className="mb-3 text-lg font-medium">{t('addRoleLabel')}</h2>
-      <form onSubmit={handleAdd} className="mb-8 flex gap-2">
+      <form onSubmit={handleAdd} className="mb-8 flex flex-wrap gap-2 sm:flex-nowrap">
         <input
           data-testid="rm-add-input"
           type="text"
@@ -217,7 +225,7 @@ export default function RoleTable({ initialRoles }: Props) {
           onChange={(e) => setAddName(e.target.value)}
           placeholder={t('namePlaceholder')}
           aria-label={t('addNameLabel')}
-          className="min-h-[44px] flex-1 rounded-md border px-3 py-2 text-sm"
+          className="min-h-[44px] min-w-0 flex-1 rounded-md border px-3 py-2 text-sm"
           disabled={loadingId === 'add'}
         />
         <input
@@ -241,113 +249,96 @@ export default function RoleTable({ initialRoles }: Props) {
         </button>
       </form>
 
-      {/* Roles list */}
+      {/* Roles list — CHORE-29: card-style <ul>/<li> rows (replaces the
+          previous <table>, which overflowed horizontally at 375px). The
+          page's existing <h1>{t('title')}</h1> labels the list for screen
+          readers; no separate caption is needed for a non-table layout. */}
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('emptyList')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium">{t('columnName')}</th>
-                <th className="px-4 py-3 text-left font-medium">{t('columnSlots')}</th>
-                {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap makes
-                    auto-layout give this column only the width its content needs,
-                    so the other (unconstrained) columns absorb the remaining
-                    width and this column stays pinned to the table's right edge. */}
-                <th className="w-[1%] whitespace-nowrap px-4 py-3 text-right font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((role) => {
-                const isLoading = loadingId === role.id
-                const isEditing = editingId === role.id
-                const isConfirmingRemove = confirmingRemoveId === role.id
-                // STORY-19: block Edit/Remove on other rows while a confirm
-                // prompt is open on any row (consistent with the existing
-                // "block concurrent row actions" convention in this file).
-                const blockedByOtherConfirm =
-                  confirmingRemoveId !== null && confirmingRemoveId !== role.id
-                // Save/Cancel must render in the actions <td>, not the name
-                // or slots <td>, so the actions column position doesn't
-                // jump between view/edit mode (AC4). A <form> can't validly
-                // wrap multiple <td>s of a row, so the <input>s here are
-                // form-associated by id via the `form` attribute to the
-                // <form> that lives in the actions cell below.
-                const editFormId = `rm-edit-form-${role.id}`
-                return (
-                  <tr key={role.id} className="border-b last:border-0 hover:bg-muted/25">
-                    <td className="px-4 py-3">
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          form={editFormId}
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder={t('namePlaceholder')}
-                          aria-label={t('namePlaceholder')}
-                          className="min-h-[44px] w-full rounded-md border px-3 py-1 text-sm"
-                          disabled={isLoading}
-                          autoFocus
-                        />
-                      ) : (
-                        role.name
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          form={editFormId}
-                          value={editSlots}
-                          onChange={(e) => setEditSlots(e.target.value)}
-                          placeholder={t('slotsPlaceholder')}
-                          aria-label={t('slotsPlaceholder')}
-                          className="min-h-[44px] w-24 rounded-md border px-3 py-1 text-sm"
-                          disabled={isLoading}
-                        />
-                      ) : (
-                        role.default_slots
-                      )}
-                    </td>
-                    {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap
-                        makes auto-layout give this column only the width its
-                        content needs, so the name/slots columns absorb the
-                        remaining width and this column stays pinned to the
-                        table's right edge. */}
-                    <td className="w-[1%] whitespace-nowrap px-4 py-3 text-right">
-                      {isEditing ? (
-                        <form
-                          id={editFormId}
-                          onSubmit={(e) => handleEdit(e, role.id)}
-                          className="flex justify-end gap-2"
-                        >
-                          <button
-                            type="submit"
-                            data-testid={`rm-save-${role.id}`}
-                            disabled={isLoading || blockedByOtherConfirm}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {isLoading ? t('actionLoading') : t('saveButton')}
-                          </button>
-                          <button
-                            type="button"
-                            data-testid={`rm-cancel-${role.id}`}
-                            onClick={cancelEdit}
-                            disabled={isLoading || blockedByOtherConfirm}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {t('cancelButton')}
-                          </button>
-                        </form>
-                      ) : isConfirmingRemove ? (
-                        <div className="flex justify-end gap-2">
+        <ul className="flex flex-col gap-2.5">
+          {rows.map((role) => {
+            const isLoading = loadingId === role.id
+            const isEditing = editingId === role.id
+            const isConfirmingRemove = confirmingRemoveId === role.id
+            // STORY-19: block Edit/Remove on other rows while a confirm
+            // prompt is open on any row (consistent with the existing
+            // "block concurrent row actions" convention in this file).
+            const blockedByOtherConfirm =
+              confirmingRemoveId !== null && confirmingRemoveId !== role.id
+            const qualifiedCount = qualifiedCounts[role.id] ?? 0
+
+            return (
+              <li
+                key={role.id}
+                className="rounded-lg border bg-card px-4 py-3.5 text-card-foreground transition-colors hover:bg-muted/25"
+              >
+                {isEditing ? (
+                  // The whole row's interactive content is the <form> itself
+                  // now that it's a single container (no more STORY-14
+                  // form={editFormId} attribute-association trick, which
+                  // existed only to bridge separate <td>s of one <tr>).
+                  <form
+                    onSubmit={(e) => handleEdit(e, role.id)}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder={t('namePlaceholder')}
+                      aria-label={t('namePlaceholder')}
+                      className="min-h-[44px] min-w-0 flex-1 rounded-md border px-3 py-1 text-sm"
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={editSlots}
+                      onChange={(e) => setEditSlots(e.target.value)}
+                      placeholder={t('slotsPlaceholder')}
+                      aria-label={t('slotsPlaceholder')}
+                      className="min-h-[44px] w-24 flex-shrink-0 rounded-md border px-3 py-1 text-sm"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="submit"
+                      data-testid={`rm-save-${role.id}`}
+                      disabled={isLoading || blockedByOtherConfirm}
+                      className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isLoading ? t('actionLoading') : t('saveButton')}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`rm-cancel-${role.id}`}
+                      onClick={cancelEdit}
+                      disabled={isLoading || blockedByOtherConfirm}
+                      className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t('cancelButton')}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">{role.name}</p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {t('peopleCanServeCount', { count: qualifiedCount })}
+                      </p>
+                    </div>
+                    <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-mono font-semibold text-secondary-foreground">
+                        {t('slotsPerSundayBadge', { count: role.default_slots })}
+                      </span>
+                      {isConfirmingRemove ? (
+                        <>
                           <button
                             data-testid={`rm-remove-confirm-${role.id}`}
                             onClick={() => handleRemove(role.id, true)}
                             disabled={isLoading}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('confirmRemoveButton')}
                           </button>
@@ -356,18 +347,18 @@ export default function RoleTable({ initialRoles }: Props) {
                             data-testid={`rm-remove-cancel-${role.id}`}
                             onClick={cancelRemoveConfirm}
                             disabled={isLoading}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('cancelButton')}
                           </button>
-                        </div>
+                        </>
                       ) : (
-                        <div className="flex justify-end gap-2">
+                        <>
                           <button
                             data-testid={`rm-edit-${role.id}`}
                             onClick={() => startEdit(role)}
                             disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {t('editButton')}
                           </button>
@@ -375,19 +366,19 @@ export default function RoleTable({ initialRoles }: Props) {
                             data-testid={`rm-remove-${role.id}`}
                             onClick={() => handleRemove(role.id)}
                             disabled={isLoading || loadingId !== null || blockedByOtherConfirm}
-                            className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            className="min-h-[44px] flex-shrink-0 rounded-full border px-4 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {isLoading ? t('actionLoading') : t('removeButton')}
                           </button>
-                        </div>
+                        </>
                       )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       )}
     </div>
   )

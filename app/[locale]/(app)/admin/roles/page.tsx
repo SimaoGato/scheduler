@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import { getSessionUser, getUserRole } from '@/lib/auth/session'
 import { createServiceClient } from '@/lib/supabase/service'
+import { qualifiedPeopleCountsByRole } from '@/lib/skills/qualified-roles'
 import RoleTable from '@/components/RoleTable'
 import type { RoleRow } from '@/types/roles'
 
@@ -63,10 +64,31 @@ export default async function AdminRolesPage() {
     roles = []
   }
 
+  // 7. Qualified-people count per role — one aggregate query, not N+1
+  // (STORY-30 metric-scope-consistency pattern: active roles x active
+  // people only). Independent try/catch: a count-query error should not
+  // break the whole page, only fall back to a 0-count map.
+  let qualifiedCounts: Record<string, number> = {}
+  try {
+    const serviceClient = createServiceClient()
+    const { data: countsMap, error } = await qualifiedPeopleCountsByRole(
+      serviceClient,
+      roles.map((role) => role.id)
+    )
+
+    if (error) {
+      console.error('[AdminRolesPage] qualifiedPeopleCountsByRole error:', error)
+    } else if (countsMap) {
+      qualifiedCounts = Object.fromEntries(countsMap)
+    }
+  } catch (err) {
+    console.error('[AdminRolesPage] qualifiedPeopleCountsByRole fetch error:', err)
+  }
+
   return (
     <main className="container mx-auto px-4 py-8">
       <h1 className="mb-6 text-2xl font-semibold">{t('title')}</h1>
-      <RoleTable initialRoles={roles} />
+      <RoleTable initialRoles={roles} qualifiedCounts={qualifiedCounts} />
     </main>
   )
 }

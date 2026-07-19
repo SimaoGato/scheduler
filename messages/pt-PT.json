@@ -79,8 +79,8 @@
   },
   "RoleManagement": {
     "title": "Funções",
-    "columnName": "Nome",
-    "columnSlots": "Vagas por domingo",
+    "peopleCanServeCount": "{count, plural, one {# pessoa pode servir} other {# pessoas podem servir}}",
+    "slotsPerSundayBadge": "{count, plural, one {# vaga por domingo} other {# vagas por domingo}}",
     "addRoleLabel": "Adicionar função",
     "namePlaceholder": "Nome",
     "slotsPlaceholder": "Vagas",

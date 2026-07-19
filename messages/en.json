@@ -79,8 +79,8 @@
   },
   "RoleManagement": {
     "title": "Roles",
-    "columnName": "Name",
-    "columnSlots": "Slots per Sunday",
+    "peopleCanServeCount": "{count, plural, one {# person can serve} other {# people can serve}}",
+    "slotsPerSundayBadge": "{count, plural, one {# slot per Sunday} other {# slots per Sunday}}",
     "addRoleLabel": "Add role",
     "namePlaceholder": "Name",
     "slotsPlaceholder": "Slots",
