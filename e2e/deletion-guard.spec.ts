@@ -280,8 +280,8 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await assignSkill(page, personId2, roleId2, 1);
 
     await page.goto('/pt-PT/admin/roles');
-    const row = page.locator('tr', { hasText: roleName });
-    const otherRow = page.locator('tr', { hasText: roleName2 });
+    const row = page.locator('li', { hasText: roleName });
+    const otherRow = page.locator('li', { hasText: roleName2 });
     await row.locator('[data-testid^="rm-remove-"]').click();
 
     const banner = page.getByTestId('rm-confirm-banner');
@@ -297,7 +297,7 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await expect(banner).toContainText(singularText);
 
     // Row is still present; deletion did not proceed.
-    await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
+    await expect(page.locator('li', { hasText: roleName })).toBeVisible();
 
     // The other role's Editar/Remover are disabled while this row's confirm
     // prompt is open (mirrors PeopleTable's equivalent assertion).
@@ -308,7 +308,7 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     // other row.
     await row.locator('[data-testid^="rm-remove-cancel-"]').click();
     await expect(row.locator('[data-testid^="rm-remove-"]')).toBeVisible();
-    await expect(page.locator('tr', { hasText: roleName })).toBeVisible();
+    await expect(page.locator('li', { hasText: roleName })).toBeVisible();
     await expect(otherRow.locator('[data-testid^="rm-edit-"]')).toBeEnabled();
 
     // Confirm actually removes the role (previously only exercised via a
@@ -316,7 +316,7 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await row.locator('[data-testid^="rm-remove-"]').click();
     await expect(banner).toBeVisible();
     await row.locator('[data-testid^="rm-remove-confirm-"]').click();
-    await expect(page.locator('tr', { hasText: roleName })).toHaveCount(0);
+    await expect(page.locator('li', { hasText: roleName })).toHaveCount(0);
     expect(await countPersonRoleSkillsForRole(roleId)).toBe(0);
     roleId = ''; // already deleted; afterEach no-op
 
@@ -332,7 +332,7 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await expect(banner2).toContainText(pluralText);
 
     await otherRow.locator('[data-testid^="rm-remove-confirm-"]').click();
-    await expect(page.locator('tr', { hasText: roleName2 })).toHaveCount(0);
+    await expect(page.locator('li', { hasText: roleName2 })).toHaveCount(0);
     expect(await countPersonRoleSkillsForRole(roleId2)).toBe(0);
     roleId2 = ''; // already deleted; afterEach no-op
   });
@@ -349,8 +349,8 @@ test.describe('STORY-19: guard deletion of in-use roles and people (auth-gated)'
     await assignSkill(page, personId, roleId, 1);
 
     await page.goto('/pt-PT/admin/roles');
-    const row = page.locator('tr', { hasText: roleName });
-    const otherRow = page.locator('tr', { hasText: roleName2 });
+    const row = page.locator('li', { hasText: roleName });
+    const otherRow = page.locator('li', { hasText: roleName2 });
 
     // Start editing role2 (not in use, no confirm prompt of its own).
     await otherRow.locator('[data-testid^="rm-edit-"]').click();
