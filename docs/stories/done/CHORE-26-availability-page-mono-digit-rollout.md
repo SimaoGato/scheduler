@@ -2,7 +2,8 @@
 Epic: maintenance
 Priority: standard — visual-only, sequenced as part of the pre-EPIC-04 UI
 push the user explicitly requested
-Status: draft
+Status: done ✅
+PR: 62
 Depends on: CHORE-23 (tokens/fonts), CHORE-24 (shared pill-shape primitives)
 Related: CHORE-19 (existing availability page Card redesign, being extended
 here, not replaced), user-provided mockup in `App design refinement/`
