@@ -166,9 +166,9 @@
     "adminTitle": "{name}'s availability",
     "backToTeam": "Back to team",
     "summaryIntro": "In the next {total} Sundays:",
-    "summaryAvailableCount": "{count, plural, one {# available Sunday} other {# available Sundays}}",
-    "summaryBlockedCount": "{count, plural, one {# blocked Sunday} other {# blocked Sundays}}",
-    "summaryNextUnavailable": "Next unavailable Sunday: {date}",
+    "summaryAvailableCount": "{count, plural, one {<num>#</num> available Sunday} other {<num>#</num> available Sundays}}",
+    "summaryBlockedCount": "{count, plural, one {<num>#</num> blocked Sunday} other {<num>#</num> blocked Sundays}}",
+    "summaryNextUnavailable": "Next unavailable Sunday: <num>{date}</num>",
     "summaryNoUpcomingBlocks": "No unavailable Sundays in the next {total}."
   }
 }

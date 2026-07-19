@@ -179,15 +179,36 @@ export default function AvailabilityToggleList({
       <CardContent data-testid="availability-summary">
         <ul className="mb-4 flex flex-col gap-1 text-sm">
           <li className="text-xl font-bold">
-            {t('summaryAvailableCount', { count: availableCount })}
+            {t.rich('summaryAvailableCount', {
+              count: availableCount,
+              num: (chunks) => (
+                <span data-testid="availability-available-numeral" className="font-mono">
+                  {chunks}
+                </span>
+              ),
+            })}
           </li>
           <li className="text-xl font-bold">
-            {t('summaryBlockedCount', { count: blockedCount })}
+            {t.rich('summaryBlockedCount', {
+              count: blockedCount,
+              num: (chunks) => (
+                <span data-testid="availability-blocked-numeral" className="font-mono">
+                  {chunks}
+                </span>
+              ),
+            })}
           </li>
         </ul>
         {formattedNextUnavailable !== null ? (
           <p className="text-sm">
-            {t('summaryNextUnavailable', { date: formattedNextUnavailable })}
+            {t.rich('summaryNextUnavailable', {
+              date: formattedNextUnavailable,
+              num: (chunks) => (
+                <span data-testid="availability-next-blocked-date" className="font-mono font-medium">
+                  {chunks}
+                </span>
+              ),
+            })}
           </p>
         ) : (
           <p className="text-sm">
@@ -227,7 +248,7 @@ export default function AvailabilityToggleList({
                     isBlocked ? 'border-destructive bg-destructive/10' : 'hover:bg-accent'
                   }`}
                 >
-                  <span>{formattedDate}</span>
+                  <span className="font-mono">{formattedDate}</span>
                   <span
                     className={
                       isBlocked
