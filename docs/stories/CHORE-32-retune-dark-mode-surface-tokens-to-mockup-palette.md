@@ -2,7 +2,7 @@
 Epic: maintenance
 Priority: standard — affects every page's dark mode, found via user-reported
 visual comparison, not aesthetic taste
-Status: refined — ready for Challenge
+Status: implemented — ready for review
 Depends on: none (should land before/alongside CHORE-21/29/30/31 so those
 land against the correct final palette instead of the stale one)
 Related: CHORE-23 (design language foundation — deliberately left these
@@ -446,3 +446,62 @@ values were verified byte-for-byte against the live file; the conversion
 method was cross-validated against CHORE-28's already-shipped values; all
 dependent pairings named in AC2 were enumerated via grep and computed.
 Ready for Challenge.
+
+## Manual Verification (AC4)
+
+Performed against a real local Supabase instance (`supabase start`, test
+users seeded via `supabase/seed-test-users.mjs`) and a `npm run build` +
+`npm start` production server, using an ad-hoc Playwright script (not
+committed — throwaway QA tooling) reusing the `e2e-integration/fixtures.ts`
+`signInWithPassword` cookie-capture pattern to drive real logged-in sessions
+for both the admin and member test users. Dark mode was forced via
+`page.emulateMedia({ colorScheme: 'dark' })` before each `page.goto()` —
+next-themes' `defaultTheme="system"` blocking script is authoritative on a
+cold navigation and will override a `resolved-theme` cookie alone (CHORE-13
+note: the cookie is only authoritative for SSR paint / soft-navigation).
+
+- **Login** (`/pt-PT/login`, unauthenticated): confirmed. Card renders at the
+  new `--card` tone, visibly distinct from the `--header`-toned page backdrop
+  it sits on (this page uses `--header`, not `--background`, so it was never
+  the retune's target, but no unexpected interaction was found).
+- **Claim** (`/pt-PT/claim`, unauthenticated): redirects to `/login` as
+  expected (unauthenticated); rendered login card confirmed dark and legible.
+- **Dashboard** (`/`, admin view): confirmed. "Resumo da equipa" and "Acesso
+  rápido" cards render visibly lighter than the page background; the orange
+  `--brand` stat tile still reads clearly against both.
+- **Users** (`/admin/users`, the page that prompted the original triage
+  finding): confirmed. Table card is now visibly distinct from the page
+  background — no longer flat/undifferentiated.
+- **Team** (`/admin/people`): confirmed. Table rows and header row read
+  clearly against the new page background.
+- **Roles** (`/admin/roles`): confirmed. Same card/page separation as Team.
+- **Settings** (`/settings`): confirmed. Input/button/theme-toggle surfaces
+  render legibly against the new background.
+- **Manage hub** (`/admin/manage`): confirmed. Three link cards visibly
+  distinct from page background.
+- **Select dropdown popover elevation order** (Design decision 2 — the
+  `--popover` fix): confirmed via the "Ligar conta" picker on `/admin/people`.
+  The open dropdown now renders at the same tone as the card/row surface it
+  floats above, correctly reading as "above" the page — no more
+  darker-than-background inversion.
+- **Member Dashboard/Availability** (`/`, `/availability`, member view):
+  confirmed dark and legible, but both test accounts (`ci-admin`,
+  `ci-member`) are unlinked to a `people` row in this sandbox's seed data, so
+  only the "account not linked" empty state was visible — the member
+  availability-summary Card (STORY-30) and the Availability toggle-list page
+  content were **not** rendered/verified in this pass. Both use the same
+  `--card`/`--background` tokens already verified passing (Card UI
+  primitive's own contrast tests, `e2e/card-ui-primitive.spec.ts`) and the
+  same `Card` component confirmed visually correct on Dashboard/Users/Team
+  above, so this gap is judged low-risk, but flagging explicitly per the
+  task's instructions.
+- **Admin sub-pages** (`/admin/people/[id]/availability`,
+  `/admin/people/[id]/skills`): **not verified** — same root cause (no linked
+  person with a real `[id]` reachable from the seeded fixture data in this
+  pass). Same low-risk judgment as above (shared `Card`/token usage already
+  confirmed elsewhere).
+- **Border prominence in non-card contexts** (Challenge WARNING #3 — table
+  dividers, input outlines): reviewed across all captured screenshots (Team
+  table row dividers, Roles table, Users table, Settings inputs). Judged
+  reasonable, not overemphasized — borders read as subtle separators, not a
+  new distracting visual layer. No follow-up needed.
