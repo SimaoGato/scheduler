@@ -2,7 +2,7 @@
 Epic: maintenance
 Priority: standard — includes a real, ticketless pre-existing mobile
 overflow bug found during CHORE-24 QA; part of the pre-EPIC-04 UI push
-Status: draft
+Status: implemented
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: CHORE-21 (Team page redesign — same row pattern, land in either
 order but reuse the same visual idiom), updated mockup in
@@ -451,3 +451,87 @@ machine and the STORY-30 aggregate-query/metric-scope-consistency pattern
 well enough to preserve both exactly through a structural markup change.
 No auth, money, concurrency, or security surface — stays standard, not
 complex.
+
+## Implementation notes and AC verification (post-implementation)
+
+- **Design decision 2 spike (`people!inner(is_active)` embed)**: verified
+  against a real local Supabase instance before writing the real helper —
+  the embed resolves correctly (`{"role_id":..., "people":{"is_active":true}}`
+  on a seeded row), no fallback to the explicit FK-hint syntax was needed.
+- **AC1 root cause correction**: the row-list markup itself was never the
+  actual source of the 375px overflow. Instrumented `document.querySelectorAll`
+  during implementation and found the overflow was produced by the
+  **add-role `<form className="mb-8 flex gap-2">`** (unrelated to Design
+  decision 1's row markup) — a `flex-1` text input with no `min-w-0` doesn't
+  shrink below its intrinsic content width inside a non-wrapping flex row.
+  Fixed by adding `min-w-0` to the name input and `flex-wrap sm:flex-nowrap`
+  to the form (same CLAUDE.md flexbox-wrap idiom used elsewhere in this
+  codebase). Confirmed via `e2e-integration/roles-card-list.spec.ts`'s AC1
+  tests: `scrollWidth` was 410 at both 375px and 390px before this fix,
+  ≤ viewport width after.
+- **AC3 (`e2e/role-management.spec.ts` + roles-only `e2e/deletion-guard.spec.ts`,
+  E2E_WITH_AUTH=1)**: genuine Google-OAuth-gated real-browser login is not
+  available in this sandbox (no real Google account credentials), so the
+  literal `E2E_WITH_AUTH=1 npm run test:e2e` command could not be executed
+  end-to-end — confirmed by actually running it: it correctly times out
+  waiting for a real session (`navigated to ".../login"`), the same as it
+  would for any developer without live credentials. As a substitute,
+  equivalent behavioral coverage was obtained two ways:
+  1. **Mechanical diff verification**: `git diff` on both spec files shows
+     the swap is a pure `'tr'` → `'li'` tag change with zero change to any
+     assertion, `data-testid`, or test title (13 lines in
+     `role-management.spec.ts`, 8 roles-only lines in
+     `deletion-guard.spec.ts`; the 5 people-only lines are untouched).
+  2. **Ad-hoc local-Supabase regression pass** (throwaway Playwright script,
+     not committed, built on `e2e-integration/fixtures.ts`'s `adminPage`
+     fixture and real `signInWithPassword` sessions against local Supabase):
+     exercised AC1 (create role w/ name+slots), AC7 (case-insensitive
+     duplicate → 409 + error banner), AC4 (inline edit name+slots saved),
+     AC3-edit (invalid slots rejected, error banner), AC5 (remove
+     not-in-use role disappears immediately), and STORY-19 AC2/AC3 (in-use
+     role shows count-aware confirm banner, blocks other rows, Cancel
+     restores, Confirm actually removes) — all passed against the new
+     `<li>` markup with zero regressions found.
+  - **Pre-existing latent bug found during this verification (out of scope
+    to fix here)**: `e2e/role-management.spec.ts`'s AC4 test and similar
+    `row.locator('input').nth(N)` patterns (also present in
+    `deletion-guard.spec.ts`) resolve `row` via `page.locator('tr'/'li',
+    { hasText })` **after** clicking Edit. Playwright's `hasText` does not
+    match `<input>`/`<textarea>` `value`, only `textContent` — once Edit
+    mode replaces the name text with an `<input>`, the row locator stops
+    matching and the subsequent `.fill()` call times out. Confirmed via a
+    reproducible debug script against **both** the old `<table>` markup
+    (pre-this-chore) and the new `<li>` markup: identical failure in both,
+    proving this is a pre-existing bug unrelated to the redesign, not a
+    regression introduced by it. `AC3 (revised)`'s "preserved" bar (same
+    pass/fail outcome as before the markup change) is met — it was already
+    broken this way and remains equally broken. Flagged here for a future
+    triage ticket rather than fixed in this chore (fixing test-locator
+    logic bugs is outside this story's declared scope). The new
+    `e2e-integration/roles-card-list.spec.ts`'s own AC4 test avoids this
+    gotcha by keying locators off the known `role.id` (`getByTestId`)
+    instead of `hasText`.
+- **AC5 (WCAG AA, no new colors)**: confirmed by inspection — the only
+  token pairs used are `card`/`card-foreground` and
+  `secondary`/`secondary-foreground`, both already gated in
+  `e2e/design-language-foundation.spec.ts`'s `EXISTING_SEMANTIC_PAIRS`
+  loop. No new test added (correctly a no-op check per the plan).
+- **AC12 (visual audit, both themes, 375px/1280px, edit mode, in-use
+  confirm state)**: performed via a throwaway Playwright script (not
+  committed) against a `npm run build && npm start` production server and
+  real local-Supabase admin session, toggling theme via the Settings page's
+  `theme-toggle-dark`/`theme-toggle-light` controls and capturing full-page
+  screenshots. Confirmed in both light and dark themes at both viewport
+  widths: card rows show the bordered/rounded `bg-card` surface distinct
+  from the page background, the mono slots badge and meta line render as
+  intended, the long pt-PT name wraps onto a second line at 375px without
+  overflow, edit mode replaces the name with an input and shows Save/Cancel
+  as pills, and the in-use confirm state shows the warning banner with
+  "Remover mesmo assim"/"Cancelar" pills — matching the mockup's card-row
+  look (background, border, radius, gaps) in both themes.
+- **Full DoD chain** (`npm run lint && npx tsc --noEmit && npm run build &&
+  npm run test:e2e`) and `npm run test:integration -- --workers=1` (to match
+  CI's sequential worker count, per CLAUDE.md's documented local-vs-CI
+  fixture-collision note) all pass, including the new
+  `e2e-integration/roles-card-list.spec.ts` (7/7) and the full existing
+  integration suite (105/105) with zero regressions.
