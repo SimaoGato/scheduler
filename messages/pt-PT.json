@@ -166,9 +166,9 @@
     "adminTitle": "Disponibilidade de {name}",
     "backToTeam": "Voltar à equipa",
     "summaryIntro": "Nos próximos {total} domingos:",
-    "summaryAvailableCount": "{count, plural, one {# domingo disponível} other {# domingos disponíveis}}",
-    "summaryBlockedCount": "{count, plural, one {# domingo bloqueado} other {# domingos bloqueados}}",
-    "summaryNextUnavailable": "Próximo domingo indisponível: {date}",
+    "summaryAvailableCount": "{count, plural, one {<num>#</num> domingo disponível} other {<num>#</num> domingos disponíveis}}",
+    "summaryBlockedCount": "{count, plural, one {<num>#</num> domingo bloqueado} other {<num>#</num> domingos bloqueados}}",
+    "summaryNextUnavailable": "Próximo domingo indisponível: <num>{date}</num>",
     "summaryNoUpcomingBlocks": "Nenhum domingo indisponível nos próximos {total}."
   }
 }
