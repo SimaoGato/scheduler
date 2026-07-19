@@ -63,11 +63,16 @@ function ptMessages(): Record<string, Record<string, string>> {
 
 // Renders a `{count, plural, one {...} other {...}}`-only ICU template for a
 // given count, substituting `#` with the count. Mirrored from home.spec.ts.
+//
+// CHORE-26: both plural branches are now wrapped in `<num>...</num>` (the
+// t.rich() render-prop tag consumed by the real component to apply
+// font-mono) — strip the tags before substituting `#`, since this helper
+// does its own raw-string substitution rather than going through t.rich().
 function renderPlural(template: string, count: number): string {
   const match = template.match(/^\{count, plural, one \{([^}]*)\} other \{([^}]*)\}\}$/)
   if (!match) throw new Error(`template is not a bare ICU plural block: ${template}`)
   const branch = count === 1 ? match[1] : match[2]
-  return branch.replace('#', String(count))
+  return branch.replace(/<\/?num>/g, '').replace('#', String(count))
 }
 
 function formatPtDate(dateStr: string): string {
@@ -190,6 +195,12 @@ test.describe('STORY-26: availability toggle list (Member, linked person, no blo
     }).format(firstSundayDate)
 
     await expect(buttons.first()).toContainText(expectedText)
+
+    // CHORE-26 AC2: the row-date span uses the font-mono token.
+    await expect(buttons.first().locator('span').first()).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
   })
 
   test('AC2: tapping an available Sunday blocks it; tapping again unblocks it', async ({
@@ -466,6 +477,16 @@ test.describe('CHORE-19: AC1 availability summary Card', () => {
     await expect(card).toContainText(
       messages.Availability.summaryIntro.replace('{total}', '12')
     )
+
+    // CHORE-26 AC1: the available/blocked count numerals use font-mono.
+    await expect(memberPage.getByTestId('availability-available-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
+    await expect(memberPage.getByTestId('availability-blocked-numeral')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
+    )
   })
 
   test('two blocked dates: shows 10 available / 2 blocked and the earliest next-unavailable date', async ({
@@ -491,13 +512,22 @@ test.describe('CHORE-19: AC1 availability summary Card', () => {
     await expect(summary).toContainText(renderPlural(messages.Availability.summaryAvailableCount, 10))
     await expect(summary).toContainText(renderPlural(messages.Availability.summaryBlockedCount, 2))
 
-    const expectedNextUnavailableText = messages.Availability.summaryNextUnavailable.replace(
-      '{date}',
-      formatPtDate(earlier)
-    )
+    // CHORE-26: summaryNextUnavailable's {date} placeholder is now wrapped in
+    // <num>...</num> in the source template — strip the tags before
+    // substituting, since this comparison is built by hand rather than
+    // through t.rich().
+    const expectedNextUnavailableText = messages.Availability.summaryNextUnavailable
+      .replace(/<\/?num>/g, '')
+      .replace('{date}', formatPtDate(earlier))
     await expect(summary).toContainText(expectedNextUnavailableText)
     await expect(summary).not.toContainText(
       messages.Availability.summaryNoUpcomingBlocks.replace('{total}', '12')
+    )
+
+    // CHORE-26 AC3: the next-blocked-Sunday date value uses font-mono.
+    await expect(memberPage.getByTestId('availability-next-blocked-date')).toHaveCSS(
+      'font-family',
+      /JetBrains Mono/
     )
   })
 
@@ -622,5 +652,11 @@ test.describe('CHORE-19: AC2/AC5 blocked-row badge at 375px', () => {
     const stateLabel = blockedButton.locator('span').nth(1)
     await expect(stateLabel).toHaveClass(/bg-destructive/)
     await expect(stateLabel).toHaveClass(/text-destructive-foreground/)
+
+    // CHORE-26 AC2/AC4: the badge span must NOT pick up the font-mono
+    // treatment on an actual blocked row (not just the available-state
+    // default) — proves the numeral/date-vs-badge split holds in the
+    // solid-fill blocked state too.
+    await expect(stateLabel).not.toHaveCSS('font-family', /JetBrains Mono/)
   })
 })
