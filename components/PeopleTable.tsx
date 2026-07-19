@@ -260,7 +260,7 @@ export default function PeopleTable({ initialPeople, allUsers, initiallyLinkedUs
         <div
           data-testid="pm-error"
           aria-live="polite"
-          className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="mb-4 rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
         >
           {errorMessage}
         </div>

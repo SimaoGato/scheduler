@@ -87,7 +87,7 @@ export default function ClaimPersonForm({ people }: Props) {
         <div
           data-testid="claim-error"
           aria-live="polite"
-          className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="rounded-md bg-destructive px-4 py-3 text-sm text-destructive-foreground"
         >
           {errorMessage}
         </div>
