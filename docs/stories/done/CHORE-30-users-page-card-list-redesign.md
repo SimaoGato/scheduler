@@ -1,7 +1,8 @@
 # CHORE-30: Redesign Users page as avatar card-list rows with badges
 Epic: maintenance
 Priority: standard — part of the pre-EPIC-04 UI push
-Status: implemented
+Status: done ✅
+PR: 65
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: CHORE-21 (Team page redesign — same row idiom), CHORE-29 (Roles
 page redesign — same row idiom), updated mockup in
