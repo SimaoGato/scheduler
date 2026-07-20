@@ -20,9 +20,6 @@
   },
   "UserManagement": {
     "title": "Gestão de utilizadores",
-    "columnName": "Nome",
-    "columnEmail": "E-mail",
-    "columnRole": "Função",
     "roleAdmin": "Administrador",
     "roleMember": "Membro",
     "promoteButton": "Promover a Administrador",
