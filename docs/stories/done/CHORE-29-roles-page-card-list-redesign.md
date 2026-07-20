@@ -2,7 +2,7 @@
 Epic: maintenance
 Priority: standard — includes a real, ticketless pre-existing mobile
 overflow bug found during CHORE-24 QA; part of the pre-EPIC-04 UI push
-Status: implemented
+Status: Done
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: CHORE-21 (Team page redesign — same row pattern, land in either
 order but reuse the same visual idiom), updated mockup in
@@ -535,3 +535,64 @@ complex.
   fixture-collision note) all pass, including the new
   `e2e-integration/roles-card-list.spec.ts` (7/7) and the full existing
   integration suite (105/105) with zero regressions.
+
+### Review / Rework (post-implementation, PR #64)
+
+- **Review cycle 1 (3 parallel reviewers) — WARNING**: the row's badge +
+  Edit/Remove actions area is a nested `flex-wrap` container inside the
+  row's own `flex-wrap` (the CLAUDE.md BUGFIX-06 "nested independent
+  flex-wrap" trap). Investigated flattening (BUGFIX-06's primary fix
+  pattern) — real-browser-rendered at 375px with a long pt-PT role name,
+  it regressed badly (the name block lost its grouped width budget once
+  badge/buttons became outer-row siblings, wrapping the name across 6+
+  lines). Kept the nested grouping instead, with an inline comment
+  documenting why, plus committed 375px/390px screenshots as evidence.
+  Also fixed all SUGGESTION-level findings from the same review. Landed
+  as commit `5e05bdd`. All-green CI at this point (`lint-build-test`,
+  `Local Supabase integration tests`).
+- **Focused re-review cycle 2 — CRITICAL**: a follow-up focused re-review
+  of that same nested-wrap fix found the grouping wrapper was also marked
+  `flex-shrink-0`, which fixes its width to its *unwrapped* max-content
+  size before the outer flex algorithm considers shrinking it — so the
+  wrapper's own internal `flex-wrap` never got a chance to engage. Passed
+  unnoticed in the default row state (badge+Editar+Remover, ~200px) but
+  overflowed at both 375px and 390px in the confirm-remove state
+  (badge+"Remover mesmo assim"+"Cancelar", ~468px combined) — a state the
+  original AC1 test never exercised (it only checked the default render).
+  **Fix**: removed `flex-shrink-0` from the wrapper (default `flex-shrink`
+  of 1 is sufficient once `flex-wrap` is present), and extended AC1's e2e
+  test to seed an in-use role (409 `role_in_use` is the only path that
+  reaches the confirm-remove state), click into it, and re-assert no
+  horizontal overflow at both widths. Verified locally: lint/tsc/build
+  clean, full `roles-card-list.spec.ts` suite (8/8), full smoke suite
+  (146 passed, 0 failed), and a real-browser screenshot confirming the
+  badge and buttons now wrap onto separate lines instead of overflowing.
+  Landed as commit `2646b4b`; CI green on both jobs. See CLAUDE.md's
+  CHORE-29 Tailwind/flexbox note for the generalized lesson (`flex-shrink-0`
+  defeating a nested wrapper's own `flex-wrap`, and the "check overflow in
+  every interactive state, not just default render" test-coverage rule).
+- **Retry budget**: this consumed both of the 2 allowed post-Review fix
+  cycles (CLAUDE.md "Retry budget"). No CRITICAL/WARNING findings remain
+  open as of commit `2646b4b`.
+
+### QA (post-Rework, against `npm run build && npm start` + local Supabase)
+
+Golden-path visual pass across both themes, real admin session
+(`ci-admin@example.test`), production build (not dev mode, to avoid the
+pre-existing/unrelated dev-mode Turbopack CSS-scanner quirk documented in
+`app/[locale]/(app)/layout.tsx`'s `calc()` comment):
+- **Desktop (1280px), light and dark theme**: card row renders with the
+  bordered/rounded `bg-card` surface, mono slots badge, and pill Edit/
+  Remove buttons, matching the mockup in both themes.
+- **Mobile (375px), dark theme**: no horizontal overflow; badge and
+  buttons wrap cleanly under the role name.
+- **Confirm-remove state (375px/390px, light theme, long pt-PT names)**:
+  re-verified with the `flex-shrink-0` fix in place — badge wraps to its
+  own line, "Remover mesmo assim"/"Cancelar" wrap to the next, no
+  overflow (screenshots: `test-results-integration/chore-29-roles-card-list-confirm-{375,390}.png`,
+  gitignored, not committed — reproducible via
+  `roles-card-list.spec.ts`'s AC1 tests).
+- Edit mode and default remove flow re-confirmed working (Save/Cancel
+  pills, immediate removal for not-in-use roles) — unchanged from the
+  original AC12 visual audit above, no new regressions from the Rework
+  fixes.
