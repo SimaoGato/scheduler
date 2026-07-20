@@ -20,9 +20,6 @@
   },
   "UserManagement": {
     "title": "User management",
-    "columnName": "Name",
-    "columnEmail": "Email",
-    "columnRole": "Role",
     "roleAdmin": "Administrator",
     "roleMember": "Member",
     "promoteButton": "Promote to Administrator",
