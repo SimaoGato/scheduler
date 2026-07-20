@@ -137,7 +137,7 @@ test('STORY-08 AC1: own row hides the promote/demote button', async ({ page }) =
   await page.goto('/pt-PT/admin/users');
   const self = await findSelf(page);
 
-  const ownRow = page.locator('tbody tr', { hasText: self.email });
+  const ownRow = page.locator('[data-testid="um-list"] li', { hasText: self.email });
   await expect(ownRow).toHaveCount(1);
   await expect(
     ownRow.locator('[data-testid^="um-promote-"], [data-testid^="um-demote-"]')

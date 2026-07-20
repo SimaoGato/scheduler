@@ -222,6 +222,11 @@ const EXISTING_SEMANTIC_PAIRS: Array<[string, string]> = [
   ['accent', 'accent-foreground'],
   ['destructive', 'destructive-foreground'],
   ['warning', 'warning-foreground'],
+  // CHORE-30: the admin role badge on the Utilizadores page is this token
+  // pair's first live DOM consumer (CHORE-28 added it as forward
+  // infrastructure with no consumer yet). Verified 16.38:1 (light) / 16.12:1
+  // (dark) — see CHORE-28's own comment in app/globals.css.
+  ['header', 'header-foreground'],
 ];
 
 for (const [bg, fg] of EXISTING_SEMANTIC_PAIRS) {
