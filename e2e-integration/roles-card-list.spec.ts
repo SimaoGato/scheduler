@@ -97,6 +97,7 @@ const WIDTHS = [375, 390]
 
 test.describe('CHORE-29: AC1 no horizontal overflow with long role names', () => {
   let roleIds: string[] = []
+  let confirmPersonId: string
 
   test.beforeEach(async ({}, testInfo) => {
     const longNames = [
@@ -109,9 +110,19 @@ test.describe('CHORE-29: AC1 no horizontal overflow with long role names', () =>
       const role = await createRole(name, 2)
       roleIds.push(role.id)
     }
+
+    // Role removal only enters the confirm-remove state (STORY-19) when the
+    // role is "in use" (409 role_in_use) — a role with zero assigned people
+    // deletes immediately on first click with no confirm UI. Assign a
+    // fixture person to roleIds[0] so the confirm-remove overflow check
+    // below actually reaches that state.
+    const person = await createPerson(`CHORE-29 AC1 Confirm Person (w${testInfo.workerIndex})`, true)
+    confirmPersonId = person.id
+    await assignSkill(confirmPersonId, roleIds[0], 1)
   })
 
   test.afterEach(async () => {
+    await deletePerson(confirmPersonId)
     for (const id of roleIds) await deleteRole(id)
   })
 
@@ -136,6 +147,25 @@ test.describe('CHORE-29: AC1 no horizontal overflow with long role names', () =>
       // e2e-integration/header-nav-mobile-overflow.spec.ts (BUGFIX-06).
       await adminPage.screenshot({
         path: `test-results-integration/chore-29-roles-card-list-${width}.png`,
+        fullPage: true,
+      })
+
+      // PR #64 re-review cycle 2 CRITICAL: the confirm-remove state
+      // (badge + "Remover mesmo assim" + "Cancelar") is wider than the
+      // default state and previously overflowed at 375px/390px because the
+      // actions wrapper was `flex-shrink-0` — its own internal flex-wrap
+      // never got a chance to engage. Re-assert no overflow after entering
+      // that state, not just the default render.
+      await adminPage.getByTestId(`rm-remove-${roleIds[0]}`).click()
+      await expect(adminPage.getByTestId(`rm-remove-confirm-${roleIds[0]}`)).toBeVisible()
+
+      const confirmScrollWidth = await adminPage.evaluate(
+        () => document.documentElement.scrollWidth,
+      )
+      expect(confirmScrollWidth).toBeLessThanOrEqual(width)
+
+      await adminPage.screenshot({
+        path: `test-results-integration/chore-29-roles-card-list-confirm-${width}.png`,
         fullPage: true,
       })
     })
