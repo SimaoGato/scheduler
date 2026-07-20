@@ -34,29 +34,37 @@ interface FixtureUser {
   email: string
 }
 
-async function createUser(
-  id: string,
-  email: string,
-  displayName: string,
-  role: 'admin' | 'member'
-): Promise<FixtureUser> {
+// Creates only the Supabase Auth user, letting Supabase generate the id and
+// reading it back from the Admin API response — same pattern as
+// e2e-integration/roles-card-list.spec.ts's createRole/createPerson, instead
+// of hand-rolling a `${10 + workerIndex}`-style UUID scheme (CHORE-30 review
+// finding #3), which is unnecessary complexity and silently breaks once
+// workerIndex pushes the interpolated number past 2 digits.
+async function createAuthUser(email: string): Promise<FixtureUser> {
   const client = serviceClient()
-  const { error: authError } = await client.auth.admin.createUser({
-    id,
+  const { data, error } = await client.auth.admin.createUser({
     email,
     password: TEST_PASSWORD,
     email_confirm: true,
   })
-  if (authError) throw new Error(`failed to create fixture auth user: ${JSON.stringify(authError)}`)
+  if (error || !data.user) {
+    throw new Error(`failed to create fixture auth user: ${JSON.stringify(error)}`)
+  }
+  return { id: data.user.id, email }
+}
 
-  const { error: upsertError } = await client
+async function upsertUserRow(
+  id: string,
+  email: string,
+  displayName: string,
+  role: 'admin' | 'member'
+): Promise<void> {
+  const { error } = await serviceClient()
     .from('users')
     .upsert({ id, email, display_name: displayName, role })
-  if (upsertError) {
-    throw new Error(`failed to upsert fixture public.users row: ${JSON.stringify(upsertError)}`)
+  if (error) {
+    throw new Error(`failed to upsert fixture public.users row: ${JSON.stringify(error)}`)
   }
-
-  return { id, email }
 }
 
 async function deleteUser(id: string): Promise<void> {
@@ -90,6 +98,12 @@ test.describe('CHORE-30: AC1 card row content (avatar, name, email, role badge)'
     // Avatar initials derived from "CI Admin" -> "CA".
     const avatar = row.locator('span[aria-hidden="true"]').first()
     await expect(avatar).toHaveText('CA')
+    // AC1: avatar carries the mono font class.
+    await expect(avatar).toHaveClass(/font-mono/)
+
+    // AC1: email text carries the mono font class.
+    const emailText = row.locator('p', { hasText: ADMIN_EMAIL })
+    await expect(emailText).toHaveClass(/font-mono/)
   })
 
   test('member row renders outline role badge', async ({ adminPage }) => {
@@ -107,6 +121,16 @@ test.describe('CHORE-30: AC1 card row content (avatar, name, email, role badge)'
     await expect(badge).toHaveClass(/border/)
     await expect(badge).toHaveClass(/text-muted-foreground/)
     await expect(badge).not.toHaveClass(/bg-header/)
+
+    // Avatar initials derived from "CI Member" -> "CM" (symmetry with the
+    // admin-row assertion above; CHORE-30 review suggestion #6).
+    const avatar = row.locator('span[aria-hidden="true"]').first()
+    await expect(avatar).toHaveText('CM')
+    // AC1: avatar and email text both carry the mono font class.
+    await expect(avatar).toHaveClass(/font-mono/)
+
+    const emailText = row.locator('p', { hasText: MEMBER_EMAIL })
+    await expect(emailText).toHaveClass(/font-mono/)
   })
 })
 
@@ -116,18 +140,26 @@ test.describe('CHORE-30: AC1 card row content (avatar, name, email, role badge)'
 
 test.describe('CHORE-30: AC2 promote/demote flow preserved', () => {
   let tempUser: FixtureUser
+  // Captured independently of tempUser/the rest of beforeEach completing, so
+  // afterEach can still clean up the auth user even if a later step (e.g.
+  // the public.users upsert) throws (CHORE-30 review finding #2).
+  let tempUserId: string | undefined
 
   test.beforeEach(async ({}, testInfo) => {
-    tempUser = await createUser(
-      `00000000-0000-4000-9000-0000000000${String(10 + testInfo.workerIndex).padStart(2, '0')}`,
-      `chore-30-promote-w${testInfo.workerIndex}@example.test`,
+    tempUserId = undefined
+    const authUser = await createAuthUser(`chore-30-promote-w${testInfo.workerIndex}@example.test`)
+    tempUserId = authUser.id
+    await upsertUserRow(
+      authUser.id,
+      authUser.email,
       `CHORE-30 Promote Fixture (w${testInfo.workerIndex})`,
       'member'
     )
+    tempUser = authUser
   })
 
   test.afterEach(async () => {
-    await deleteUser(tempUser.id)
+    if (tempUserId) await deleteUser(tempUserId)
   })
 
   test('clicking um-promote flips the row to um-demote (admin badge)', async ({ adminPage }) => {
@@ -156,18 +188,28 @@ const WIDTHS = [375, 390]
 
 test.describe('CHORE-30: AC3 no horizontal overflow, truncation engages; AC4 tap targets', () => {
   let longUser: FixtureUser
+  // Captured independently of longUser/the rest of beforeEach completing, so
+  // afterEach can still clean up the auth user even if a later step (e.g.
+  // the public.users upsert) throws (CHORE-30 review finding #2).
+  let longUserId: string | undefined
 
   test.beforeEach(async ({}, testInfo) => {
-    longUser = await createUser(
-      `00000000-0000-4000-9000-0000000000${String(50 + testInfo.workerIndex).padStart(2, '0')}`,
-      `chore.30.very.long.email.address.fixture.w${testInfo.workerIndex}@some-extremely-long-example-domain.example.test`,
+    longUserId = undefined
+    const authUser = await createAuthUser(
+      `chore.30.very.long.email.address.fixture.w${testInfo.workerIndex}@some-extremely-long-example-domain.example.test`
+    )
+    longUserId = authUser.id
+    await upsertUserRow(
+      authUser.id,
+      authUser.email,
       `Maria da Conceição Fernandes de Sousa e Silva Nogueira (w${testInfo.workerIndex})`,
       'member'
     )
+    longUser = authUser
   })
 
   test.afterEach(async () => {
-    await deleteUser(longUser.id)
+    if (longUserId) await deleteUser(longUserId)
   })
 
   for (const width of WIDTHS) {
