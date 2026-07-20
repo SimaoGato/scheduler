@@ -9,8 +9,17 @@ interface Props {
   currentUserId: string
 }
 
+// CHORE-30: co-located pure helper for the avatar's initials, same "small
+// pure helper lives next to its one consumer" convention as RoleTable.tsx's
+// isValidSlotsInput. Takes the first letters of the first two words.
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return words.slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('')
+}
+
 export default function UserTable({ initialUsers, currentUserId }: Props) {
   const t = useTranslations('UserManagement')
+  const tAuth = useTranslations('Auth')
   const [rows, setRows] = useState<UserRow[]>(initialUsers)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -58,57 +67,70 @@ export default function UserTable({ initialUsers, currentUserId }: Props) {
           {errorMessage}
         </div>
       )}
-      <div className="overflow-x-auto rounded-md border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">{t('columnName')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('columnEmail')}</th>
-              <th className="px-4 py-3 text-left font-medium">{t('columnRole')}</th>
-              {/* Shrink-to-fit trailing column: w-[1%] + whitespace-nowrap makes
-                  auto-layout give this column only the width its content needs,
-                  so the other (unconstrained) columns absorb the remaining
-                  width and this column stays pinned to the table's right edge. */}
-              <th className="w-[1%] whitespace-nowrap px-4 py-3 text-right font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((user) => {
-              const isLoading = loadingId === user.id
-              return (
-                <tr key={user.id} className="border-b last:border-0 hover:bg-muted/25">
-                  <td className="px-4 py-3">{user.display_name ?? '—'}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
-                  <td className="px-4 py-3">
-                    {user.role === 'admin' ? t('roleAdmin') : t('roleMember')}
-                  </td>
-                  <td className="w-[1%] whitespace-nowrap px-4 py-3 text-right">
-                    {user.id === currentUserId ? null : user.role === 'member' ? (
-                      <button
-                        data-testid={`um-promote-${user.id}`}
-                        onClick={() => handleRoleChange(user.id, 'admin')}
-                        disabled={isLoading}
-                        className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isLoading ? t('actionLoading') : t('promoteButton')}
-                      </button>
-                    ) : (
-                      <button
-                        data-testid={`um-demote-${user.id}`}
-                        onClick={() => handleRoleChange(user.id, 'member')}
-                        disabled={isLoading}
-                        className="min-h-[44px] rounded-md border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isLoading ? t('actionLoading') : t('demoteButton')}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Card-row list — CHORE-30, same idiom as CHORE-29's RoleTable.tsx.
+          The right-hand group (badge + button) is intentionally nested but
+          NOT flex-shrink-0 (CHORE-29's landmine/fix, see CLAUDE.md). */}
+      <ul data-testid="um-list" className="flex flex-col gap-2.5">
+        {rows.map((user) => {
+          const isLoading = loadingId === user.id
+          // Name text keeps today's exact behavior unchanged (Design decision
+          // 2, reverted after Challenge cycle 1): only the avatar's initials
+          // computation falls back to Auth.userFallback when display_name is
+          // null/blank.
+          const nameText = user.display_name ?? '—'
+          const initialsSource =
+            (user.display_name ?? '').trim() !== '' ? user.display_name! : tAuth('userFallback')
+          const initials = getInitials(initialsSource)
+          const roleBadgeClass =
+            user.role === 'admin'
+              ? 'rounded-full bg-header px-2 py-0.5 text-xs font-mono font-semibold text-header-foreground'
+              : 'rounded-full border px-2 py-0.5 text-xs font-mono font-semibold text-muted-foreground'
+
+          return (
+            <li
+              key={user.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3.5 text-card-foreground transition-colors hover:bg-muted/25"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-primary-foreground"
+                >
+                  {initials}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{nameText}</p>
+                  <p className="truncate font-mono text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={roleBadgeClass}>
+                  {user.role === 'admin' ? t('roleAdmin') : t('roleMember')}
+                </span>
+                {user.id === currentUserId ? null : user.role === 'member' ? (
+                  <button
+                    data-testid={`um-promote-${user.id}`}
+                    onClick={() => handleRoleChange(user.id, 'admin')}
+                    disabled={isLoading}
+                    className="min-h-[44px] rounded-full border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoading ? t('actionLoading') : t('promoteButton')}
+                  </button>
+                ) : (
+                  <button
+                    data-testid={`um-demote-${user.id}`}
+                    onClick={() => handleRoleChange(user.id, 'member')}
+                    disabled={isLoading}
+                    className="min-h-[44px] rounded-full border px-3 text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isLoading ? t('actionLoading') : t('demoteButton')}
+                  </button>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
