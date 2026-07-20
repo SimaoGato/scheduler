@@ -195,6 +195,14 @@ test('AC1b: --brand-foreground on --brand meets WCAG AA (>=4.5:1) in both themes
 // solid pairing, so it is excluded from the strict loop below and instead
 // pinned here (not gated at 4.5) so a future accidental change is still
 // caught, without blocking this unrelated chore on pre-existing debt.
+//
+// CHORE-30 update: UserTable.tsx's card-row markup now uses
+// `hover:bg-muted/25` (same idiom as RoleTable.tsx's row hover state), not
+// `bg-muted/50` — the old `<thead>` that used `bg-muted/50` was removed
+// along with the rest of the <table> markup. The only remaining
+// `bg-muted/50` usages are PeopleTable.tsx's `<thead>` row and the
+// login/claim layout shells; the claim above (no live solid-pairing
+// consumer) still holds.
 test('AC2 note: --muted-foreground on solid --muted is pre-existing, below-AA debt (pinned, not gated — see comment)', () => {
   const css = readFileSync(GLOBALS_CSS_PATH, 'utf8');
   const rootBlock = extractThemeBlock(css, ':root');
