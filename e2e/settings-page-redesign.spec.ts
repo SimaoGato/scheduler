@@ -13,8 +13,10 @@
  *       renders").
  *     - AC2: the three preference rows render with translated titles inside
  *       the preferences card, and a computed-style check proves divide-y
- *       actually engaged (non-zero border-top on the 2nd/3rd row) — not
- *       just visually eyeballed.
+ *       actually engaged (non-zero border-bottom on the 1st/2nd row, zero on
+ *       the last row — this repo's Tailwind v4 divide-y applies
+ *       border-bottom-width to all-but-last child, not border-top-width to
+ *       all-but-first as in Tailwind v3) — not just visually eyeballed.
  *     - AC3: the sign-out button performs the exact STORY-15 marker-cookie
  *       flow (mirrors signout-instant-nav.spec.ts's clickSignOut pattern),
  *       renders full-width with a >=44px tap target.
@@ -82,18 +84,26 @@ test.describe('CHORE-31: Settings page redesign', () => {
     await expect(card.getByRole('heading', { name: 'Idioma', exact: true })).toBeVisible();
     await expect(card.getByRole('heading', { name: 'Tema', exact: true })).toBeVisible();
 
-    // Lightweight computed-style check that divide-y actually engaged: the
-    // 2nd and 3rd row each have a non-zero border-top width, proving
-    // Tailwind's divide-y utility is applied, not just eyeballed.
+    // Lightweight computed-style check that divide-y actually engaged. This
+    // repo's Tailwind v4 compiles `divide-y` with `--tw-divide-y-reverse: 0`,
+    // which applies border-bottom-width to all-but-last child (not
+    // border-top-width to all-but-first, as in Tailwind v3) — verified via
+    // real-browser computed styles during PR #66 review. So the 1st and 2nd
+    // row each have a non-zero border-bottom width (the trailing divider),
+    // and the last row has none.
     const rows = card.locator('> div');
     const rowCount = await rows.count();
     expect(rowCount).toBe(3);
-    for (let i = 1; i < rowCount; i += 1) {
-      const borderTopWidth = await rows.nth(i).evaluate(
-        (el) => window.getComputedStyle(el).borderTopWidth
+    for (let i = 0; i < rowCount - 1; i += 1) {
+      const borderBottomWidth = await rows.nth(i).evaluate(
+        (el) => window.getComputedStyle(el).borderBottomWidth
       );
-      expect(parseFloat(borderTopWidth)).toBeGreaterThan(0);
+      expect(parseFloat(borderBottomWidth)).toBeGreaterThan(0);
     }
+    const lastBorderBottomWidth = await rows.nth(rowCount - 1).evaluate(
+      (el) => window.getComputedStyle(el).borderBottomWidth
+    );
+    expect(parseFloat(lastBorderBottomWidth)).toBe(0);
   });
 
   test('AC3: sign-out button performs the marker-cookie flow, full-width, >=44px', async ({
