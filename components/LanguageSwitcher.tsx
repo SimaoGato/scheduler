@@ -10,6 +10,11 @@ const LOCALE_LABELS: Record<string, string> = { 'pt-PT': 'PT', en: 'EN' };
  * LanguageSwitcher — settings-page control to switch between pt-PT and en
  * (CHORE-06). Renders on /[locale]/settings only (see story's "Placement
  * update"); not surfaced in AppHeader/AppNav/UserWidgetMenu.
+ *
+ * CHORE-31: no longer renders its own <section>/<h2> title wrapper —
+ * SettingsRow (the caller) now supplies the row's title/description. This
+ * component's only rendered output is the control itself; testids/aria-labels
+ * on the two chips are unchanged.
  */
 export default function LanguageSwitcher() {
   const locale = useLocale();
@@ -20,28 +25,23 @@ export default function LanguageSwitcher() {
   const otherLocaleLabel = LOCALE_LABELS[otherLocale] ?? otherLocale;
 
   return (
-    <section aria-labelledby="language-section-title" className="flex flex-col gap-3 max-w-sm">
-      <h2 id="language-section-title" className="text-sm font-medium">
-        {t('languageLabel')}
-      </h2>
-      <div className="flex items-center gap-2" role="group">
-        <span
-          data-testid="language-switcher-current"
-          aria-current="true"
-          className="min-h-[44px] inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium bg-accent"
-        >
-          {LOCALE_LABELS[locale] ?? locale}
-        </span>
-        <Link
-          href={pathname}
-          locale={otherLocale}
-          data-testid="language-switcher-link"
-          aria-label={`${otherLocaleLabel} — ${switchLabel}`}
-          className="min-h-[44px] inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          {otherLocaleLabel}
-        </Link>
-      </div>
-    </section>
+    <div className="flex items-center gap-2" role="group">
+      <span
+        data-testid="language-switcher-current"
+        aria-current="true"
+        className="min-h-[44px] inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium bg-accent"
+      >
+        {LOCALE_LABELS[locale] ?? locale}
+      </span>
+      <Link
+        href={pathname}
+        locale={otherLocale}
+        data-testid="language-switcher-link"
+        aria-label={`${otherLocaleLabel} — ${switchLabel}`}
+        className="min-h-[44px] inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+      >
+        {otherLocaleLabel}
+      </Link>
+    </div>
   );
 }
