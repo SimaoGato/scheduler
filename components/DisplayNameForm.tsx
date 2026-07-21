@@ -83,7 +83,13 @@ export default function DisplayNameForm({ initialDisplayName, googleNamePlacehol
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm">
-      <label htmlFor="display-name-input" className="text-sm font-medium">
+      {/* CHORE-31: SettingsRow's title for this row reuses this same
+          nameLabel string as its visible heading — rendering it a second
+          time here would be a redundant duplicate. sr-only preserves the
+          htmlFor/id association (aria-label/accessible-name on
+          display-name-input below is unchanged) while removing the visual
+          duplication. */}
+      <label htmlFor="display-name-input" className="sr-only">
         {t('nameLabel')}
       </label>
       <input
