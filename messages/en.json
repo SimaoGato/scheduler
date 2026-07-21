@@ -110,15 +110,18 @@
   "Settings": {
     "title": "Settings",
     "nameLabel": "Display name",
+    "nameRowDescription": "How your name appears in Escala",
     "saveButton": "Save",
     "savingLabel": "Saving...",
     "successMessage": "Saved",
     "errorEmpty": "Name cannot be empty.",
     "errorGeneric": "Something went wrong. Please try again.",
     "languageLabel": "Language",
+    "languageRowDescription": "App display language",
     "switchToPortuguese": "Switch to Portuguese",
     "switchToEnglish": "Switch to English",
     "themeSectionTitle": "Theme",
+    "themeRowDescription": "Switch between light and dark",
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark"

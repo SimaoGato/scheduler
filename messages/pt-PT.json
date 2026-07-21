@@ -110,15 +110,18 @@
   "Settings": {
     "title": "Definições",
     "nameLabel": "Nome apresentado",
+    "nameRowDescription": "Como o seu nome é apresentado no Escala",
     "saveButton": "Guardar",
     "savingLabel": "A guardar...",
     "successMessage": "Guardado",
     "errorEmpty": "O nome não pode estar vazio.",
     "errorGeneric": "Ocorreu um erro. Tente novamente.",
     "languageLabel": "Idioma",
+    "languageRowDescription": "Idioma da aplicação",
     "switchToPortuguese": "Mudar para português",
     "switchToEnglish": "Mudar para inglês",
     "themeSectionTitle": "Tema",
+    "themeRowDescription": "Alternar entre tema claro e escuro",
     "themeSystem": "Sistema",
     "themeLight": "Claro",
     "themeDark": "Escuro"
