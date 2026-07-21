@@ -1,7 +1,8 @@
 # CHORE-31: Redesign Settings page (profile card + grouped preference rows)
 Epic: maintenance
 Priority: standard — part of the pre-EPIC-04 UI push
-Status: implemented
+Status: done ✅
+PR: 66
 Depends on: CHORE-23 (tokens/fonts, done), CHORE-24 (pill primitives, done)
 Related: updated mockup in `App design refinement/Escala Dashboard.dc.html`
 (`isSettings` block), STORY-21 (display name form), CHORE-11 (theme
