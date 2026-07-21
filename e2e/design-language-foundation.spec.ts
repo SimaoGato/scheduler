@@ -255,6 +255,49 @@ for (const [bg, fg] of EXISTING_SEMANTIC_PAIRS) {
   });
 }
 
+// --- CHORE-31 AC3: --destructive-outline vs --background contrast ----------
+//
+// New, additive token for the Settings-page sign-out button's
+// `destructiveOutline` Button variant (CHORE-31). Mirrors the AC1a/AC1b
+// --brand/--brand-foreground pattern above: a static HSL-format check plus a
+// computed WCAG AA contrast check. Only verified against --background (the
+// button's actual placement, a direct sibling of the page's Cards) — NOT
+// against --card (see globals.css's comment on this token for the reason:
+// dark theme drops to 3.82:1 against --card, failing the 4.5:1 text floor).
+
+test('CHORE-31 AC3a: --destructive-outline exists in HSL format in both :root and .dark', () => {
+  const css = readFileSync(GLOBALS_CSS_PATH, 'utf8');
+  const rootBlock = extractThemeBlock(css, ':root');
+  const darkBlock = extractThemeBlock(css, '\\.dark');
+
+  // :root's value is `var(--destructive)`, not a literal HSL triple (see
+  // Design decision 5 — it's a reference, not a duplicate). Assert the
+  // reference form directly, then resolve it to the literal --destructive
+  // value for the contrast computation in AC3b below.
+  expect(rootBlock).toMatch(/--destructive-outline:\s*var\(--destructive\);/);
+  // .dark's value IS a new, independent literal HSL triple.
+  expect(darkBlock).toMatch(/--destructive-outline:\s*[\d.]+\s+[\d.]+%\s+[\d.]+%;/);
+  expect(darkBlock).not.toMatch(/--destructive-outline:\s*var\(/);
+});
+
+test('CHORE-31 AC3b: --destructive-outline on --background meets WCAG AA (>=4.5:1) in both themes', () => {
+  const css = readFileSync(GLOBALS_CSS_PATH, 'utf8');
+  const rootBlock = extractThemeBlock(css, ':root');
+  const darkBlock = extractThemeBlock(css, '\\.dark');
+
+  // :root's --destructive-outline is `var(--destructive)` — resolve to
+  // --destructive's own literal value for the light-theme computation.
+  const lightBackground = extractHslVar(rootBlock, 'background');
+  const lightDestructiveOutline = extractHslVar(rootBlock, 'destructive');
+  const lightRatio = contrastRatioFromHsl(lightDestructiveOutline, lightBackground);
+  expect(lightRatio).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT_MIN_RATIO);
+
+  const darkBackground = extractHslVar(darkBlock, 'background');
+  const darkDestructiveOutline = extractHslVar(darkBlock, 'destructive-outline');
+  const darkRatio = contrastRatioFromHsl(darkDestructiveOutline, darkBackground);
+  expect(darkRatio).toBeGreaterThanOrEqual(WCAG_AA_NORMAL_TEXT_MIN_RATIO);
+});
+
 // --- AC3a: static check — fonts loaded via next/font/google, wired into theme
 
 test('AC3a: lib/fonts.ts loads Space Grotesk and JetBrains Mono via next/font/google', () => {

@@ -56,6 +56,18 @@
        this diff; CHORE-24 wires it into Button/Badge. */
     --brand: 27.7 95.5% 56.7%;
     --brand-foreground: 240 10% 3.9%;
+    /* CHORE-31: outline-button color for the Settings-page sign-out button
+       (variant="destructiveOutline"). A var() reference, not a literal
+       duplicate (CHORE-32's "literal duplicates silently diverge" lesson) —
+       light theme's existing --destructive value already clears both the
+       4.5:1 text floor and 3:1 border floor against --background (4.83:1),
+       so no new value is needed here; referencing it keeps the two tokens
+       in sync if --destructive is ever retuned in light theme. Verified
+       ONLY against --background (the button's actual placement, a direct
+       sibling of the page's Cards) — NOT against --card (would be 3.82:1
+       in dark theme, failing 4.5:1 — see .dark's comment below and
+       components/SettingsSignOutButton.tsx's placement constraint). */
+    --destructive-outline: var(--destructive);
     /* CHORE-28: header-surface tokens. Mockup source values
        (Escala Dashboard.dc.html lines 511-534, theme()): light
        header: oklch(0.22 0.035 250), headerBorder: oklch(0.30 0.035 250),
@@ -172,6 +184,24 @@
        reuse one accent value in both themes. */
     --brand: 27.7 95.5% 56.7%;
     --brand-foreground: 240 10% 3.9%;
+    /* CHORE-31: new, independent literal value — deliberately diverging from
+       .dark's --destructive (0 62.8% 30.6%), because that value is tuned
+       only for the solid-fill/near-white-text pairing (CHORE-32's comment:
+       "any future bg-destructive/10 + text-destructive usage should use the
+       solid-fill pattern instead"), not for standalone text/border color
+       against --background. Held hue at 0 (same red family as
+       --destructive) and swept saturation/lightness against dark theme's
+       --background (211 28% 15%) using this repo's own
+       hslToRgb/relativeLuminance/contrastRatioFromHsl formulas
+       (e2e/design-language-foundation.spec.ts) until both the 4.5:1 text
+       floor and 3:1 border floor cleared. Verified: --destructive-outline on
+       --background = 4.702:1 (dark) / 4.829:1 (light, via :root's var()
+       reference above) — see e2e/design-language-foundation.spec.ts's
+       "CHORE-31 AC3b" test. NOT verified against --card (drops to 3.82:1 in
+       dark theme, failing the 4.5:1 text floor) — the sign-out button that
+       consumes this token must stay a direct sibling of the page's Cards,
+       never nested inside a CardContent. */
+    --destructive-outline: 0 72.2% 65%;
     /* CHORE-28: mockup source values (dark): header: oklch(0.20 0.03 250),
        headerBorder: oklch(0.36 0.03 250), headerText: oklch(0.96 0.01 85),
        headerTextMuted: oklch(0.70 0.02 250).
@@ -207,6 +237,7 @@
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-outline: hsl(var(--destructive-outline));
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
   --color-brand: hsl(var(--brand));
