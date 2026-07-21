@@ -73,9 +73,14 @@ test.describe('CHORE-31: Settings page redesign', () => {
     await expect(card).toBeVisible();
 
     // Translated row titles (not raw keys) are visible inside the card.
-    await expect(card.getByText('Nome apresentado')).toBeVisible();
-    await expect(card.getByText('Idioma')).toBeVisible();
-    await expect(card.getByText('Tema')).toBeVisible();
+    // Scoped to the <h2> title role (SettingsRow.tsx) with exact match: a
+    // substring/case-insensitive getByText() would also match each row's
+    // <p> description (e.g. "Idioma da aplicação", "...tema claro e
+    // escuro"), causing a strict-mode-violation (2 matches) — verified via
+    // standalone repro during PR #66 review.
+    await expect(card.getByRole('heading', { name: 'Nome apresentado', exact: true })).toBeVisible();
+    await expect(card.getByRole('heading', { name: 'Idioma', exact: true })).toBeVisible();
+    await expect(card.getByRole('heading', { name: 'Tema', exact: true })).toBeVisible();
 
     // Lightweight computed-style check that divide-y actually engaged: the
     // 2nd and 3rd row each have a non-zero border-top width, proving
